@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Selah: Biblia & Calma",
+    "slug": "selah-bible",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "selahbible",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#090d16",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.selah.bible"
+    },
+    "android": {
+      "package": "com.selah.bible",
+      "backgroundColor": "#090d16",
+      "adaptiveIcon": {
+        "backgroundColor": "#090d16",
+        "foregroundImage": "./assets/images/icon.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 1
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-sqlite",
+        {
+          "enableFTS": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#10b981"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3e650552-a548-4109-b957-5ceabb72ce09"
+      }
+    },
+    "owner": "joelchino"
+  }
+}
