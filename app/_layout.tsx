@@ -175,6 +175,13 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
+        name="curiosities/index"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
         name="search"
         options={{
           headerShown: false,
