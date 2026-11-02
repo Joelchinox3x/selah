@@ -292,3 +292,20 @@ export async function getLastRead(): Promise<{ bookId: number; chapter: number; 
   return { bookId: row.book_id, chapter: row.chapter, lastReadAt: row.last_read_at };
 }
 
+export async function getChaptersWithUserData(bookId: number): Promise<number[]> {
+  try {
+    const db = await getUserDb();
+    const rows = await db.getAllAsync<{ chapter: number }>(
+      `SELECT DISTINCT chapter FROM bookmarks WHERE book_id = ?
+       UNION
+       SELECT DISTINCT chapter FROM notes WHERE book_id = ?
+       UNION
+       SELECT DISTINCT chapter FROM highlights WHERE book_id = ?`,
+      [bookId, bookId, bookId]
+    );
+    return rows.map((r) => r.chapter);
+  } catch {
+    return [];
+  }
+}
+

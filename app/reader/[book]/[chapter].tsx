@@ -704,6 +704,7 @@ export default function ChapterReaderScreen() {
       {book && (
         <ChapterSelectorModal
           visible={chapterModalVisible}
+          bookId={book.id}
           bookName={book.name}
           totalChapters={book.chapters_count}
           currentChapter={chapterNumber}

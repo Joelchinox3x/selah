@@ -5,24 +5,54 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Search, ChevronRight } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { Screen } from '@/src/components/ui/Screen';
 import { ChapterSelectorModal } from '@/src/features/reader/components/ChapterSelectorModal';
 import { getBooks } from '@/src/services/db/bibleDb';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
-import { Book, Testament } from '@/src/types/bible';
+import { Book } from '@/src/types/bible';
 import { hapticLight, hapticSelection } from '@/src/services/haptics/hapticFeedback';
+import {
+  getBookMeta,
+  BibleCategory,
+} from '@/src/features/bible/data/bibleBooksMeta';
 
-type FilterScope = 'ALL' | 'OT' | 'NT';
+type FilterScope =
+  | 'ALL'
+  | 'OT'
+  | 'NT'
+  | BibleCategory;
+
+interface FilterOption {
+  key: FilterScope;
+  label: string;
+}
+
+const FILTER_OPTIONS: FilterOption[] = [
+  { key: 'ALL', label: 'Todos' },
+  { key: 'OT', label: 'Antiguo Testamento' },
+  { key: 'NT', label: 'Nuevo Testamento' },
+  { key: 'Pentateuco', label: 'Pentateuco' },
+  { key: 'Históricos', label: 'Históricos' },
+  { key: 'Poéticos', label: 'Poéticos' },
+  { key: 'Profetas Mayores', label: 'Profetas Mayores' },
+  { key: 'Profetas Menores', label: 'Profetas Menores' },
+  { key: 'Evangelios', label: 'Evangelios' },
+  { key: 'Epístolas Paulinas', label: 'Epístolas Paulinas' },
+  { key: 'Epístolas Generales', label: 'Epístolas Generales' },
+  { key: 'Profecía', label: 'Profecía' },
+];
 
 export default function BibleScreen() {
   const router = useRouter();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
+  const isDark = themeMode === 'oled';
 
   const [books, setBooks] = useState<Book[]>([]);
   const [filterScope, setFilterScope] = useState<FilterScope>('ALL');
@@ -39,21 +69,34 @@ export default function BibleScreen() {
     load();
   }, []);
 
+  const countForScope = (scope: FilterScope) => {
+    if (scope === 'ALL') return books.length;
+    if (scope === 'OT') return books.filter((b) => b.testament === 'OT').length;
+    if (scope === 'NT') return books.filter((b) => b.testament === 'NT').length;
+    return books.filter((b) => getBookMeta(b.id)?.category === scope).length;
+  };
+
   const filteredBooks = useMemo(() => {
     let result = books;
     if (filterScope === 'OT') {
       result = result.filter((b) => b.testament === 'OT');
     } else if (filterScope === 'NT') {
       result = result.filter((b) => b.testament === 'NT');
+    } else if (filterScope !== 'ALL') {
+      result = result.filter((b) => getBookMeta(b.id)?.category === filterScope);
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (b) =>
+      result = result.filter((b) => {
+        const meta = getBookMeta(b.id);
+        return (
           b.name.toLowerCase().includes(q) ||
-          b.abbreviation.toLowerCase().includes(q)
-      );
+          b.abbreviation.toLowerCase().includes(q) ||
+          Boolean(meta?.subtitle.toLowerCase().includes(q)) ||
+          Boolean(meta?.category.toLowerCase().includes(q))
+        );
+      });
     }
 
     return result;
@@ -75,57 +118,71 @@ export default function BibleScreen() {
     setSelectedBookForChapters(null);
   };
 
-  const renderBookItem = ({ item }: { item: Book }) => (
-    <TouchableOpacity
-      style={[
-        styles.bookItem,
-        {
-          backgroundColor: theme.cardBackground,
-          borderColor: theme.borderSubtle,
-        },
-      ]}
-      activeOpacity={0.7}
-      onPress={() => handleBookPress(item)}
-    >
-      <View style={styles.bookLeft}>
-        <View
-          style={[
-            styles.bookBadge,
-            {
-              backgroundColor:
-                item.testament === 'OT'
-                  ? theme.surfaceRaised
-                  : theme.accentMuted,
-            },
-          ]}
-        >
-          <Text
+  const renderBookItem = ({ item }: { item: Book }) => {
+    const meta = getBookMeta(item.id);
+    const orderNumber = meta?.orderNumber || String(item.id).padStart(2, '0');
+    const categoryInfo = meta
+      ? `${meta.category} · ${meta.subtitle}`
+      : item.testament === 'OT'
+      ? 'Antiguo Testamento'
+      : 'Nuevo Testamento';
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.bookCard,
+          {
+            backgroundColor: theme.cardBackground,
+            borderColor: theme.borderSubtle,
+          },
+        ]}
+        activeOpacity={0.7}
+        onPress={() => handleBookPress(item)}
+      >
+        <View style={styles.bookLeft}>
+          {/* Order Badge (01, 02, 23...) */}
+          <View
             style={[
-              styles.bookBadgeText,
+              styles.orderBadge,
               {
-                color: item.testament === 'OT' ? theme.textMuted : theme.accent,
+                backgroundColor:
+                  isDark ? 'rgba(255,255,255,0.06)' : '#EFF6FF',
               },
             ]}
           >
-            {item.abbreviation}
-          </Text>
+            <Text
+              style={[
+                styles.orderBadgeText,
+                {
+                  color: isDark ? theme.accent : '#2563EB',
+                },
+              ]}
+            >
+              {orderNumber}
+            </Text>
+          </View>
+
+          {/* Book Name & Canonical Theme Subtitle */}
+          <View style={styles.bookDetails}>
+            <Text style={[styles.bookTitle, { color: theme.text }]}>
+              {item.name}
+            </Text>
+            <Text
+              style={[styles.bookSubtitle, { color: theme.textMuted }]}
+              numberOfLines={1}
+            >
+              {categoryInfo}
+            </Text>
+          </View>
         </View>
 
-        <View>
-          <Text style={[styles.bookName, { color: theme.text }]}>
-            {item.name}
-          </Text>
-          <Text style={[styles.bookMeta, { color: theme.textMuted }]}>
-            {item.chapters_count}{' '}
-            {item.chapters_count === 1 ? 'capítulo' : 'capítulos'} ·{' '}
-            {item.testament === 'OT' ? 'Antiguo Testamento' : 'Nuevo Testamento'}
-          </Text>
-        </View>
-      </View>
-
-      <ChevronRight size={18} color={theme.textMuted} />
-    </TouchableOpacity>
-  );
+        {/* Chapters Count (50 cap, 40 cap, 66 cap) */}
+        <Text style={[styles.chaptersCountText, { color: theme.textMuted }]}>
+          {item.chapters_count} cap
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <Screen safeTop safeBottom={false}>
@@ -159,7 +216,7 @@ export default function BibleScreen() {
           <Search size={16} color={theme.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Buscar libro (ej. Salmos, Juan, Romanos)..."
+            placeholder="Buscar libro (ej. Salmos, Juan, Isaías)..."
             placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -167,48 +224,51 @@ export default function BibleScreen() {
           />
         </View>
 
-        {/* Scope Pill Filters */}
-        <View style={styles.scopeRow}>
-          {(['ALL', 'OT', 'NT'] as FilterScope[]).map((scope) => {
-            const isSelected = filterScope === scope;
-            const labels: Record<FilterScope, string> = {
-              ALL: `Todos (${books.length})`,
-              OT: 'Antiguo Testamento (39)',
-              NT: 'Nuevo Testamento (27)',
-            };
-            return (
-              <TouchableOpacity
-                key={scope}
-                style={[
-                  styles.scopePill,
-                  {
-                    backgroundColor: isSelected
-                      ? theme.accent
-                      : theme.surfaceRaised,
-                    borderColor: isSelected
-                      ? theme.accent
-                      : theme.borderSubtle,
-                  },
-                ]}
-                onPress={() => {
-                  hapticLight();
-                  setFilterScope(scope);
-                }}
-              >
-                <Text
+        {/* Horizontally scrollable Category Pills */}
+        <View style={styles.scopeWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scopeScrollContent}
+          >
+            {FILTER_OPTIONS.map((opt) => {
+              const isSelected = filterScope === opt.key;
+              const count = countForScope(opt.key);
+              return (
+                <TouchableOpacity
+                  key={opt.key}
                   style={[
-                    styles.scopePillText,
+                    styles.scopePill,
                     {
-                      color: isSelected ? '#ffffff' : theme.textMuted,
-                      fontWeight: isSelected ? '700' : '500',
+                      backgroundColor: isSelected
+                        ? theme.accent
+                        : theme.surfaceRaised,
+                      borderColor: isSelected
+                        ? theme.accent
+                        : theme.borderSubtle,
                     },
                   ]}
+                  onPress={() => {
+                    hapticLight();
+                    setFilterScope(opt.key);
+                  }}
+                  activeOpacity={0.75}
                 >
-                  {labels[scope]}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <Text
+                    style={[
+                      styles.scopePillText,
+                      {
+                        color: isSelected ? '#FFFFFF' : theme.textMuted,
+                        fontWeight: isSelected ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    {opt.label} ({count})
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       </View>
 
@@ -224,7 +284,8 @@ export default function BibleScreen() {
       {/* Chapter Picker Modal */}
       {selectedBookForChapters && (
         <ChapterSelectorModal
-          visible={!!selectedBookForChapters}
+          visible={Boolean(selectedBookForChapters)}
+          bookId={selectedBookForChapters.id}
           bookName={selectedBookForChapters.name}
           totalChapters={selectedBookForChapters.chapters_count}
           currentChapter={1}
@@ -260,7 +321,7 @@ const styles = StyleSheet.create({
   filterSection: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 6,
   },
   searchInputWrapper: {
     flexDirection: 'row',
@@ -275,32 +336,37 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
   },
-  scopeRow: {
-    flexDirection: 'row',
-    gap: 8,
+  scopeWrapper: {
     marginTop: 10,
   },
+  scopeScrollContent: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 2,
+  },
   scopePill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
   },
   scopePillText: {
     fontSize: 12,
+    letterSpacing: 0.1,
   },
   listContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 40,
-    gap: 8,
+    gap: 10,
   },
-  bookItem: {
+  bookCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
   },
   bookLeft: {
@@ -308,25 +374,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    marginRight: 12,
   },
-  bookBadge: {
-    width: 40,
-    height: 40,
+  orderBadge: {
+    width: 36,
+    height: 36,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bookBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
+  orderBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
   },
-  bookName: {
+  bookDetails: {
+    flex: 1,
+  },
+  bookTitle: {
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  bookMeta: {
+  bookSubtitle: {
     fontSize: 12,
     marginTop: 2,
+    lineHeight: 16,
+  },
+  chaptersCountText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
 });
