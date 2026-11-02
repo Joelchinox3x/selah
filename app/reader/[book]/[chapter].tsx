@@ -128,20 +128,17 @@ export default function ChapterReaderScreen() {
   const [shareModalVisible, setShareModalVisible] = useState(false);
 
   const flatListRef = useRef<FlatList<VerseWithUserData>>(null);
+  const lastPressRef = useRef<number>(0);
 
-  // Load chapter data without tearing down screen
-  const loadChapter = useCallback(async () => {
-    if (!book) {
-      setInitialLoading(true);
-    }
-    setSelectedVerseNumbers([]);
+  // Load chapter data without tearing down screen or causing cyclic re-renders
+  const loadChapter = useCallback(async (bId: number, chNum: number) => {
     try {
       const [bookData, versesData, uData, booksList, peopleMapping] = await Promise.all([
-        getBookById(bookId),
-        getChapterVerses(bookId, chapterNumber),
-        getChapterUserData(bookId, chapterNumber),
+        getBookById(bId),
+        getChapterVerses(bId, chNum),
+        getChapterUserData(bId, chNum),
         getBooks(),
-        getPeopleForChapter(bookId, chapterNumber),
+        getPeopleForChapter(bId, chNum),
       ]);
 
       setBook(bookData);
@@ -150,21 +147,23 @@ export default function ChapterReaderScreen() {
       setAllBooks(booksList);
       setChapterPeople(peopleMapping);
 
-      recordReadingProgress(bookId, chapterNumber).catch(() => {});
-
-      if (targetHighlightVerse) {
-        setSelectedVerseNumbers([targetHighlightVerse]);
-      }
+      recordReadingProgress(bId, chNum).catch(() => {});
     } catch (e) {
       console.warn('Error loading chapter:', e);
     } finally {
       setInitialLoading(false);
     }
-  }, [bookId, chapterNumber, targetHighlightVerse, book]);
+  }, []);
 
   useEffect(() => {
-    loadChapter();
-  }, [loadChapter]);
+    setSelectedVerseNumbers([]);
+    setInitialLoading(true);
+    loadChapter(bookId, chapterNumber).then(() => {
+      if (targetHighlightVerse) {
+        setSelectedVerseNumbers([targetHighlightVerse]);
+      }
+    });
+  }, [bookId, chapterNumber, targetHighlightVerse, loadChapter]);
 
   // Combine raw verses with user data
   const enrichedVerses: VerseWithUserData[] = useMemo(() => {
@@ -185,6 +184,13 @@ export default function ChapterReaderScreen() {
   }, [verses, userData]);
 
   const handleVersePress = (verse: VerseWithUserData) => {
+    const now = Date.now();
+    // Guard against rapid synthetic double-taps on touch screens
+    if (now - lastPressRef.current < 200) {
+      return;
+    }
+    lastPressRef.current = now;
+
     hapticSelection();
     setSelectedVerseNumbers((prev) => {
       if (prev.includes(verse.verse)) {
@@ -575,6 +581,7 @@ export default function ChapterReaderScreen() {
         <FlatList
           ref={flatListRef}
           data={enrichedVerses}
+          extraData={selectedVerseNumbers}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
             <VerseItem
