@@ -200,30 +200,22 @@ export default function ChapterReaderScreen() {
   };
 
   const handleApplyHighlight = async (color: HighlightColor) => {
-    for (const vNum of selectedVerseNumbers) {
+    const targets = [...selectedVerseNumbers];
+    for (const vNum of targets) {
       await setHighlight(bookId, chapterNumber, vNum, color);
     }
-    setUserData((prev) => {
-      const updatedHighlights = { ...prev.highlights };
-      for (const vNum of selectedVerseNumbers) {
-        updatedHighlights[vNum] = { id: Date.now(), color };
-      }
-      return { ...prev, highlights: updatedHighlights };
-    });
+    const freshUserData = await getChapterUserData(bookId, chapterNumber);
+    setUserData(freshUserData);
     handleClearSelection();
   };
 
   const handleRemoveHighlight = async () => {
-    for (const vNum of selectedVerseNumbers) {
+    const targets = [...selectedVerseNumbers];
+    for (const vNum of targets) {
       await removeHighlight(bookId, chapterNumber, vNum);
     }
-    setUserData((prev) => {
-      const updatedHighlights = { ...prev.highlights };
-      for (const vNum of selectedVerseNumbers) {
-        delete updatedHighlights[vNum];
-      }
-      return { ...prev, highlights: updatedHighlights };
-    });
+    const freshUserData = await getChapterUserData(bookId, chapterNumber);
+    setUserData(freshUserData);
     handleClearSelection();
   };
 

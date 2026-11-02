@@ -12,6 +12,7 @@ import {
   X,
   Palette,
   Ban,
+  Check,
 } from 'lucide-react-native';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes, highlightColors, HighlightColor } from '@/src/theme/colors';
@@ -30,6 +31,8 @@ interface MultiVerseActionBarProps {
   onOpenShareModal: () => void;
 }
 
+const ALL_HIGHLIGHT_COLORS: HighlightColor[] = ['yellow', 'green', 'blue', 'pink'];
+
 export const MultiVerseActionBar: React.FC<MultiVerseActionBarProps> = ({
   selectedVerses,
   bookName,
@@ -43,6 +46,7 @@ export const MultiVerseActionBar: React.FC<MultiVerseActionBarProps> = ({
 }) => {
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
+  const isDark = themeMode === 'oled';
 
   if (selectedVerses.length === 0) return null;
 
@@ -58,6 +62,8 @@ export const MultiVerseActionBar: React.FC<MultiVerseActionBarProps> = ({
 
   const referenceString = `${bookName} ${chapter}:${verseRangeText}`;
   const notesCount = selectedVerses.filter((v) => v.hasNote).length;
+  const isBookmarked = selectedVerses.length > 0 && selectedVerses.every((v) => v.isBookmarked);
+  const activeColor = selectedVerses[0]?.highlightColor;
 
   return (
     <View style={styles.floatingContainer}>
@@ -65,17 +71,17 @@ export const MultiVerseActionBar: React.FC<MultiVerseActionBarProps> = ({
         style={[
           styles.barWrapper,
           {
-            backgroundColor: themeMode === 'oled' ? '#111827' : '#1F2937',
-            borderColor: theme.border,
+            backgroundColor: isDark ? '#0F172A' : '#1E293B',
+            borderColor: isDark ? '#1E293B' : '#334155',
             shadowColor: '#000',
           },
         ]}
       >
-        {/* Header row: Status & Dismiss (Photo 3) */}
+        {/* Header Row: Title & Close Button */}
         <View style={styles.headerRow}>
           <View style={styles.selectionTitleRow}>
             <View style={styles.dotActive} />
-            <Text style={styles.referenceText}>
+            <Text style={styles.referenceText} numberOfLines={1}>
               {referenceString} seleccionado
             </Text>
           </View>
@@ -84,94 +90,113 @@ export const MultiVerseActionBar: React.FC<MultiVerseActionBarProps> = ({
               hapticLight();
               onClearSelection();
             }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={styles.closeBtn}
           >
-            <X size={16} color="#9CA3AF" />
+            <X size={18} color="#94A3B8" />
           </TouchableOpacity>
         </View>
 
-        {/* Action Controls Row (Photo 3) */}
-        <View style={styles.actionRow}>
-          {/* Highlight Color Circles */}
-          <View style={styles.resaltarSection}>
-            <Text style={styles.resaltarLabel}>Resaltar:</Text>
-            <View style={styles.colorsRow}>
-              {(['yellow', 'green', 'pink'] as HighlightColor[]).map((c) => (
+        {/* Row 1: Highlighting Palette (All 4 colors + Remove) */}
+        <View style={styles.highlightRow}>
+          <Text style={styles.highlightLabel}>Resaltar:</Text>
+          <View style={styles.colorsGroup}>
+            {ALL_HIGHLIGHT_COLORS.map((c) => {
+              const isSelectedColor = activeColor === c;
+              return (
                 <TouchableOpacity
                   key={c}
                   style={[
                     styles.colorDot,
                     { backgroundColor: highlightColors[c].dot },
+                    isSelectedColor && styles.colorDotSelected,
                   ]}
                   activeOpacity={0.7}
                   onPress={() => {
                     hapticLight();
                     onApplyHighlight(c);
                   }}
-                />
-              ))}
-              <TouchableOpacity
-                style={styles.removeHighlightDot}
-                onPress={() => {
-                  hapticLight();
-                  onRemoveHighlight();
-                }}
-                activeOpacity={0.7}
-              >
-                <Ban size={12} color="#9CA3AF" />
-              </TouchableOpacity>
+                >
+                  {isSelectedColor && (
+                    <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Remove highlight dot */}
+            <TouchableOpacity
+              style={styles.removeHighlightDot}
+              onPress={() => {
+                hapticLight();
+                onRemoveHighlight();
+              }}
+              activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ban size={13} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Row 2: Actions Bar: Favorito, Nota, Crear Tarjeta (Balanced, never overflows) */}
+        <View style={styles.actionsBottomRow}>
+          {/* Favorito */}
+          <TouchableOpacity
+            style={[styles.toolBtn, isBookmarked && styles.toolBtnActive]}
+            onPress={() => {
+              hapticSuccess();
+              onToggleBookmark();
+            }}
+            activeOpacity={0.75}
+          >
+            <Star
+              size={16}
+              color={isBookmarked ? '#F59E0B' : '#E2E8F0'}
+              fill={isBookmarked ? '#F59E0B' : 'transparent'}
+            />
+            <Text
+              style={[
+                styles.toolBtnText,
+                isBookmarked && { color: '#F59E0B', fontWeight: '700' },
+              ]}
+            >
+              Favorito
+            </Text>
+          </TouchableOpacity>
+
+          {/* Nota */}
+          <TouchableOpacity
+            style={styles.toolBtn}
+            onPress={() => {
+              hapticLight();
+              onOpenNoteModal();
+            }}
+            activeOpacity={0.75}
+          >
+            <View style={styles.noteIconWrap}>
+              <FileEdit size={16} color="#E2E8F0" />
+              {notesCount > 0 && (
+                <View style={styles.noteBadge}>
+                  <Text style={styles.noteBadgeText}>{notesCount}</Text>
+                </View>
+              )}
             </View>
-          </View>
+            <Text style={styles.toolBtnText}>Nota</Text>
+          </TouchableOpacity>
 
-          {/* Action Buttons: Favorito, Nota, Crear Tarjeta */}
-          <View style={styles.actionsRightGroup}>
-            {/* Favorito */}
-            <TouchableOpacity
-              style={styles.toolBtn}
-              onPress={() => {
-                hapticSuccess();
-                onToggleBookmark();
-              }}
-              activeOpacity={0.75}
-            >
-              <Star size={16} color="#F3F4F6" />
-              <Text style={styles.toolBtnText}>Favorito</Text>
-            </TouchableOpacity>
-
-            {/* Nota */}
-            <TouchableOpacity
-              style={styles.toolBtn}
-              onPress={() => {
-                hapticLight();
-                onOpenNoteModal();
-              }}
-              activeOpacity={0.75}
-            >
-              <View style={styles.noteIconWrap}>
-                <FileEdit size={16} color="#F3F4F6" />
-                {notesCount > 0 && (
-                  <View style={styles.noteBadge}>
-                    <Text style={styles.noteBadgeText}>{notesCount}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.toolBtnText}>Nota</Text>
-            </TouchableOpacity>
-
-            {/* Crear Tarjeta (Warm Peach Pill Button from Photo 3) */}
-            <TouchableOpacity
-              style={styles.createCardBtn}
-              onPress={() => {
-                hapticLight();
-                onOpenShareModal();
-              }}
-              activeOpacity={0.85}
-            >
-              <Palette size={15} color="#1F2937" />
-              <Text style={styles.createCardBtnText}>Crear Tarjeta</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Crear Tarjeta (High Priority, spacious and perfectly aligned) */}
+          <TouchableOpacity
+            style={styles.createCardBtn}
+            onPress={() => {
+              hapticLight();
+              onOpenShareModal();
+            }}
+            activeOpacity={0.85}
+          >
+            <Palette size={15} color="#7C2D12" />
+            <Text style={styles.createCardBtnText}>Crear Tarjeta</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -182,8 +207,8 @@ const styles = StyleSheet.create({
   floatingContainer: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 24 : 16,
-    left: 14,
-    right: 14,
+    left: 12,
+    right: 12,
     alignItems: 'center',
     zIndex: 999,
   },
@@ -198,20 +223,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 18,
     elevation: 10,
+    gap: 10,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 10,
+    paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-    marginBottom: 10,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   selectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    marginRight: 8,
   },
   dotActive: {
     width: 6,
@@ -226,58 +253,71 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   closeBtn: {
-    padding: 2,
+    padding: 3,
   },
-  actionRow: {
+  highlightRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    paddingVertical: 2,
   },
-  resaltarSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  resaltarLabel: {
-    color: '#9CA3AF',
-    fontSize: 11,
+  highlightLabel: {
+    color: '#94A3B8',
+    fontSize: 12,
     fontWeight: '600',
   },
-  colorsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  colorDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  removeHighlightDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#4B5563',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionsRightGroup: {
+  colorsGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  toolBtn: {
+  colorDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    gap: 3,
+  },
+  colorDotSelected: {
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    transform: [{ scale: 1.1 }],
+  },
+  removeHighlightDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: '#475569',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+  actionsBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingTop: 2,
+  },
+  toolBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    gap: 6,
+    flex: 1,
+  },
+  toolBtnActive: {
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
   },
   toolBtnText: {
-    color: '#D1D5DB',
-    fontSize: 10,
+    color: '#E2E8F0',
+    fontSize: 12,
     fontWeight: '600',
   },
   noteIconWrap: {
@@ -285,12 +325,12 @@ const styles = StyleSheet.create({
   },
   noteBadge: {
     position: 'absolute',
-    top: -4,
-    right: -8,
+    top: -5,
+    right: -7,
     backgroundColor: '#D97706',
     borderRadius: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    paddingHorizontal: 3.5,
+    paddingVertical: 0.5,
   },
   noteBadgeText: {
     color: '#FFFFFF',
@@ -300,11 +340,13 @@ const styles = StyleSheet.create({
   createCardBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     backgroundColor: '#FED7AA',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    flex: 1.4,
   },
   createCardBtnText: {
     color: '#7C2D12',
