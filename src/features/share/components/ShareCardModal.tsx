@@ -29,7 +29,7 @@ import {
   BackgroundCategory,
 } from '../data/cardBackgrounds';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type AspectRatioMode = '1:1' | '9:16';
 type TypographyPreset = 'classic' | 'modern' | 'solemn';
@@ -55,6 +55,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   referenceText,
   onClose,
 }) => {
+  // All hooks declared unconditionally at the very top
   const [aspectRatio, setAspectRatio] = useState<AspectRatioMode>('1:1');
   const [selectedBgId, setSelectedBgId] = useState<string>(() => getRandomImageBgId());
   const [fontPreset, setFontPreset] = useState<TypographyPreset>('classic');
@@ -62,14 +63,17 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   const [isExporting, setIsExporting] = useState(false);
 
   const cardRef = useRef<View>(null);
+  const prevVisible = useRef(false);
+
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
-  // Whenever modal opens, pick a new random photographic background
+  // Whenever modal opens from closed to open, pick a new random photographic background
   useEffect(() => {
-    if (visible) {
+    if (visible && !prevVisible.current) {
       setSelectedBgId(getRandomImageBgId());
     }
+    prevVisible.current = visible;
   }, [visible]);
 
   const currentBg = useMemo(() => {
@@ -84,7 +88,56 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
     return CARD_BACKGROUNDS.filter((bg) => bg.category === activeCategory);
   }, [activeCategory]);
 
-  if (!visible) return null;
+  // Preview dimensions calculated synchronously without hook overhead
+  const previewWidth = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 260) : 172;
+  const previewHeight = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 260) : 306;
+
+  const cleanVerses = (versesText || '').trim();
+  const cleanRef = (referenceText || '').trim();
+  const textLength = cleanVerses.length;
+
+  const getDynamicTypography = () => {
+    let fontSize = 16;
+    let lineHeight = 24;
+
+    if (textLength > 280) {
+      fontSize = aspectRatio === '9:16' ? 12 : 11;
+      lineHeight = aspectRatio === '9:16' ? 17 : 16;
+    } else if (textLength > 150) {
+      fontSize = aspectRatio === '9:16' ? 14 : 13;
+      lineHeight = aspectRatio === '9:16' ? 20 : 19;
+    } else {
+      fontSize = aspectRatio === '9:16' ? 17 : 15;
+      lineHeight = aspectRatio === '9:16' ? 25 : 23;
+    }
+
+    switch (fontPreset) {
+      case 'classic':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+          fontStyle: 'italic' as const,
+          fontWeight: '600' as const,
+          fontSize,
+          lineHeight,
+        };
+      case 'modern':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+          fontWeight: '700' as const,
+          fontStyle: 'normal' as const,
+          fontSize,
+          lineHeight,
+        };
+      case 'solemn':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
+          fontWeight: '700' as const,
+          fontStyle: 'normal' as const,
+          fontSize,
+          lineHeight,
+        };
+    }
+  };
 
   const handleShare = async () => {
     try {
@@ -110,71 +163,13 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
           mimeType: 'image/png',
-          dialogTitle: `Compartir ${referenceText}`,
+          dialogTitle: `Compartir ${cleanRef}`,
         });
       }
     } catch (err) {
       console.warn('Error exporting shareable card:', err);
     } finally {
       setIsExporting(false);
-    }
-  };
-
-  // Preview sizing that GUARANTEES the whole card is visible without being cut off
-  const previewDimensions = useMemo(() => {
-    if (aspectRatio === '1:1') {
-      const size = Math.min(SCREEN_WIDTH - 64, Math.min(SCREEN_HEIGHT * 0.34, 270));
-      return { width: size, height: size };
-    } else {
-      // For 9:16 story format, cap height so it never overflows the modal viewport
-      const targetHeight = Math.min(SCREEN_HEIGHT * 0.38, 310);
-      const targetWidth = Math.round(targetHeight * (9 / 16));
-      return { width: targetWidth, height: targetHeight };
-    }
-  }, [aspectRatio]);
-
-  // Dynamic typography sizing based on verse text length
-  const textLength = versesText?.length || 0;
-  const getDynamicTypography = () => {
-    let fontSize = 16;
-    let lineHeight = 24;
-
-    if (textLength > 280) {
-      fontSize = aspectRatio === '9:16' ? 13 : 12;
-      lineHeight = aspectRatio === '9:16' ? 19 : 17;
-    } else if (textLength > 150) {
-      fontSize = aspectRatio === '9:16' ? 15 : 14;
-      lineHeight = aspectRatio === '9:16' ? 22 : 20;
-    } else {
-      fontSize = aspectRatio === '9:16' ? 18 : 16;
-      lineHeight = aspectRatio === '9:16' ? 26 : 24;
-    }
-
-    switch (fontPreset) {
-      case 'classic':
-        return {
-          fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-          fontStyle: 'italic' as const,
-          fontWeight: '600' as const,
-          fontSize,
-          lineHeight,
-        };
-      case 'modern':
-        return {
-          fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
-          fontWeight: '700' as const,
-          fontStyle: 'normal' as const,
-          fontSize,
-          lineHeight,
-        };
-      case 'solemn':
-        return {
-          fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-          fontWeight: '800' as const,
-          fontStyle: 'normal' as const,
-          fontSize,
-          lineHeight,
-        };
     }
   };
 
@@ -352,8 +347,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                       styles.thumbItem,
                       isSelected && {
                         borderColor: theme.accent,
-                        borderWidth: 2.5,
-                        transform: [{ scale: 1.05 }],
+                        borderWidth: 2,
                       },
                     ]}
                     onPress={() => {
@@ -388,7 +382,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                       </View>
                     )}
 
-                    {/* Checkmark icon for selected background */}
+                    {/* Checkmark badge for selected background */}
                     {isSelected && (
                       <View style={[styles.thumbCheckBadge, { backgroundColor: theme.accent }]}>
                         <Check size={11} color="#ffffff" strokeWidth={3} />
@@ -421,8 +415,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
               style={[
                 styles.cardView,
                 {
-                  width: previewDimensions.width,
-                  height: previewDimensions.height,
+                  width: previewWidth,
+                  height: previewHeight,
                   backgroundColor: cardBgColor,
                   borderColor: cardBorderColor,
                 },
@@ -466,7 +460,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                             },
                           ]}
                         >
-                          «{versesText}»
+                          «{cleanVerses}»
                         </Text>
 
                         <View style={styles.cardRefWrapper}>
@@ -481,7 +475,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                               },
                             ]}
                           >
-                            — {referenceText} —
+                            — {cleanRef} —
                           </Text>
                           <Text
                             style={[
@@ -531,21 +525,21 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                         { color: cardTextColor },
                       ]}
                     >
-                      «{versesText}»
+                      «{cleanVerses}»
                     </Text>
 
                     <View style={styles.cardRefWrapper}>
                       <Text style={[styles.cardReference, { color: cardAccentColor }]}>
-                        — {referenceText} —
+                        — {cleanRef} —
                       </Text>
-                      <Text style={[styles.cardVersion, { color: cardTextColor + '99' }]}>
+                      <Text style={[styles.cardVersion, { color: cardTextColor, opacity: 0.7 }]}>
                         Reina-Valera 1909
                       </Text>
                     </View>
                   </View>
 
                   <View style={styles.cardFooter}>
-                    <Text style={[styles.watermark, { color: cardTextColor + '88' }]}>
+                    <Text style={[styles.watermark, { color: cardTextColor, opacity: 0.65 }]}>
                       ✦ Selah · Calma Espiritual
                     </Text>
                   </View>
