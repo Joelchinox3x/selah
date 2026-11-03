@@ -11,7 +11,6 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
-import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import {
@@ -60,7 +59,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   onClose,
 }) => {
   // All hooks declared unconditionally at the very top
-  const [aspectRatio, setAspectRatio] = useState<AspectRatioMode>('1:1');
+  const [aspectRatio, setAspectRatio] = useState<AspectRatioMode>('9:16');
   const [selectedBgId, setSelectedBgId] = useState<string>(() => getRandomImageBgId());
   const [fontPreset, setFontPreset] = useState<TypographyPreset>('classic');
   const [textPosition, setTextPosition] = useState<TextVerticalPosition>('center');
@@ -93,41 +92,40 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
     return CARD_BACKGROUNDS.filter((bg) => bg.category === activeCategory);
   }, [activeCategory]);
 
-  // Preview dimensions calculated synchronously without hook overhead
-  // Fits comfortably on screen with 0 cropping
-  const previewWidth = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 72, 260) : 170;
-  const previewHeight = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 72, 260) : 302;
+  // Preview dimensions: generous width so text is never cramped or unnaturally zoomed
+  const previewWidth = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 275) : 205;
+  const previewHeight = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 275) : 364;
 
   const cleanVerses = (versesText || '').trim();
   const cleanRef = (referenceText || '').trim();
   const textLength = cleanVerses.length;
 
-  // Responsive font sizing based on card ratio and character count
+  // Refined, subtle font sizing leaving generous negative space around the image
   const getDynamicTypography = () => {
-    let fontSize = 16;
-    let lineHeight = 24;
+    let fontSize = 13.5;
+    let lineHeight = 20;
 
     if (aspectRatio === '9:16') {
-      if (textLength > 240) {
-        fontSize = 11;
-        lineHeight = 16;
-      } else if (textLength > 130) {
-        fontSize = 13;
-        lineHeight = 19;
+      if (textLength > 200) {
+        fontSize = 11.5;
+        lineHeight = 17;
+      } else if (textLength > 110) {
+        fontSize = 12.5;
+        lineHeight = 18.5;
       } else {
-        fontSize = 15;
-        lineHeight = 22;
+        fontSize = 14;
+        lineHeight = 21;
       }
     } else {
-      if (textLength > 240) {
-        fontSize = 12.5;
-        lineHeight = 18;
-      } else if (textLength > 130) {
-        fontSize = 14.5;
-        lineHeight = 21;
+      if (textLength > 200) {
+        fontSize = 12;
+        lineHeight = 17.5;
+      } else if (textLength > 110) {
+        fontSize = 13.5;
+        lineHeight = 20;
       } else {
-        fontSize = 16.5;
-        lineHeight = 25;
+        fontSize = 15;
+        lineHeight = 22.5;
       }
     }
 
@@ -135,7 +133,6 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
       case 'classic':
         return {
           fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-          fontStyle: 'italic' as const,
           fontWeight: '600' as const,
           fontSize,
           lineHeight,
@@ -143,8 +140,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
       case 'modern':
         return {
           fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-          fontWeight: '700' as const,
-          fontStyle: 'normal' as const,
+          fontWeight: '600' as const,
           fontSize,
           lineHeight,
         };
@@ -152,7 +148,6 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
         return {
           fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
           fontWeight: '700' as const,
-          fontStyle: 'normal' as const,
           fontSize,
           lineHeight,
         };
@@ -166,16 +161,11 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
 
       if (!cardRef.current) return;
 
-      // Force 1080p Full HD export so letters are razor-sharp on WhatsApp & Social Media
-      const targetWidth = 1080;
-      const targetHeight = aspectRatio === '1:1' ? 1080 : 1920;
-
+      // Capture at native high-density pixel ratio without artificial bitmap stretching
       const uri = await captureRef(cardRef, {
         format: 'png',
         quality: 1,
         result: 'tmpfile',
-        width: targetWidth,
-        height: targetHeight,
       });
 
       hapticSuccess();
@@ -195,9 +185,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
 
   const isImageBg = currentBg.type === 'image';
   const cardTextColor = isImageBg ? '#ffffff' : (currentBg.textColor || theme.text);
-  const cardAccentColor = isImageBg ? '#fde047' : (currentBg.accentColor || theme.accent);
-  const cardBorderColor = isImageBg ? 'rgba(255,255,255,0.22)' : (currentBg.borderColor || theme.border);
-  const cardBgColor = isImageBg ? '#0a0d14' : (currentBg.bgColor || theme.cardBackground);
+  const cardAccentColor = isImageBg ? '#facc15' : (currentBg.accentColor || theme.accent);
+  const cardBorderColor = isImageBg ? 'rgba(255,255,255,0.20)' : (currentBg.borderColor || theme.border);
+  const cardBgColor = isImageBg ? '#080a10' : (currentBg.bgColor || theme.cardBackground);
 
   // Content alignment based on textPosition (YouVersion style)
   const getContentJustify = () => {
@@ -230,7 +220,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                 Crear Postal Bíblica
               </Text>
               <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-                Inspirado en YouVersion · La imagen en su máxima belleza
+                Diseño YouVersion · Letras refinadas y fondo completo
               </Text>
             </View>
             <TouchableOpacity
@@ -244,29 +234,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
 
           {/* Quick Tools Row: Aspect Ratio & Text Position (YouVersion-style) */}
           <View style={styles.quickToolsRow}>
-            {/* Aspect Ratio (1:1 / 9:16) */}
+            {/* Aspect Ratio (9:16 / 1:1) */}
             <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
-              <TouchableOpacity
-                style={[
-                  styles.segmentBtn,
-                  aspectRatio === '1:1' && { backgroundColor: theme.cardBackground },
-                ]}
-                onPress={() => {
-                  hapticLight();
-                  setAspectRatio('1:1');
-                }}
-              >
-                <Square size={13} color={aspectRatio === '1:1' ? theme.accent : theme.textMuted} />
-                <Text
-                  style={[
-                    styles.segmentText,
-                    { color: aspectRatio === '1:1' ? theme.accent : theme.textMuted },
-                  ]}
-                >
-                  1:1 Post
-                </Text>
-              </TouchableOpacity>
-
               <TouchableOpacity
                 style={[
                   styles.segmentBtn,
@@ -285,6 +254,27 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                   ]}
                 >
                   9:16 Historia
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.segmentBtn,
+                  aspectRatio === '1:1' && { backgroundColor: theme.cardBackground },
+                ]}
+                onPress={() => {
+                  hapticLight();
+                  setAspectRatio('1:1');
+                }}
+              >
+                <Square size={13} color={aspectRatio === '1:1' ? theme.accent : theme.textMuted} />
+                <Text
+                  style={[
+                    styles.segmentText,
+                    { color: aspectRatio === '1:1' ? theme.accent : theme.textMuted },
+                  ]}
+                >
+                  1:1 Post
                 </Text>
               </TouchableOpacity>
             </View>
@@ -359,8 +349,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                       styles.segmentText,
                       {
                         color: fontPreset === tp ? theme.accent : theme.textMuted,
-                        fontStyle: tp === 'classic' ? 'italic' : 'normal',
-                        fontWeight: tp === 'solemn' ? '700' : '600',
+                        fontWeight: fontPreset === tp ? '700' : '500',
                       },
                     ]}
                   >
@@ -371,7 +360,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </View>
           </View>
 
-          {/* Card Preview Container - Fully visible, completely uncovered image */}
+          {/* Card Preview Container */}
           <View style={styles.previewWrapper}>
             <View
               ref={cardRef}
@@ -388,43 +377,24 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             >
               {isImageBg && currentBg.source ? (
                 <>
-                  {/* Full Cover Image - Completely visible */}
+                  {/* Full Cover Image - High definition */}
                   <Image
                     source={currentBg.source}
                     style={StyleSheet.absoluteFill}
                     resizeMode="cover"
                   />
 
-                  {/* YouVersion Progressive Scrim Gradient - No boxes, natural shading */}
-                  <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
-                    <Defs>
-                      <SvgLinearGradient id="youversionScrim" x1="0" y1="0" x2="0" y2="1">
-                        <Stop
-                          offset="0"
-                          stopColor="#000000"
-                          stopOpacity={textPosition === 'top' ? 0.82 : 0.15}
-                        />
-                        <Stop
-                          offset="0.35"
-                          stopColor="#000000"
-                          stopOpacity={textPosition === 'center' ? 0.55 : textPosition === 'top' ? 0.58 : 0.25}
-                        />
-                        <Stop
-                          offset="0.70"
-                          stopColor="#000000"
-                          stopOpacity={textPosition === 'center' ? 0.55 : textPosition === 'bottom' ? 0.60 : 0.20}
-                        />
-                        <Stop
-                          offset="1"
-                          stopColor="#000000"
-                          stopOpacity={textPosition === 'bottom' ? 0.85 : 0.15}
-                        />
-                      </SvgLinearGradient>
-                    </Defs>
-                    <Rect x="0" y="0" width="100%" height="100%" fill="url(#youversionScrim)" />
-                  </Svg>
+                  {/* Clean uniform photographic scrim - Zero cutoffs or grey lines */}
+                  <View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      {
+                        backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.35})`,
+                      },
+                    ]}
+                  />
 
-                  {/* YouVersion Editorial Overlay: Pure typography directly over the image */}
+                  {/* YouVersion Editorial Overlay: Refined typography */}
                   <View
                     style={[
                       styles.cardInnerOverlay,
@@ -461,30 +431,17 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                         >
                           — {cleanRef} —
                         </Text>
-                        <Text
-                          style={[
-                            styles.youversionVersion,
-                            {
-                              color: 'rgba(255, 255, 255, 0.85)',
-                              textShadowColor: 'rgba(0, 0, 0, 0.85)',
-                              textShadowOffset: { width: 0, height: 1 },
-                              textShadowRadius: 3,
-                            },
-                          ]}
-                        >
-                          Reina-Valera 1909
-                        </Text>
                       </View>
                     </View>
                   </View>
 
-                  {/* Discrete bottom brand mark */}
+                  {/* Subtle, tiny bottom brand mark */}
                   <View style={styles.bottomWatermark}>
                     <Text
                       style={[
                         styles.watermarkText,
                         {
-                          color: 'rgba(255, 255, 255, 0.75)',
+                          color: 'rgba(255, 255, 255, 0.60)',
                           textShadowColor: 'rgba(0, 0, 0, 0.90)',
                           textShadowOffset: { width: 0, height: 1 },
                           textShadowRadius: 3,
@@ -518,14 +475,11 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                       <Text style={[styles.youversionReference, { color: cardAccentColor }]}>
                         — {cleanRef} —
                       </Text>
-                      <Text style={[styles.youversionVersion, { color: cardTextColor, opacity: 0.7 }]}>
-                        Reina-Valera 1909
-                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.bottomWatermark}>
-                    <Text style={[styles.watermarkText, { color: cardTextColor, opacity: 0.6 }]}>
+                    <Text style={[styles.watermarkText, { color: cardTextColor, opacity: 0.5 }]}>
                       ✦ SELAH
                     </Text>
                   </View>
@@ -764,33 +718,27 @@ const styles = StyleSheet.create({
   },
   cardInnerOverlay: {
     ...StyleSheet.absoluteFill,
-    paddingHorizontal: 16,
-    paddingVertical: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     alignItems: 'center',
   },
   editorialContent: {
     alignItems: 'center',
     width: '100%',
+    maxWidth: 240,
   },
   youversionVerseText: {
     textAlign: 'center',
-    letterSpacing: -0.2,
-    paddingHorizontal: 6,
+    letterSpacing: -0.1,
   },
   editorialRefBlock: {
-    marginTop: 8,
+    marginTop: 10,
     alignItems: 'center',
   },
   youversionReference: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-  },
-  youversionVersion: {
-    fontSize: 9.5,
-    marginTop: 2,
-    fontWeight: '500',
-    letterSpacing: 0.2,
+    fontSize: 11.5,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   bottomWatermark: {
     position: 'absolute',
