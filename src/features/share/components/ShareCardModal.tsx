@@ -11,6 +11,7 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import {
@@ -18,8 +19,10 @@ import {
   Share2,
   Square,
   Smartphone,
-  Sparkles,
   Check,
+  AlignVerticalJustifyStart,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
 } from 'lucide-react-native';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
@@ -33,6 +36,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type AspectRatioMode = '1:1' | '9:16';
 type TypographyPreset = 'classic' | 'modern' | 'solemn';
+type TextVerticalPosition = 'top' | 'center' | 'bottom';
 
 interface ShareCardModalProps {
   visible: boolean;
@@ -59,6 +63,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   const [aspectRatio, setAspectRatio] = useState<AspectRatioMode>('1:1');
   const [selectedBgId, setSelectedBgId] = useState<string>(() => getRandomImageBgId());
   const [fontPreset, setFontPreset] = useState<TypographyPreset>('classic');
+  const [textPosition, setTextPosition] = useState<TextVerticalPosition>('center');
   const [activeCategory, setActiveCategory] = useState<BackgroundCategory>('all');
   const [isExporting, setIsExporting] = useState(false);
 
@@ -89,26 +94,41 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   }, [activeCategory]);
 
   // Preview dimensions calculated synchronously without hook overhead
-  const previewWidth = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 260) : 172;
-  const previewHeight = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 260) : 306;
+  // Fits comfortably on screen with 0 cropping
+  const previewWidth = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 72, 260) : 170;
+  const previewHeight = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 72, 260) : 302;
 
   const cleanVerses = (versesText || '').trim();
   const cleanRef = (referenceText || '').trim();
   const textLength = cleanVerses.length;
 
+  // Responsive font sizing based on card ratio and character count
   const getDynamicTypography = () => {
     let fontSize = 16;
     let lineHeight = 24;
 
-    if (textLength > 280) {
-      fontSize = aspectRatio === '9:16' ? 12 : 11;
-      lineHeight = aspectRatio === '9:16' ? 17 : 16;
-    } else if (textLength > 150) {
-      fontSize = aspectRatio === '9:16' ? 14 : 13;
-      lineHeight = aspectRatio === '9:16' ? 20 : 19;
+    if (aspectRatio === '9:16') {
+      if (textLength > 240) {
+        fontSize = 11;
+        lineHeight = 16;
+      } else if (textLength > 130) {
+        fontSize = 13;
+        lineHeight = 19;
+      } else {
+        fontSize = 15;
+        lineHeight = 22;
+      }
     } else {
-      fontSize = aspectRatio === '9:16' ? 17 : 15;
-      lineHeight = aspectRatio === '9:16' ? 25 : 23;
+      if (textLength > 240) {
+        fontSize = 12.5;
+        lineHeight = 18;
+      } else if (textLength > 130) {
+        fontSize = 14.5;
+        lineHeight = 21;
+      } else {
+        fontSize = 16.5;
+        lineHeight = 25;
+      }
     }
 
     switch (fontPreset) {
@@ -146,7 +166,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
 
       if (!cardRef.current) return;
 
-      // Force 1080p high definition export so letters are razor-sharp on WhatsApp & Social Media
+      // Force 1080p Full HD export so letters are razor-sharp on WhatsApp & Social Media
       const targetWidth = 1080;
       const targetHeight = aspectRatio === '1:1' ? 1080 : 1920;
 
@@ -176,8 +196,20 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   const isImageBg = currentBg.type === 'image';
   const cardTextColor = isImageBg ? '#ffffff' : (currentBg.textColor || theme.text);
   const cardAccentColor = isImageBg ? '#fde047' : (currentBg.accentColor || theme.accent);
-  const cardBorderColor = isImageBg ? 'rgba(255,255,255,0.25)' : (currentBg.borderColor || theme.border);
-  const cardBgColor = isImageBg ? '#0d1117' : (currentBg.bgColor || theme.cardBackground);
+  const cardBorderColor = isImageBg ? 'rgba(255,255,255,0.22)' : (currentBg.borderColor || theme.border);
+  const cardBgColor = isImageBg ? '#0a0d14' : (currentBg.bgColor || theme.cardBackground);
+
+  // Content alignment based on textPosition (YouVersion style)
+  const getContentJustify = () => {
+    switch (textPosition) {
+      case 'top':
+        return 'flex-start';
+      case 'center':
+        return 'center';
+      case 'bottom':
+        return 'flex-end';
+    }
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -198,7 +230,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                 Crear Postal Bíblica
               </Text>
               <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-                Personaliza para WhatsApp y Redes Sociales
+                Inspirado en YouVersion · La imagen en su máxima belleza
               </Text>
             </View>
             <TouchableOpacity
@@ -210,9 +242,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Controls Bar 1: Aspect Ratio & Typography */}
-          <View style={styles.controlsRow}>
-            {/* Aspect ratio segmented pills */}
+          {/* Quick Tools Row: Aspect Ratio & Text Position (YouVersion-style) */}
+          <View style={styles.quickToolsRow}>
+            {/* Aspect Ratio (1:1 / 9:16) */}
             <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
               <TouchableOpacity
                 style={[
@@ -257,7 +289,58 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Typography preset toggles */}
+            {/* Position Selector: Top / Center / Bottom */}
+            <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
+              <TouchableOpacity
+                style={[
+                  styles.segmentIconBtn,
+                  textPosition === 'top' && { backgroundColor: theme.cardBackground },
+                ]}
+                onPress={() => {
+                  hapticLight();
+                  setTextPosition('top');
+                }}
+              >
+                <AlignVerticalJustifyStart
+                  size={14}
+                  color={textPosition === 'top' ? theme.accent : theme.textMuted}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.segmentIconBtn,
+                  textPosition === 'center' && { backgroundColor: theme.cardBackground },
+                ]}
+                onPress={() => {
+                  hapticLight();
+                  setTextPosition('center');
+                }}
+              >
+                <AlignVerticalJustifyCenter
+                  size={14}
+                  color={textPosition === 'center' ? theme.accent : theme.textMuted}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.segmentIconBtn,
+                  textPosition === 'bottom' && { backgroundColor: theme.cardBackground },
+                ]}
+                onPress={() => {
+                  hapticLight();
+                  setTextPosition('bottom');
+                }}
+              >
+                <AlignVerticalJustifyEnd
+                  size={14}
+                  color={textPosition === 'bottom' ? theme.accent : theme.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Typography Preset */}
             <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
               {(['classic', 'modern', 'solemn'] as TypographyPreset[]).map((tp) => (
                 <TouchableOpacity
@@ -288,7 +371,170 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </View>
           </View>
 
-          {/* Background Category Selector (No AI tags) */}
+          {/* Card Preview Container - Fully visible, completely uncovered image */}
+          <View style={styles.previewWrapper}>
+            <View
+              ref={cardRef}
+              collapsable={false}
+              style={[
+                styles.cardView,
+                {
+                  width: previewWidth,
+                  height: previewHeight,
+                  backgroundColor: cardBgColor,
+                  borderColor: cardBorderColor,
+                },
+              ]}
+            >
+              {isImageBg && currentBg.source ? (
+                <>
+                  {/* Full Cover Image - Completely visible */}
+                  <Image
+                    source={currentBg.source}
+                    style={StyleSheet.absoluteFill}
+                    resizeMode="cover"
+                  />
+
+                  {/* YouVersion Progressive Scrim Gradient - No boxes, natural shading */}
+                  <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+                    <Defs>
+                      <SvgLinearGradient id="youversionScrim" x1="0" y1="0" x2="0" y2="1">
+                        <Stop
+                          offset="0"
+                          stopColor="#000000"
+                          stopOpacity={textPosition === 'top' ? 0.82 : 0.15}
+                        />
+                        <Stop
+                          offset="0.35"
+                          stopColor="#000000"
+                          stopOpacity={textPosition === 'center' ? 0.55 : textPosition === 'top' ? 0.58 : 0.25}
+                        />
+                        <Stop
+                          offset="0.70"
+                          stopColor="#000000"
+                          stopOpacity={textPosition === 'center' ? 0.55 : textPosition === 'bottom' ? 0.60 : 0.20}
+                        />
+                        <Stop
+                          offset="1"
+                          stopColor="#000000"
+                          stopOpacity={textPosition === 'bottom' ? 0.85 : 0.15}
+                        />
+                      </SvgLinearGradient>
+                    </Defs>
+                    <Rect x="0" y="0" width="100%" height="100%" fill="url(#youversionScrim)" />
+                  </Svg>
+
+                  {/* YouVersion Editorial Overlay: Pure typography directly over the image */}
+                  <View
+                    style={[
+                      styles.cardInnerOverlay,
+                      { justifyContent: getContentJustify() },
+                    ]}
+                  >
+                    <View style={styles.editorialContent}>
+                      <Text
+                        style={[
+                          styles.youversionVerseText,
+                          getDynamicTypography(),
+                          {
+                            color: '#ffffff',
+                            textShadowColor: 'rgba(0, 0, 0, 0.90)',
+                            textShadowOffset: { width: 0, height: 1.5 },
+                            textShadowRadius: 6,
+                          },
+                        ]}
+                      >
+                        «{cleanVerses}»
+                      </Text>
+
+                      <View style={styles.editorialRefBlock}>
+                        <Text
+                          style={[
+                            styles.youversionReference,
+                            {
+                              color: cardAccentColor,
+                              textShadowColor: 'rgba(0, 0, 0, 0.85)',
+                              textShadowOffset: { width: 0, height: 1 },
+                              textShadowRadius: 4,
+                            },
+                          ]}
+                        >
+                          — {cleanRef} —
+                        </Text>
+                        <Text
+                          style={[
+                            styles.youversionVersion,
+                            {
+                              color: 'rgba(255, 255, 255, 0.85)',
+                              textShadowColor: 'rgba(0, 0, 0, 0.85)',
+                              textShadowOffset: { width: 0, height: 1 },
+                              textShadowRadius: 3,
+                            },
+                          ]}
+                        >
+                          Reina-Valera 1909
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Discrete bottom brand mark */}
+                  <View style={styles.bottomWatermark}>
+                    <Text
+                      style={[
+                        styles.watermarkText,
+                        {
+                          color: 'rgba(255, 255, 255, 0.75)',
+                          textShadowColor: 'rgba(0, 0, 0, 0.90)',
+                          textShadowOffset: { width: 0, height: 1 },
+                          textShadowRadius: 3,
+                        },
+                      ]}
+                    >
+                      ✦ SELAH
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                /* Solid / Minimalist Style */
+                <View
+                  style={[
+                    styles.cardInnerOverlay,
+                    { justifyContent: getContentJustify() },
+                  ]}
+                >
+                  <View style={styles.editorialContent}>
+                    <Text
+                      style={[
+                        styles.youversionVerseText,
+                        getDynamicTypography(),
+                        { color: cardTextColor },
+                      ]}
+                    >
+                      «{cleanVerses}»
+                    </Text>
+
+                    <View style={styles.editorialRefBlock}>
+                      <Text style={[styles.youversionReference, { color: cardAccentColor }]}>
+                        — {cleanRef} —
+                      </Text>
+                      <Text style={[styles.youversionVersion, { color: cardTextColor, opacity: 0.7 }]}>
+                        Reina-Valera 1909
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.bottomWatermark}>
+                    <Text style={[styles.watermarkText, { color: cardTextColor, opacity: 0.6 }]}>
+                      ✦ SELAH
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Background Category Selector (Clean, spiritual labels) */}
           <View style={styles.categoryRow}>
             {(
               [
@@ -382,7 +628,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                       </View>
                     )}
 
-                    {/* Checkmark badge for selected background */}
+                    {/* Active check badge */}
                     {isSelected && (
                       <View style={[styles.thumbCheckBadge, { backgroundColor: theme.accent }]}>
                         <Check size={11} color="#ffffff" strokeWidth={3} />
@@ -405,147 +651,6 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                 );
               })}
             </ScrollView>
-          </View>
-
-          {/* Card Preview Container - Centered, never cut off */}
-          <View style={styles.previewWrapper}>
-            <View
-              ref={cardRef}
-              collapsable={false}
-              style={[
-                styles.cardView,
-                {
-                  width: previewWidth,
-                  height: previewHeight,
-                  backgroundColor: cardBgColor,
-                  borderColor: cardBorderColor,
-                },
-              ]}
-            >
-              {isImageBg && currentBg.source ? (
-                <>
-                  {/* Full Cover Background Image */}
-                  <Image
-                    source={currentBg.source}
-                    style={StyleSheet.absoluteFill}
-                    resizeMode="cover"
-                  />
-
-                  {/* Deep Scrim Overlay for high contrast */}
-                  <View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      {
-                        backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.48})`,
-                      },
-                    ]}
-                  />
-
-                  {/* Inner Content with Frosted Glass Contrast Box */}
-                  <View style={styles.cardInner}>
-                    <View style={styles.cardCenterBody}>
-                      {/* High-Legibility Glass Container for WhatsApp & Social Clarity */}
-                      <View style={styles.verseGlassContainer}>
-                        <Sparkles size={13} color="#fde047" style={{ marginBottom: 6, opacity: 0.95 }} />
-
-                        <Text
-                          style={[
-                            styles.cardVerseText,
-                            getDynamicTypography(),
-                            {
-                              color: '#ffffff',
-                              textShadowColor: 'rgba(0, 0, 0, 0.95)',
-                              textShadowOffset: { width: 0, height: 1 },
-                              textShadowRadius: 4,
-                            },
-                          ]}
-                        >
-                          «{cleanVerses}»
-                        </Text>
-
-                        <View style={styles.cardRefWrapper}>
-                          <Text
-                            style={[
-                              styles.cardReference,
-                              {
-                                color: '#fde047',
-                                textShadowColor: 'rgba(0, 0, 0, 0.9)',
-                                textShadowOffset: { width: 0, height: 1 },
-                                textShadowRadius: 3,
-                              },
-                            ]}
-                          >
-                            — {cleanRef} —
-                          </Text>
-                          <Text
-                            style={[
-                              styles.cardVersion,
-                              {
-                                color: 'rgba(255, 255, 255, 0.9)',
-                                textShadowColor: 'rgba(0, 0, 0, 0.9)',
-                                textShadowOffset: { width: 0, height: 1 },
-                                textShadowRadius: 2,
-                              },
-                            ]}
-                          >
-                            Reina-Valera 1909
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    {/* Footer Watermark */}
-                    <View style={styles.cardFooter}>
-                      <Text
-                        style={[
-                          styles.watermark,
-                          {
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            textShadowColor: 'rgba(0, 0, 0, 0.9)',
-                            textShadowOffset: { width: 0, height: 1 },
-                            textShadowRadius: 3,
-                          },
-                        ]}
-                      >
-                        ✦ Selah · Calma Espiritual
-                      </Text>
-                    </View>
-                  </View>
-                </>
-              ) : (
-                /* Solid / Minimalist Card View */
-                <View style={styles.cardInner}>
-                  <View style={[styles.ornamentLine, { backgroundColor: cardAccentColor }]} />
-
-                  <View style={styles.cardCenterBody}>
-                    <Text
-                      style={[
-                        styles.cardVerseText,
-                        getDynamicTypography(),
-                        { color: cardTextColor },
-                      ]}
-                    >
-                      «{cleanVerses}»
-                    </Text>
-
-                    <View style={styles.cardRefWrapper}>
-                      <Text style={[styles.cardReference, { color: cardAccentColor }]}>
-                        — {cleanRef} —
-                      </Text>
-                      <Text style={[styles.cardVersion, { color: cardTextColor, opacity: 0.7 }]}>
-                        Reina-Valera 1909
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.cardFooter}>
-                    <Text style={[styles.watermark, { color: cardTextColor, opacity: 0.65 }]}>
-                      ✦ Selah · Calma Espiritual
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
           </View>
 
           {/* Footer with High-Resolution Share Button */}
@@ -584,7 +689,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     borderTopWidth: 1,
-    paddingTop: 14,
+    paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 28 : 16,
   },
   header: {
@@ -608,89 +713,153 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 16,
   },
-  controlsRow: {
+  quickToolsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 6,
-    gap: 8,
+    paddingBottom: 4,
+    gap: 6,
   },
   segmentedGroup: {
     flexDirection: 'row',
-    borderRadius: 12,
-    padding: 3,
-    gap: 3,
+    borderRadius: 10,
+    padding: 2.5,
+    gap: 2,
   },
   segmentBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4.5,
+    borderRadius: 8,
+  },
+  segmentIconBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 7,
     paddingVertical: 5,
-    borderRadius: 9,
+    borderRadius: 8,
   },
   segmentText: {
     fontSize: 11,
     fontWeight: '600',
   },
+  previewWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+  },
+  cardView: {
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 8,
+    position: 'relative',
+  },
+  cardInnerOverlay: {
+    ...StyleSheet.absoluteFill,
+    paddingHorizontal: 16,
+    paddingVertical: 22,
+    alignItems: 'center',
+  },
+  editorialContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  youversionVerseText: {
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    paddingHorizontal: 6,
+  },
+  editorialRefBlock: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  youversionReference: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  youversionVersion: {
+    fontSize: 9.5,
+    marginTop: 2,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+  },
+  bottomWatermark: {
+    position: 'absolute',
+    bottom: 8,
+    alignSelf: 'center',
+  },
+  watermarkText: {
+    fontSize: 8.5,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+  },
   categoryRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingVertical: 4,
+    paddingTop: 4,
+    paddingBottom: 2,
     gap: 6,
   },
   catChip: {
     paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 3.5,
+    borderRadius: 10,
     borderWidth: 1,
   },
   catChipText: {
-    fontSize: 11,
+    fontSize: 10.5,
   },
   carouselContainer: {
-    paddingVertical: 6,
+    paddingVertical: 5,
   },
   carouselContent: {
     paddingHorizontal: 20,
-    gap: 10,
+    gap: 8,
     alignItems: 'center',
   },
   thumbItem: {
-    width: 64,
+    width: 60,
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 2,
     borderWidth: 1.5,
     borderColor: 'transparent',
     position: 'relative',
   },
   thumbImage: {
-    width: 58,
-    height: 58,
-    borderRadius: 10,
+    width: 54,
+    height: 54,
+    borderRadius: 8,
   },
   thumbSolid: {
-    width: 58,
-    height: 58,
-    borderRadius: 10,
+    width: 54,
+    height: 54,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   thumbSolidText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   thumbCheckBadge: {
     position: 'absolute',
     top: 0,
     right: 0,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 17,
+    height: 17,
+    borderRadius: 8.5,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -698,85 +867,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   thumbName: {
-    fontSize: 10,
-    marginTop: 4,
-    textAlign: 'center',
-    maxWidth: 64,
-  },
-  previewWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  cardView: {
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  cardInner: {
-    flex: 1,
-    padding: 14,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ornamentLine: {
-    width: 36,
-    height: 3,
-    borderRadius: 2,
-    alignSelf: 'center',
-  },
-  cardCenterBody: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  verseGlassContainer: {
-    backgroundColor: 'rgba(5, 8, 16, 0.72)',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.20)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  cardVerseText: {
-    textAlign: 'center',
-    letterSpacing: -0.2,
-  },
-  cardRefWrapper: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  cardReference: {
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0.1,
-  },
-  cardVersion: {
-    fontSize: 10,
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  cardFooter: {
-    alignItems: 'center',
-    paddingTop: 4,
-  },
-  watermark: {
     fontSize: 9.5,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    marginTop: 3,
+    textAlign: 'center',
+    maxWidth: 60,
   },
   modalFooter: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
   },
   shareActionBtn: {
@@ -784,17 +882,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 13,
-    borderRadius: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowRadius: 5,
     elevation: 3,
   },
   shareActionBtnText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
   },
 });
