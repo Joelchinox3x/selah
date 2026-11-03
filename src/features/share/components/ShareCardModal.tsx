@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,30 @@ import {
   Platform,
   ActivityIndicator,
   Dimensions,
+  Image,
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { X, Share2, Square, Smartphone } from 'lucide-react-native';
+import {
+  X,
+  Share2,
+  Square,
+  Smartphone,
+  Sparkles,
+  Check,
+} from 'lucide-react-native';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticSuccess, hapticLight } from '@/src/services/haptics/hapticFeedback';
+import {
+  CARD_BACKGROUNDS,
+  BackgroundCategory,
+} from '../data/cardBackgrounds';
 
-const { width } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type AspectRatioMode = '1:1' | '9:16';
-type CardStyleTheme = 'sepia' | 'oled' | 'dawn';
+type TypographyPreset = 'classic' | 'modern' | 'solemn';
 
 interface ShareCardModalProps {
   visible: boolean;
@@ -29,6 +41,14 @@ interface ShareCardModalProps {
   onClose: () => void;
 }
 
+// Function to pick a random photographic image by default
+const getRandomImageBgId = (): string => {
+  const imageList = CARD_BACKGROUNDS.filter((bg) => bg.type === 'image');
+  if (imageList.length === 0) return CARD_BACKGROUNDS[0].id;
+  const randomIndex = Math.floor(Math.random() * imageList.length);
+  return imageList[randomIndex].id;
+};
+
 export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   visible,
   versesText,
@@ -36,42 +56,35 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   onClose,
 }) => {
   const [aspectRatio, setAspectRatio] = useState<AspectRatioMode>('1:1');
-  const [cardTheme, setCardTheme] = useState<CardStyleTheme>('sepia');
+  const [selectedBgId, setSelectedBgId] = useState<string>(() => getRandomImageBgId());
+  const [fontPreset, setFontPreset] = useState<TypographyPreset>('classic');
+  const [activeCategory, setActiveCategory] = useState<BackgroundCategory>('all');
   const [isExporting, setIsExporting] = useState(false);
 
   const cardRef = useRef<View>(null);
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
-  if (!visible) return null;
-
-  const getCardColors = () => {
-    switch (cardTheme) {
-      case 'sepia':
-        return {
-          bg: '#f7f1e1',
-          text: '#3c2e1e',
-          accent: '#b45309',
-          border: '#e4d6b8',
-        };
-      case 'oled':
-        return {
-          bg: '#090d16',
-          text: '#f8fafc',
-          accent: '#38bdf8',
-          border: '#1e293b',
-        };
-      case 'dawn':
-        return {
-          bg: '#fdf4ec',
-          text: '#2d1810',
-          accent: '#ea580c',
-          border: '#fed7aa',
-        };
+  // Whenever modal opens, pick a new random photographic background
+  useEffect(() => {
+    if (visible) {
+      setSelectedBgId(getRandomImageBgId());
     }
-  };
+  }, [visible]);
 
-  const currentCardColors = getCardColors();
+  const currentBg = useMemo(() => {
+    return (
+      CARD_BACKGROUNDS.find((bg) => bg.id === selectedBgId) ||
+      CARD_BACKGROUNDS[0]
+    );
+  }, [selectedBgId]);
+
+  const filteredBackgrounds = useMemo(() => {
+    if (activeCategory === 'all') return CARD_BACKGROUNDS;
+    return CARD_BACKGROUNDS.filter((bg) => bg.category === activeCategory);
+  }, [activeCategory]);
+
+  if (!visible) return null;
 
   const handleShare = async () => {
     try {
@@ -80,10 +93,16 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
 
       if (!cardRef.current) return;
 
+      // Force 1080p high definition export so letters are razor-sharp on WhatsApp & Social Media
+      const targetWidth = 1080;
+      const targetHeight = aspectRatio === '1:1' ? 1080 : 1920;
+
       const uri = await captureRef(cardRef, {
         format: 'png',
         quality: 1,
         result: 'tmpfile',
+        width: targetWidth,
+        height: targetHeight,
       });
 
       hapticSuccess();
@@ -101,8 +120,69 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
     }
   };
 
-  const previewWidth = Math.min(width - 48, 360);
-  const previewHeight = aspectRatio === '1:1' ? previewWidth : previewWidth * (16 / 9);
+  // Preview sizing that GUARANTEES the whole card is visible without being cut off
+  const previewDimensions = useMemo(() => {
+    if (aspectRatio === '1:1') {
+      const size = Math.min(SCREEN_WIDTH - 64, Math.min(SCREEN_HEIGHT * 0.34, 270));
+      return { width: size, height: size };
+    } else {
+      // For 9:16 story format, cap height so it never overflows the modal viewport
+      const targetHeight = Math.min(SCREEN_HEIGHT * 0.38, 310);
+      const targetWidth = Math.round(targetHeight * (9 / 16));
+      return { width: targetWidth, height: targetHeight };
+    }
+  }, [aspectRatio]);
+
+  // Dynamic typography sizing based on verse text length
+  const textLength = versesText?.length || 0;
+  const getDynamicTypography = () => {
+    let fontSize = 16;
+    let lineHeight = 24;
+
+    if (textLength > 280) {
+      fontSize = aspectRatio === '9:16' ? 13 : 12;
+      lineHeight = aspectRatio === '9:16' ? 19 : 17;
+    } else if (textLength > 150) {
+      fontSize = aspectRatio === '9:16' ? 15 : 14;
+      lineHeight = aspectRatio === '9:16' ? 22 : 20;
+    } else {
+      fontSize = aspectRatio === '9:16' ? 18 : 16;
+      lineHeight = aspectRatio === '9:16' ? 26 : 24;
+    }
+
+    switch (fontPreset) {
+      case 'classic':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+          fontStyle: 'italic' as const,
+          fontWeight: '600' as const,
+          fontSize,
+          lineHeight,
+        };
+      case 'modern':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
+          fontWeight: '700' as const,
+          fontStyle: 'normal' as const,
+          fontSize,
+          lineHeight,
+        };
+      case 'solemn':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
+          fontWeight: '800' as const,
+          fontStyle: 'normal' as const,
+          fontSize,
+          lineHeight,
+        };
+    }
+  };
+
+  const isImageBg = currentBg.type === 'image';
+  const cardTextColor = isImageBg ? '#ffffff' : (currentBg.textColor || theme.text);
+  const cardAccentColor = isImageBg ? '#fde047' : (currentBg.accentColor || theme.accent);
+  const cardBorderColor = isImageBg ? 'rgba(255,255,255,0.25)' : (currentBg.borderColor || theme.border);
+  const cardBgColor = isImageBg ? '#0d1117' : (currentBg.bgColor || theme.cardBackground);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -120,10 +200,10 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
           <View style={[styles.header, { borderBottomColor: theme.borderSubtle }]}>
             <View>
               <Text style={[styles.title, { color: theme.text }]}>
-                Tarjeta para Compartir
+                Crear Postal Bíblica
               </Text>
               <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-                Personaliza para WhatsApp o Redes Sociales
+                Personaliza para WhatsApp y Redes Sociales
               </Text>
             </View>
             <TouchableOpacity
@@ -135,18 +215,21 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Controls: Aspect Ratio & Theme */}
+          {/* Controls Bar 1: Aspect Ratio & Typography */}
           <View style={styles.controlsRow}>
-            {/* Aspect ratio toggles */}
+            {/* Aspect ratio segmented pills */}
             <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
               <TouchableOpacity
                 style={[
                   styles.segmentBtn,
                   aspectRatio === '1:1' && { backgroundColor: theme.cardBackground },
                 ]}
-                onPress={() => setAspectRatio('1:1')}
+                onPress={() => {
+                  hapticLight();
+                  setAspectRatio('1:1');
+                }}
               >
-                <Square size={14} color={aspectRatio === '1:1' ? theme.accent : theme.textMuted} />
+                <Square size={13} color={aspectRatio === '1:1' ? theme.accent : theme.textMuted} />
                 <Text
                   style={[
                     styles.segmentText,
@@ -162,94 +245,316 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                   styles.segmentBtn,
                   aspectRatio === '9:16' && { backgroundColor: theme.cardBackground },
                 ]}
-                onPress={() => setAspectRatio('9:16')}
+                onPress={() => {
+                  hapticLight();
+                  setAspectRatio('9:16');
+                }}
               >
-                <Smartphone size={14} color={aspectRatio === '9:16' ? theme.accent : theme.textMuted} />
+                <Smartphone size={13} color={aspectRatio === '9:16' ? theme.accent : theme.textMuted} />
                 <Text
                   style={[
                     styles.segmentText,
                     { color: aspectRatio === '9:16' ? theme.accent : theme.textMuted },
                   ]}
                 >
-                  9:16 Estado
+                  9:16 Historia
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Themes */}
-            <View style={styles.themeCirclesRow}>
-              {(['sepia', 'oled', 'dawn'] as CardStyleTheme[]).map((st) => (
+            {/* Typography preset toggles */}
+            <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
+              {(['classic', 'modern', 'solemn'] as TypographyPreset[]).map((tp) => (
                 <TouchableOpacity
-                  key={st}
+                  key={tp}
                   style={[
-                    styles.themeCircle,
-                    st === 'sepia' && { backgroundColor: '#f7f1e1', borderColor: '#b45309' },
-                    st === 'oled' && { backgroundColor: '#090d16', borderColor: '#38bdf8' },
-                    st === 'dawn' && { backgroundColor: '#fdf4ec', borderColor: '#ea580c' },
-                    cardTheme === st && styles.activeThemeCircle,
+                    styles.segmentBtn,
+                    fontPreset === tp && { backgroundColor: theme.cardBackground },
                   ]}
-                  onPress={() => setCardTheme(st)}
-                />
+                  onPress={() => {
+                    hapticLight();
+                    setFontPreset(tp);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      {
+                        color: fontPreset === tp ? theme.accent : theme.textMuted,
+                        fontStyle: tp === 'classic' ? 'italic' : 'normal',
+                        fontWeight: tp === 'solemn' ? '700' : '600',
+                      },
+                    ]}
+                  >
+                    {tp === 'classic' ? 'Serif' : tp === 'modern' ? 'Sans' : 'Solemne'}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* Card Preview Container */}
-          <ScrollView
-            style={styles.previewScroll}
-            contentContainerStyle={styles.previewContent}
-            showsVerticalScrollIndicator={false}
-          >
+          {/* Background Category Selector (No AI tags) */}
+          <View style={styles.categoryRow}>
+            {(
+              [
+                { id: 'all', label: 'Todos (18)' },
+                { id: 'real', label: 'Fotografía (5)' },
+                { id: 'spiritual', label: 'Paisajes Bíblicos (10)' },
+                { id: 'minimal', label: 'Clásicos (3)' },
+              ] as { id: BackgroundCategory; label: string }[]
+            ).map((cat) => {
+              const isActive = activeCategory === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[
+                    styles.catChip,
+                    {
+                      backgroundColor: isActive ? theme.accentMuted : theme.surfaceRaised,
+                      borderColor: isActive ? theme.accent : theme.borderSubtle,
+                    },
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    setActiveCategory(cat.id);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.catChipText,
+                      {
+                        color: isActive ? theme.accent : theme.textMuted,
+                        fontWeight: isActive ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Horizontal Background Thumbnails Carousel */}
+          <View style={styles.carouselContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.carouselContent}
+            >
+              {filteredBackgrounds.map((bg) => {
+                const isSelected = bg.id === selectedBgId;
+                return (
+                  <TouchableOpacity
+                    key={bg.id}
+                    activeOpacity={0.8}
+                    style={[
+                      styles.thumbItem,
+                      isSelected && {
+                        borderColor: theme.accent,
+                        borderWidth: 2.5,
+                        transform: [{ scale: 1.05 }],
+                      },
+                    ]}
+                    onPress={() => {
+                      hapticLight();
+                      setSelectedBgId(bg.id);
+                    }}
+                  >
+                    {bg.type === 'image' && bg.source ? (
+                      <Image
+                        source={bg.source}
+                        style={styles.thumbImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.thumbSolid,
+                          {
+                            backgroundColor: bg.bgColor || '#333',
+                            borderColor: bg.borderColor || '#666',
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.thumbSolidText,
+                            { color: bg.textColor || '#fff' },
+                          ]}
+                        >
+                          Aa
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Checkmark icon for selected background */}
+                    {isSelected && (
+                      <View style={[styles.thumbCheckBadge, { backgroundColor: theme.accent }]}>
+                        <Check size={11} color="#ffffff" strokeWidth={3} />
+                      </View>
+                    )}
+
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.thumbName,
+                        {
+                          color: isSelected ? theme.accent : theme.textMuted,
+                          fontWeight: isSelected ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {bg.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Card Preview Container - Centered, never cut off */}
+          <View style={styles.previewWrapper}>
             <View
               ref={cardRef}
               collapsable={false}
               style={[
                 styles.cardView,
                 {
-                  width: previewWidth,
-                  height: previewHeight,
-                  backgroundColor: currentCardColors.bg,
-                  borderColor: currentCardColors.border,
+                  width: previewDimensions.width,
+                  height: previewDimensions.height,
+                  backgroundColor: cardBgColor,
+                  borderColor: cardBorderColor,
                 },
               ]}
             >
-              {/* Subtle ornamental top line */}
-              <View style={[styles.ornamentLine, { backgroundColor: currentCardColors.accent }]} />
+              {isImageBg && currentBg.source ? (
+                <>
+                  {/* Full Cover Background Image */}
+                  <Image
+                    source={currentBg.source}
+                    style={StyleSheet.absoluteFill}
+                    resizeMode="cover"
+                  />
 
-              <View style={styles.cardCenterBody}>
-                <Text
-                  style={[
-                    styles.cardVerseText,
-                    {
-                      color: currentCardColors.text,
-                      fontSize: aspectRatio === '9:16' ? 18 : 16,
-                      lineHeight: aspectRatio === '9:16' ? 28 : 24,
-                    },
-                  ]}
-                >
-                  «{versesText}»
-                </Text>
+                  {/* Deep Scrim Overlay for high contrast */}
+                  <View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      {
+                        backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.48})`,
+                      },
+                    ]}
+                  />
 
-                <View style={styles.cardRefWrapper}>
-                  <Text style={[styles.cardReference, { color: currentCardColors.accent }]}>
-                    — {referenceText}
-                  </Text>
-                  <Text style={[styles.cardVersion, { color: currentCardColors.text + '88' }]}>
-                    Reina-Valera 1909
-                  </Text>
+                  {/* Inner Content with Frosted Glass Contrast Box */}
+                  <View style={styles.cardInner}>
+                    <View style={styles.cardCenterBody}>
+                      {/* High-Legibility Glass Container for WhatsApp & Social Clarity */}
+                      <View style={styles.verseGlassContainer}>
+                        <Sparkles size={13} color="#fde047" style={{ marginBottom: 6, opacity: 0.95 }} />
+
+                        <Text
+                          style={[
+                            styles.cardVerseText,
+                            getDynamicTypography(),
+                            {
+                              color: '#ffffff',
+                              textShadowColor: 'rgba(0, 0, 0, 0.95)',
+                              textShadowOffset: { width: 0, height: 1 },
+                              textShadowRadius: 4,
+                            },
+                          ]}
+                        >
+                          «{versesText}»
+                        </Text>
+
+                        <View style={styles.cardRefWrapper}>
+                          <Text
+                            style={[
+                              styles.cardReference,
+                              {
+                                color: '#fde047',
+                                textShadowColor: 'rgba(0, 0, 0, 0.9)',
+                                textShadowOffset: { width: 0, height: 1 },
+                                textShadowRadius: 3,
+                              },
+                            ]}
+                          >
+                            — {referenceText} —
+                          </Text>
+                          <Text
+                            style={[
+                              styles.cardVersion,
+                              {
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                textShadowColor: 'rgba(0, 0, 0, 0.9)',
+                                textShadowOffset: { width: 0, height: 1 },
+                                textShadowRadius: 2,
+                              },
+                            ]}
+                          >
+                            Reina-Valera 1909
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Footer Watermark */}
+                    <View style={styles.cardFooter}>
+                      <Text
+                        style={[
+                          styles.watermark,
+                          {
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            textShadowColor: 'rgba(0, 0, 0, 0.9)',
+                            textShadowOffset: { width: 0, height: 1 },
+                            textShadowRadius: 3,
+                          },
+                        ]}
+                      >
+                        ✦ Selah · Calma Espiritual
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              ) : (
+                /* Solid / Minimalist Card View */
+                <View style={styles.cardInner}>
+                  <View style={[styles.ornamentLine, { backgroundColor: cardAccentColor }]} />
+
+                  <View style={styles.cardCenterBody}>
+                    <Text
+                      style={[
+                        styles.cardVerseText,
+                        getDynamicTypography(),
+                        { color: cardTextColor },
+                      ]}
+                    >
+                      «{versesText}»
+                    </Text>
+
+                    <View style={styles.cardRefWrapper}>
+                      <Text style={[styles.cardReference, { color: cardAccentColor }]}>
+                        — {referenceText} —
+                      </Text>
+                      <Text style={[styles.cardVersion, { color: cardTextColor + '99' }]}>
+                        Reina-Valera 1909
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.cardFooter}>
+                    <Text style={[styles.watermark, { color: cardTextColor + '88' }]}>
+                      ✦ Selah · Calma Espiritual
+                    </Text>
+                  </View>
                 </View>
-              </View>
-
-              {/* Watermark branding */}
-              <View style={styles.cardFooter}>
-                <Text style={[styles.watermark, { color: currentCardColors.text + '66' }]}>
-                  ✦ Selah · Calma Espiritual
-                </Text>
-              </View>
+              )}
             </View>
-          </ScrollView>
+          </View>
 
-          {/* Footer with WhatsApp Export Button */}
+          {/* Footer with High-Resolution Share Button */}
           <View style={[styles.modalFooter, { borderTopColor: theme.borderSubtle }]}>
             <TouchableOpacity
               style={[styles.shareActionBtn, { backgroundColor: theme.accent }]}
@@ -263,7 +568,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                 <>
                   <Share2 size={18} color="#ffffff" />
                   <Text style={styles.shareActionBtnText}>
-                    Compartir imagen (WhatsApp / Redes)
+                    Compartir postal (WhatsApp / Redes)
                   </Text>
                 </>
               )}
@@ -278,15 +583,14 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.72)',
     justifyContent: 'flex-end',
   },
   container: {
-    maxHeight: '88%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
     borderTopWidth: 1,
-    paddingTop: 16,
+    paddingTop: 14,
     paddingBottom: Platform.OS === 'ios' ? 28 : 16,
   },
   header: {
@@ -294,78 +598,137 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
   },
   title: {
     fontSize: 17,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   subtitle: {
     fontSize: 12,
     marginTop: 2,
   },
   closeBtn: {
-    padding: 4,
+    padding: 6,
+    borderRadius: 16,
   },
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 6,
+    gap: 8,
   },
   segmentedGroup: {
     flexDirection: 'row',
     borderRadius: 12,
     padding: 3,
-    gap: 4,
+    gap: 3,
   },
   segmentBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 9,
   },
   segmentText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
-  themeCirclesRow: {
+  categoryRow: {
     flexDirection: 'row',
-    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 4,
+    gap: 6,
+  },
+  catChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  catChipText: {
+    fontSize: 11,
+  },
+  carouselContainer: {
+    paddingVertical: 6,
+  },
+  carouselContent: {
+    paddingHorizontal: 20,
+    gap: 10,
     alignItems: 'center',
   },
-  themeCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  thumbItem: {
+    width: 64,
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 2,
     borderWidth: 1.5,
+    borderColor: 'transparent',
+    position: 'relative',
   },
-  activeThemeCircle: {
-    borderWidth: 2.5,
-    transform: [{ scale: 1.15 }],
+  thumbImage: {
+    width: 58,
+    height: 58,
+    borderRadius: 10,
   },
-  previewScroll: {
-    flexGrow: 0,
-    maxHeight: 400,
-  },
-  previewContent: {
+  thumbSolid: {
+    width: 58,
+    height: 58,
+    borderRadius: 10,
+    borderWidth: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'center',
+  },
+  thumbSolidText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  thumbCheckBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    zIndex: 10,
+  },
+  thumbName: {
+    fontSize: 10,
+    marginTop: 4,
+    textAlign: 'center',
+    maxWidth: 64,
+  },
+  previewWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
   },
   cardView: {
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 24,
-    justifyContent: 'space-between',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  cardInner: {
+    flex: 1,
+    padding: 14,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   ornamentLine: {
     width: 36,
@@ -375,39 +738,51 @@ const styles = StyleSheet.create({
   },
   cardCenterBody: {
     flex: 1,
+    width: '100%',
     justifyContent: 'center',
-    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  verseGlassContainer: {
+    backgroundColor: 'rgba(5, 8, 16, 0.72)',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.20)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   cardVerseText: {
-    fontStyle: 'italic',
     textAlign: 'center',
     letterSpacing: -0.2,
   },
   cardRefWrapper: {
-    marginTop: 18,
+    marginTop: 10,
     alignItems: 'center',
   },
   cardReference: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.1,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.1,
   },
   cardVersion: {
-    fontSize: 11,
+    fontSize: 10,
     marginTop: 2,
+    fontWeight: '500',
   },
   cardFooter: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 4,
   },
   watermark: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.4,
+    fontSize: 9.5,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   modalFooter: {
     paddingHorizontal: 20,
-    paddingTop: 14,
+    paddingTop: 10,
     borderTopWidth: 1,
   },
   shareActionBtn: {
@@ -415,11 +790,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
+    paddingVertical: 13,
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 3,
   },
