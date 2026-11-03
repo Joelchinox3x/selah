@@ -2,11 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import * as SplashScreen from 'expo-splash-screen';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { getBibleDb } from '@/src/services/db/bibleDb';
 import { getUserDb } from '@/src/services/db/userDb';
 import { scheduleSliding14DayNotifications } from '@/src/services/notifications/notificationService';
 import { themes } from '@/src/theme/colors';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
@@ -44,6 +47,12 @@ export default function RootLayout() {
     prepareApp();
   }, [prepareApp]);
 
+  useEffect(() => {
+    if (isReady) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isReady]);
+
   // Listen for user tapping a scheduled notification -> Deep link to reader
   useEffect(() => {
     try {
@@ -79,7 +88,7 @@ export default function RootLayout() {
         <Text style={[styles.splashSubtitle, { color: theme.textMuted }]}>
           {initError
             ? `Error al inicializar: ${initError}`
-            : 'Preparando las Sagradas Escrituras...\nReina Valera 1909'}
+            : 'Preparando las Sagradas Escrituras...'}
         </Text>
         {initError ? (
           <TouchableOpacity

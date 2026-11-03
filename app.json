@@ -8,13 +8,28 @@
     "scheme": "selahbible",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#090d16",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#090d16"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.selah.bible"
+      "bundleIdentifier": "com.selah.bible",
+      "splash": {
+        "image": "./assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#090d16"
+      }
     },
     "android": {
       "package": "com.selah.bible",
       "backgroundColor": "#090d16",
+      "splash": {
+        "image": "./assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#090d16"
+      },
       "adaptiveIcon": {
         "backgroundColor": "#090d16",
         "foregroundImage": "./assets/images/icon.png"
