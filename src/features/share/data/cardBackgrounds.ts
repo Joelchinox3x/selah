@@ -1,12 +1,12 @@
 import { ImageSourcePropType } from 'react-native';
 
-export type BackgroundCategory = 'all' | 'real' | 'spiritual' | 'minimal';
+export type BackgroundCategory = 'all' | 'spiritual' | 'minimal';
 
 export interface CardBackground {
   id: string;
   name: string;
   subtitle: string;
-  category: 'real' | 'spiritual' | 'minimal';
+  category: 'spiritual' | 'minimal';
   type: 'image' | 'solid';
   source?: ImageSourcePropType;
   overlayOpacity?: number;
@@ -17,89 +17,42 @@ export interface CardBackground {
 }
 
 export const CARD_BACKGROUNDS: CardBackground[] = [
-  // --- FOTOGRAFÍA REAL PROFESIONAL ---
-  {
-    id: 'real_open_bible',
-    name: 'Palabra Viva',
-    subtitle: 'Biblia en madera con luz natural',
-    category: 'real',
-    type: 'image',
-    source: require('@/assets/backgrounds/real_open_bible.webp'),
-    overlayOpacity: 0.50,
-  },
-  {
-    id: 'real_sunrise_ocean',
-    name: 'Amanecer en el Mar',
-    subtitle: 'Océano dorado y horizonte sereno',
-    category: 'real',
-    type: 'image',
-    source: require('@/assets/backgrounds/real_sunrise_ocean.webp'),
-    overlayOpacity: 0.48,
-  },
-  {
-    id: 'real_mountain_peaks',
-    name: 'Cumbres de Paz',
-    subtitle: 'Montañas majestuosas y niebla',
-    category: 'real',
-    type: 'image',
-    source: require('@/assets/backgrounds/real_mountain_peaks.webp'),
-    overlayOpacity: 0.50,
-  },
-  {
-    id: 'real_forest_sunlight',
-    name: 'Luz en el Bosque',
-    subtitle: 'Rayos solares entre árboles',
-    category: 'real',
-    type: 'image',
-    source: require('@/assets/backgrounds/real_forest_sunlight.webp'),
-    overlayOpacity: 0.52,
-  },
-  {
-    id: 'real_desert_stars',
-    name: 'Noche en el Desierto',
-    subtitle: 'Bóveda celeste y estrellas',
-    category: 'real',
-    type: 'image',
-    source: require('@/assets/backgrounds/real_desert_stars.webp'),
-    overlayOpacity: 0.40,
-  },
-
-  // --- PAISAJES BÍBLICOS Y NATURALEZA SAGRADA ---
+  // --- FOTOGRAFÍA SAGRADA UNIFICADA 9:16 (1080 x 1920) ---
   {
     id: 'bg_bible_dawn',
     name: 'Amanecer Bíblico',
-    subtitle: 'Escrituras iluminadas al alba',
+    subtitle: 'Escrituras iluminadas al alba sobre madera',
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_bible_dawn.webp'),
-    overlayOpacity: 0.50,
+    overlayOpacity: 0.35,
   },
   {
     id: 'bg_prayer_candle',
     name: 'Oración Íntima',
-    subtitle: 'Vela cálida y devoción',
+    subtitle: 'Cálida vela de bronce y devoción',
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_prayer_candle.webp'),
-    overlayOpacity: 0.45,
+    overlayOpacity: 0.30,
   },
   {
     id: 'bg_sea_galilee',
     name: 'Mar de Galilea',
-    subtitle: 'Aguas cristalinas en calma',
+    subtitle: 'Aguas cristalinas en calma al alba',
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_sea_galilee.webp'),
-    overlayOpacity: 0.48,
+    overlayOpacity: 0.35,
   },
   {
     id: 'bg_still_waters',
     name: 'Aguas de Reposo',
-    subtitle: 'Salmo 23, arroyo de montaña',
+    subtitle: 'Salmo 23, arroyo de montaña y piedras',
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_still_waters.webp'),
-    overlayOpacity: 0.52,
+    overlayOpacity: 0.38,
   },
   {
     id: 'bg_green_pastures',
@@ -108,7 +61,7 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_green_pastures.webp'),
-    overlayOpacity: 0.48,
+    overlayOpacity: 0.35,
   },
   {
     id: 'bg_path_light',
@@ -117,7 +70,7 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_path_light.webp'),
-    overlayOpacity: 0.52,
+    overlayOpacity: 0.38,
   },
   {
     id: 'bg_starry_night',
@@ -126,7 +79,7 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_starry_night.webp'),
-    overlayOpacity: 0.40,
+    overlayOpacity: 0.28,
   },
   {
     id: 'bg_mount_sinai',
@@ -135,7 +88,7 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_mount_sinai.webp'),
-    overlayOpacity: 0.48,
+    overlayOpacity: 0.35,
   },
   {
     id: 'bg_gethsemane_olives',
@@ -144,7 +97,7 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_gethsemane_olives.webp'),
-    overlayOpacity: 0.50,
+    overlayOpacity: 0.38,
   },
   {
     id: 'bg_sacred_parchment',
@@ -153,7 +106,7 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_sacred_parchment.webp'),
-    overlayOpacity: 0.52,
+    overlayOpacity: 0.38,
   },
 
   // --- ESTILOS CLÁSICOS Y MINIMALISTAS ---

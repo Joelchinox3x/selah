@@ -538,9 +538,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
           <View style={styles.categoryRow}>
             {(
               [
-                { id: 'all', label: 'Todos (18)' },
-                { id: 'real', label: 'Fotografía (5)' },
-                { id: 'spiritual', label: 'Paisajes Bíblicos (10)' },
+                { id: 'all', label: 'Todos (13)' },
+                { id: 'spiritual', label: 'Paisajes y Fotos (10)' },
                 { id: 'minimal', label: 'Clásicos (3)' },
               ] as { id: BackgroundCategory; label: string }[]
             ).map((cat) => {
