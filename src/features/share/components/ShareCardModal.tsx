@@ -34,7 +34,7 @@ import {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type AspectRatioMode = '1:1' | '9:16';
-type TypographyPreset = 'classic' | 'modern' | 'solemn';
+type TypographyPreset = 'classic' | 'modern' | 'poetic' | 'solemn';
 type TextVerticalPosition = 'top' | 'center' | 'bottom';
 
 interface ShareCardModalProps {
@@ -137,6 +137,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
           fontWeight: '600' as const,
           fontSize,
           lineHeight,
+          letterSpacing: 0,
         };
       case 'modern':
         return {
@@ -144,18 +145,29 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
           fontWeight: '600' as const,
           fontSize,
           lineHeight,
+          letterSpacing: -0.2,
+        };
+      case 'poetic':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+          fontStyle: 'italic' as const,
+          fontWeight: '500' as const,
+          fontSize: fontSize * 1.05,
+          lineHeight: lineHeight * 1.08,
+          letterSpacing: 0.2,
         };
       case 'solemn':
         return {
           fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
           fontWeight: '700' as const,
-          fontSize,
-          lineHeight,
+          fontSize: fontSize * 0.95,
+          lineHeight: lineHeight * 1.06,
+          letterSpacing: 0.6,
         };
     }
   };
 
-  // Typography for Full HD export (1080x1920)
+  // Typography for Full HD export (1080x1920 or 1080x1080)
   const getExportTypography = () => {
     let fontSize = 42;
     let lineHeight = 62;
@@ -191,6 +203,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
           fontWeight: '600' as const,
           fontSize,
           lineHeight,
+          letterSpacing: 0,
         };
       case 'modern':
         return {
@@ -198,13 +211,24 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
           fontWeight: '600' as const,
           fontSize,
           lineHeight,
+          letterSpacing: -0.4,
+        };
+      case 'poetic':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+          fontStyle: 'italic' as const,
+          fontWeight: '500' as const,
+          fontSize: fontSize * 1.05,
+          lineHeight: lineHeight * 1.08,
+          letterSpacing: 0.4,
         };
       case 'solemn':
         return {
           fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
           fontWeight: '700' as const,
-          fontSize,
-          lineHeight,
+          fontSize: fontSize * 0.95,
+          lineHeight: lineHeight * 1.06,
+          letterSpacing: 1.6,
         };
     }
   };
@@ -289,7 +313,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Quick Tools Row: Aspect Ratio & Text Position */}
+          {/* Quick Tools Row 1: Aspect Ratio & Text Vertical Position */}
           <View style={styles.quickToolsRow}>
             {/* Aspect Ratio (9:16 / 1:1) */}
             <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
@@ -386,34 +410,70 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                 />
               </TouchableOpacity>
             </View>
+          </View>
 
-            {/* Typography Preset */}
-            <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
-              {(['classic', 'modern', 'solemn'] as TypographyPreset[]).map((tp) => (
-                <TouchableOpacity
-                  key={tp}
-                  style={[
-                    styles.segmentBtn,
-                    fontPreset === tp && { backgroundColor: theme.cardBackground },
-                  ]}
-                  onPress={() => {
-                    hapticLight();
-                    setFontPreset(tp);
-                  }}
-                >
-                  <Text
+          {/* Quick Tools Row 2: Typography Style Selector (4 Presets) */}
+          <View style={styles.typographyRow}>
+            <View style={[styles.typographySegmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
+              {(
+                [
+                  {
+                    id: 'classic',
+                    label: 'Serif',
+                    style: { fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif' },
+                  },
+                  {
+                    id: 'modern',
+                    label: 'Sans',
+                    style: { fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif' },
+                  },
+                  {
+                    id: 'poetic',
+                    label: 'Cursiva',
+                    style: {
+                      fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+                      fontStyle: 'italic' as const,
+                    },
+                  },
+                  {
+                    id: 'solemn',
+                    label: 'Solemne',
+                    style: {
+                      fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
+                      fontWeight: '700' as const,
+                      letterSpacing: 0.5,
+                    },
+                  },
+                ] as { id: TypographyPreset; label: string; style: any }[]
+              ).map((tp) => {
+                const isActive = fontPreset === tp.id;
+                return (
+                  <TouchableOpacity
+                    key={tp.id}
                     style={[
-                      styles.segmentText,
-                      {
-                        color: fontPreset === tp ? theme.accent : theme.textMuted,
-                        fontWeight: fontPreset === tp ? '700' : '500',
-                      },
+                      styles.typographySegmentBtn,
+                      isActive && { backgroundColor: theme.cardBackground },
                     ]}
+                    onPress={() => {
+                      hapticLight();
+                      setFontPreset(tp.id);
+                    }}
                   >
-                    {tp === 'classic' ? 'Serif' : tp === 'modern' ? 'Sans' : 'Solemne'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.typographySegmentText,
+                        tp.style,
+                        {
+                          color: isActive ? theme.accent : theme.textMuted,
+                          fontWeight: isActive ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {tp.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
@@ -911,6 +971,27 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 11,
     fontWeight: '600',
+  },
+  typographyRow: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 2,
+  },
+  typographySegmentedGroup: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 2.5,
+    gap: 3,
+  },
+  typographySegmentBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  typographySegmentText: {
+    fontSize: 11.5,
   },
   previewWrapper: {
     alignItems: 'center',
