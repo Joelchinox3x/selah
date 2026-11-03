@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    flexShrink: 1,
+    flexShrink: 0,
   },
   emojiCircle: {
     width: 28,
@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 9,
     paddingVertical: 3,
+    flexShrink: 1,
   },
   recordPillText: {
     fontSize: 10.5,
