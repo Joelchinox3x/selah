@@ -66,7 +66,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   const [activeCategory, setActiveCategory] = useState<BackgroundCategory>('all');
   const [isExporting, setIsExporting] = useState(false);
 
-  const cardRef = useRef<View>(null);
+  // Separate ref for the high-res offscreen export view so exported images are never zoomed
+  const exportCardRef = useRef<View>(null);
   const prevVisible = useRef(false);
 
   const themeMode = useSettingsStore((s) => s.theme);
@@ -92,40 +93,94 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
     return CARD_BACKGROUNDS.filter((bg) => bg.category === activeCategory);
   }, [activeCategory]);
 
-  // Preview dimensions: generous width so text is never cramped or unnaturally zoomed
-  const previewWidth = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 275) : 205;
-  const previewHeight = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 275) : 364;
+  // Preview dimensions (exact 9:16 ratio matching the 1080x1920 image with 0 cropping)
+  const previewWidth = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 270) : 202;
+  const previewHeight = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 270) : 360;
 
   const cleanVerses = (versesText || '').trim();
   const cleanRef = (referenceText || '').trim();
   const textLength = cleanVerses.length;
 
-  // Refined, subtle font sizing leaving generous negative space around the image
+  // Typography for on-screen preview
   const getDynamicTypography = () => {
-    let fontSize = 13.5;
-    let lineHeight = 20;
+    let fontSize = 13;
+    let lineHeight = 19;
 
     if (aspectRatio === '9:16') {
       if (textLength > 200) {
-        fontSize = 11.5;
-        lineHeight = 17;
+        fontSize = 11;
+        lineHeight = 16;
       } else if (textLength > 110) {
-        fontSize = 12.5;
-        lineHeight = 18.5;
+        fontSize = 12;
+        lineHeight = 17.5;
       } else {
-        fontSize = 14;
-        lineHeight = 21;
+        fontSize = 13.5;
+        lineHeight = 20;
       }
     } else {
       if (textLength > 200) {
         fontSize = 12;
-        lineHeight = 17.5;
+        lineHeight = 17;
       } else if (textLength > 110) {
-        fontSize = 13.5;
-        lineHeight = 20;
+        fontSize = 13;
+        lineHeight = 19;
       } else {
-        fontSize = 15;
-        lineHeight = 22.5;
+        fontSize = 14.5;
+        lineHeight = 21.5;
+      }
+    }
+
+    switch (fontPreset) {
+      case 'classic':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+          fontWeight: '600' as const,
+          fontSize,
+          lineHeight,
+        };
+      case 'modern':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+          fontWeight: '600' as const,
+          fontSize,
+          lineHeight,
+        };
+      case 'solemn':
+        return {
+          fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
+          fontWeight: '700' as const,
+          fontSize,
+          lineHeight,
+        };
+    }
+  };
+
+  // Typography for Full HD export (1080x1920)
+  const getExportTypography = () => {
+    let fontSize = 42;
+    let lineHeight = 62;
+
+    if (aspectRatio === '9:16') {
+      if (textLength > 200) {
+        fontSize = 32;
+        lineHeight = 48;
+      } else if (textLength > 110) {
+        fontSize = 38;
+        lineHeight = 56;
+      } else {
+        fontSize = 44;
+        lineHeight = 66;
+      }
+    } else {
+      if (textLength > 200) {
+        fontSize = 34;
+        lineHeight = 50;
+      } else if (textLength > 110) {
+        fontSize = 40;
+        lineHeight = 58;
+      } else {
+        fontSize = 46;
+        lineHeight = 68;
       }
     }
 
@@ -159,10 +214,10 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
       hapticLight();
       setIsExporting(true);
 
-      if (!cardRef.current) return;
+      if (!exportCardRef.current) return;
 
-      // Capture at native high-density pixel ratio without artificial bitmap stretching
-      const uri = await captureRef(cardRef, {
+      // Capture directly from the native 1080x1920 Full HD canvas (0 zoom, 0 blur)
+      const uri = await captureRef(exportCardRef, {
         format: 'png',
         quality: 1,
         result: 'tmpfile',
@@ -189,7 +244,6 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   const cardBorderColor = isImageBg ? 'rgba(255,255,255,0.20)' : (currentBg.borderColor || theme.border);
   const cardBgColor = isImageBg ? '#080a10' : (currentBg.bgColor || theme.cardBackground);
 
-  // Content alignment based on textPosition (YouVersion style)
   const getContentJustify = () => {
     switch (textPosition) {
       case 'top':
@@ -220,7 +274,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                 Crear Postal Bíblica
               </Text>
               <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-                Diseño YouVersion · Letras refinadas y fondo completo
+                Imagen completa 9:16 sin recortes ni zoom
               </Text>
             </View>
             <TouchableOpacity
@@ -232,7 +286,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Quick Tools Row: Aspect Ratio & Text Position (YouVersion-style) */}
+          {/* Quick Tools Row: Aspect Ratio & Text Position */}
           <View style={styles.quickToolsRow}>
             {/* Aspect Ratio (9:16 / 1:1) */}
             <View style={[styles.segmentedGroup, { backgroundColor: theme.surfaceRaised }]}>
@@ -360,11 +414,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </View>
           </View>
 
-          {/* Card Preview Container */}
+          {/* On-Screen Card Preview Container */}
           <View style={styles.previewWrapper}>
             <View
-              ref={cardRef}
-              collapsable={false}
               style={[
                 styles.cardView,
                 {
@@ -377,24 +429,22 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             >
               {isImageBg && currentBg.source ? (
                 <>
-                  {/* Full Cover Image - High definition */}
                   <Image
                     source={currentBg.source}
                     style={StyleSheet.absoluteFill}
                     resizeMode="cover"
                   />
 
-                  {/* Clean uniform photographic scrim - Zero cutoffs or grey lines */}
+                  {/* Soft transparent overlay so white text is readable */}
                   <View
                     style={[
                       StyleSheet.absoluteFill,
                       {
-                        backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.35})`,
+                        backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.32})`,
                       },
                     ]}
                   />
 
-                  {/* YouVersion Editorial Overlay: Refined typography */}
                   <View
                     style={[
                       styles.cardInnerOverlay,
@@ -435,7 +485,6 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                     </View>
                   </View>
 
-                  {/* Subtle, tiny bottom brand mark */}
                   <View style={styles.bottomWatermark}>
                     <Text
                       style={[
@@ -453,7 +502,6 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                   </View>
                 </>
               ) : (
-                /* Solid / Minimalist Style */
                 <View
                   style={[
                     styles.cardInnerOverlay,
@@ -488,7 +536,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </View>
           </View>
 
-          {/* Background Category Selector (Clean, spiritual labels) */}
+          {/* Background Category Selector */}
           <View style={styles.categoryRow}>
             {(
               [
@@ -581,7 +629,6 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                       </View>
                     )}
 
-                    {/* Active check badge */}
                     {isSelected && (
                       <View style={[styles.thumbCheckBadge, { backgroundColor: theme.accent }]}>
                         <Check size={11} color="#ffffff" strokeWidth={3} />
@@ -627,6 +674,148 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             </TouchableOpacity>
           </View>
         </View>
+      </View>
+
+      {/* DEDICATED OFFSCREEN FULL HD 1080x1920 EXPORT CANVAS - 0 ZOOM, 0 DISTORTION */}
+      <View
+        ref={exportCardRef}
+        collapsable={false}
+        style={{
+          position: 'absolute',
+          left: -9999,
+          top: -9999,
+          width: aspectRatio === '1:1' ? 1080 : 1080,
+          height: aspectRatio === '1:1' ? 1080 : 1920,
+          backgroundColor: cardBgColor,
+          overflow: 'hidden',
+        }}
+      >
+        {isImageBg && currentBg.source ? (
+          <>
+            <Image
+              source={currentBg.source}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.32})`,
+                },
+              ]}
+            />
+            <View
+              style={{
+                ...StyleSheet.absoluteFill,
+                paddingHorizontal: 90,
+                paddingVertical: 120,
+                alignItems: 'center',
+                justifyContent: getContentJustify(),
+              }}
+            >
+              <View style={{ alignItems: 'center', width: '100%', maxWidth: 900 }}>
+                <Text
+                  style={[
+                    getExportTypography(),
+                    {
+                      color: '#ffffff',
+                      textAlign: 'center',
+                      textShadowColor: 'rgba(0, 0, 0, 0.92)',
+                      textShadowOffset: { width: 0, height: 4 },
+                      textShadowRadius: 14,
+                    },
+                  ]}
+                >
+                  «{cleanVerses}»
+                </Text>
+
+                <View style={{ marginTop: 32, alignItems: 'center' }}>
+                  <Text
+                    style={{
+                      fontSize: 32,
+                      fontWeight: '800',
+                      letterSpacing: 1.5,
+                      color: cardAccentColor,
+                      textShadowColor: 'rgba(0, 0, 0, 0.90)',
+                      textShadowOffset: { width: 0, height: 3 },
+                      textShadowRadius: 10,
+                    }}
+                  >
+                    — {cleanRef} —
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={{ position: 'absolute', bottom: 32, alignSelf: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: '800',
+                  letterSpacing: 3,
+                  color: 'rgba(255, 255, 255, 0.65)',
+                  textShadowColor: 'rgba(0, 0, 0, 0.90)',
+                  textShadowOffset: { width: 0, height: 2 },
+                  textShadowRadius: 8,
+                }}
+              >
+                ✦ SELAH
+              </Text>
+            </View>
+          </>
+        ) : (
+          <View
+            style={{
+              ...StyleSheet.absoluteFill,
+              paddingHorizontal: 90,
+              paddingVertical: 120,
+              alignItems: 'center',
+              justifyContent: getContentJustify(),
+            }}
+          >
+            <View style={{ alignItems: 'center', width: '100%', maxWidth: 900 }}>
+              <Text
+                style={[
+                  getExportTypography(),
+                  {
+                    color: cardTextColor,
+                    textAlign: 'center',
+                  },
+                ]}
+              >
+                «{cleanVerses}»
+              </Text>
+
+              <View style={{ marginTop: 32, alignItems: 'center' }}>
+                <Text
+                  style={{
+                    fontSize: 32,
+                    fontWeight: '800',
+                    letterSpacing: 1.5,
+                    color: cardAccentColor,
+                  }}
+                >
+                  — {cleanRef} —
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ position: 'absolute', bottom: 32, alignSelf: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: '800',
+                  letterSpacing: 3,
+                  color: cardTextColor,
+                  opacity: 0.5,
+                }}
+              >
+                ✦ SELAH
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </Modal>
   );

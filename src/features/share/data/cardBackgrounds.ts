@@ -24,7 +24,7 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     subtitle: 'Escrituras iluminadas al alba sobre madera',
     category: 'spiritual',
     type: 'image',
-    source: require('@/assets/backgrounds/bg_bible_dawn.webp'),
+    source: require('@/assets/backgrounds/bg_bible_sanctuary.webp'),
     overlayOpacity: 0.35,
   },
   {
