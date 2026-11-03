@@ -76,9 +76,33 @@ export default function ChapterReaderScreen() {
   const [chapterNumber, setChapterNumber] = useState<number>(() =>
     parseInt(params.chapter || '23', 10)
   );
-  const targetHighlightVerse = params.highlightVerse
-    ? parseInt(params.highlightVerse, 10)
-    : null;
+  const rawHighlightParam = typeof params.highlightVerse === 'string'
+    ? params.highlightVerse.trim()
+    : Array.isArray(params.highlightVerse)
+    ? String(params.highlightVerse[0]).trim()
+    : '';
+
+  const targetHighlightVerses = useMemo<number[]>(() => {
+    if (!rawHighlightParam) return [];
+    if (rawHighlightParam.includes('-')) {
+      const parts = rawHighlightParam.split('-').map((s) => parseInt(s.trim(), 10));
+      if (!isNaN(parts[0]) && !isNaN(parts[1]) && parts[1] >= parts[0]) {
+        const list: number[] = [];
+        for (let i = parts[0]; i <= parts[1]; i++) {
+          list.push(i);
+        }
+        return list;
+      }
+    }
+    if (rawHighlightParam.includes(',')) {
+      return rawHighlightParam
+        .split(',')
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => !isNaN(n));
+    }
+    const single = parseInt(rawHighlightParam, 10);
+    return isNaN(single) ? [] : [single];
+  }, [rawHighlightParam]);
 
   // Sync state if navigation params change externally
   useEffect(() => {
@@ -159,11 +183,31 @@ export default function ChapterReaderScreen() {
     setSelectedVerseNumbers([]);
     setInitialLoading(true);
     loadChapter(bookId, chapterNumber).then(() => {
-      if (targetHighlightVerse) {
-        setSelectedVerseNumbers([targetHighlightVerse]);
+      if (targetHighlightVerses.length > 0) {
+        setSelectedVerseNumbers(targetHighlightVerses);
+
+        // Smoothly scroll to the first verse in the target range
+        const firstVerseNum = targetHighlightVerses[0];
+        setTimeout(() => {
+          setVerses((currentVerses) => {
+            const targetIndex = currentVerses.findIndex((v) => v.verse === firstVerseNum);
+            if (targetIndex >= 0 && flatListRef.current) {
+              try {
+                flatListRef.current.scrollToIndex({
+                  index: targetIndex,
+                  viewPosition: 0.12,
+                  animated: true,
+                });
+              } catch (err) {
+                // Handled gracefully by onScrollToIndexFailed
+              }
+            }
+            return currentVerses;
+          });
+        }, 300);
       }
     });
-  }, [bookId, chapterNumber, targetHighlightVerse, loadChapter]);
+  }, [bookId, chapterNumber, rawHighlightParam, loadChapter]);
 
   // Combine raw verses with user data
   const enrichedVerses: VerseWithUserData[] = useMemo(() => {
@@ -598,6 +642,22 @@ export default function ChapterReaderScreen() {
           maxToRenderPerBatch={20}
           windowSize={7}
           removeClippedSubviews={true}
+          onScrollToIndexFailed={(info) => {
+            setTimeout(() => {
+              try {
+                flatListRef.current?.scrollToIndex({
+                  index: info.index,
+                  viewPosition: 0.12,
+                  animated: true,
+                });
+              } catch (err) {
+                flatListRef.current?.scrollToOffset({
+                  offset: info.averageItemLength * info.index,
+                  animated: true,
+                });
+              }
+            }, 200);
+          }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={

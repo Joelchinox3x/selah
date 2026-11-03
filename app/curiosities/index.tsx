@@ -19,7 +19,6 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  Bookmark,
 } from 'lucide-react-native';
 import { Screen } from '@/src/components/ui/Screen';
 import {
@@ -28,6 +27,7 @@ import {
   CURIOSITY_CATEGORIES,
   CuriosityCategory,
   getTodayCuriosity,
+  getCuriosityHighlightParam,
 } from '@/src/features/curiosities/data/biblicalCuriosities';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
@@ -57,7 +57,7 @@ export default function CuriositiesScreen() {
     hapticLight();
     router.push({
       pathname: `/reader/${curiosity.bookId}/${curiosity.chapter}`,
-      params: { highlightVerse: String(curiosity.verse) },
+      params: { highlightVerse: getCuriosityHighlightParam(curiosity) },
     } as any);
   };
 
@@ -90,6 +90,7 @@ export default function CuriositiesScreen() {
           c.deepDive.toLowerCase().includes(q) ||
           c.biblicalCitation.toLowerCase().includes(q) ||
           c.badgeValue?.toLowerCase().includes(q) ||
+          c.categoryTag.toLowerCase().includes(q) ||
           c.keyTakeaway.toLowerCase().includes(q)
       );
     }
@@ -112,24 +113,37 @@ export default function CuriositiesScreen() {
           },
         ]}
       >
-        {/* Top Badges */}
+        {/* Top Badges: UI/UX Pro Max clean separation & zero collision */}
         <View style={styles.cardHeaderRow}>
-          <View style={styles.tagWrap}>
-            <Text style={styles.emoji}>{item.emoji}</Text>
+          <View style={styles.headerLeftGroup}>
             <View
               style={[
-                styles.categoryBadge,
+                styles.emojiBubble,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(217, 119, 6, 0.16)'
-                    : 'rgba(217, 119, 6, 0.10)',
+                    ? '#1e293b'
+                    : 'rgba(217, 119, 6, 0.08)',
                 },
               ]}
             >
-              <Text style={[styles.categoryBadgeText, { color: theme.accent }]}>
-                {item.categoryLabel.toUpperCase()}
+              <Text style={styles.emojiText}>{item.emoji}</Text>
+            </View>
+
+            <View
+              style={[
+                styles.categoryTagPill,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(217, 119, 6, 0.15)'
+                    : 'rgba(217, 119, 6, 0.08)',
+                },
+              ]}
+            >
+              <Text style={[styles.categoryTagText, { color: theme.accent }]}>
+                {item.categoryTag}
               </Text>
             </View>
+
             {isToday && (
               <View
                 style={[
@@ -137,8 +151,8 @@ export default function CuriositiesScreen() {
                   { backgroundColor: theme.accent },
                 ]}
               >
-                <Sparkles size={10} color="#fff" />
-                <Text style={styles.todayBadgeText}>DE HOY</Text>
+                <Sparkles size={9} color="#fff" />
+                <Text style={styles.todayBadgeText}>HOY</Text>
               </View>
             )}
           </View>
@@ -176,7 +190,7 @@ export default function CuriositiesScreen() {
           ]}
         >
           <View style={styles.citationRow}>
-            <BookOpen size={12} color={theme.accent} />
+            <BookOpen size={13} color={theme.accent} />
             <Text style={[styles.citationText, { color: theme.accent }]}>
               {item.biblicalCitation}
             </Text>
@@ -256,7 +270,7 @@ export default function CuriositiesScreen() {
           >
             <BookOpen size={14} color="#ffffff" />
             <Text style={styles.openBibleBtnText}>
-              Ver en la Biblia
+              Ver {item.biblicalCitation} en la Biblia
             </Text>
           </TouchableOpacity>
 
@@ -512,27 +526,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
     gap: 8,
   },
-  tagWrap: {
+  headerLeftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
     flexShrink: 1,
   },
-  emoji: {
-    fontSize: 18,
+  emojiBubble: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  categoryBadge: {
-    paddingHorizontal: 8,
+  emojiText: {
+    fontSize: 15,
+  },
+  categoryTagPill: {
+    paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
   },
-  categoryBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+  categoryTagText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
   todayBadge: {
     flexDirection: 'row',
@@ -543,19 +564,20 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   todayBadgeText: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: '800',
     color: '#fff',
+    letterSpacing: 0.5,
   },
   recordValuePill: {
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
   recordValueText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 10.5,
+    fontWeight: '700',
   },
   cardTitle: {
     fontSize: 17,
@@ -647,8 +669,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 40,
+    height: 42,
     borderRadius: 10,
+    paddingHorizontal: 12,
   },
   openBibleBtnText: {
     color: '#ffffff',
@@ -656,8 +679,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   shareBtn: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',

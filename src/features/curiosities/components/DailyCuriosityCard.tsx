@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Sparkles, ChevronRight, BookOpen, Compass } from 'lucide-react-native';
-import { BiblicalCuriosity } from '@/src/features/curiosities/data/biblicalCuriosities';
+import { Sparkles, ChevronRight, BookOpen } from 'lucide-react-native';
+import {
+  BiblicalCuriosity,
+  getCuriosityHighlightParam,
+} from '@/src/features/curiosities/data/biblicalCuriosities';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight } from '@/src/services/haptics/hapticFeedback';
@@ -28,7 +31,7 @@ export const DailyCuriosityCard: React.FC<DailyCuriosityCardProps> = ({
     hapticLight();
     router.push({
       pathname: `/reader/${curiosity.bookId}/${curiosity.chapter}`,
-      params: { highlightVerse: String(curiosity.verse) },
+      params: { highlightVerse: getCuriosityHighlightParam(curiosity) },
     } as any);
   };
 
@@ -42,23 +45,34 @@ export const DailyCuriosityCard: React.FC<DailyCuriosityCardProps> = ({
         },
       ]}
     >
-      {/* Top Header Row */}
+      {/* Top Header Row with UI/UX Pro Max clean separation */}
       <View style={styles.topRow}>
         <View style={styles.tagWrap}>
-          <Text style={styles.emoji}>{curiosity.emoji}</Text>
+          <View
+            style={[
+              styles.emojiCircle,
+              {
+                backgroundColor: isDark
+                  ? '#1e293b'
+                  : 'rgba(217, 119, 6, 0.08)',
+              },
+            ]}
+          >
+            <Text style={styles.emojiText}>{curiosity.emoji}</Text>
+          </View>
           <View
             style={[
               styles.badge,
               {
                 backgroundColor: isDark
-                  ? 'rgba(217, 119, 6, 0.16)'
-                  : 'rgba(217, 119, 6, 0.10)',
+                  ? 'rgba(217, 119, 6, 0.15)'
+                  : 'rgba(217, 119, 6, 0.08)',
               },
             ]}
           >
             <Sparkles size={11} color={theme.accent} />
             <Text style={[styles.badgeText, { color: theme.accent }]}>
-              ¿SABÍAS QUÉ? • {curiosity.categoryLabel.toUpperCase()}
+              ¿SABÍAS QUÉ? · {curiosity.categoryTag}
             </Text>
           </View>
         </View>
@@ -119,7 +133,7 @@ export const DailyCuriosityCard: React.FC<DailyCuriosityCardProps> = ({
         >
           <BookOpen size={13} color={theme.accent} />
           <Text style={[styles.verseBtnText, { color: theme.accent }]}>
-            {curiosity.biblicalCitation}
+            Leer {curiosity.biblicalCitation}
           </Text>
         </TouchableOpacity>
 
@@ -155,17 +169,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
     gap: 8,
   },
   tagWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
     flexShrink: 1,
   },
-  emoji: {
-    fontSize: 16,
+  emojiCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emojiText: {
+    fontSize: 15,
   },
   badge: {
     flexDirection: 'row',
@@ -177,18 +198,18 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
   recordPill: {
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
   recordPillText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 10.5,
+    fontWeight: '700',
   },
   title: {
     fontSize: 16,

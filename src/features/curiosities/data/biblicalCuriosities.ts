@@ -25,13 +25,15 @@ export interface BiblicalCuriosity {
   title: string;
   category: CuriosityCategory;
   categoryLabel: string;
+  categoryTag: string; // Compact, e.g. "RÉCORD", "PERSONAJE", "CIENCIA", "INSÓLITO"
   emoji: string;
-  badgeValue?: string; // e.g. "82 palabras", "969 años", "2.90m", "176 versículos"
+  badgeValue?: string; // Short & punchy, e.g. "1,000 filisteos", "82 palabras", "~2.90 m"
   bookId: number;
   bookName: string;
   chapter: number;
   verse: number;
-  biblicalCitation: string; // e.g. "Ester 8:9"
+  endVerse?: number; // End verse for multi-verse spans (e.g. Josué 10:12-14 -> verse: 12, endVerse: 14)
+  biblicalCitation: string; // e.g. "Josué 10:12-14"
   verseSnippet: string; // Reina Valera 1909 verse text
   didYouKnow: string; // Quick punchy insight
   deepDive: string; // Historical / theological / linguistic context
@@ -45,8 +47,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Versículo Más Largo de Toda la Biblia',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '🏆',
-    badgeValue: '82 palabras · 350+ letras',
+    badgeValue: '82 palabras',
     bookId: 17,
     bookName: 'Ester',
     chapter: 8,
@@ -66,8 +69,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Versículo Más Corto de las Escrituras',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '💧',
-    badgeValue: 'Solo 2 palabras · 10 letras',
+    badgeValue: '2 palabras',
     bookId: 43,
     bookName: 'Juan',
     chapter: 11,
@@ -86,12 +90,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Capítulo Central y Más Breve de la Biblia',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '📍',
-    badgeValue: '2 versículos · Salmo 117',
+    badgeValue: '2 versículos',
     bookId: 19,
     bookName: 'Salmos',
     chapter: 117,
     verse: 1,
+    endVerse: 2,
     biblicalCitation: 'Salmo 117:1-2',
     verseSnippet:
       'Alabad a Jehová, naciones todas; pueblos todos, alabadle. Porque ha engrandecido sobre nosotros su misericordia...',
@@ -107,8 +113,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Capítulo Más Largo: Acróstico Alfabético',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '📜',
-    badgeValue: '176 versículos · Salmo 119',
+    badgeValue: '176 versículos',
     bookId: 19,
     bookName: 'Salmos',
     chapter: 119,
@@ -127,8 +134,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Versículo Central de la Confianza Humana',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '🛡️',
-    badgeValue: 'Centro de la Escritura',
+    badgeValue: 'Centro bíblico',
     bookId: 19,
     bookName: 'Salmos',
     chapter: 118,
@@ -147,12 +155,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Nombre Propio Más Largo de la Biblia',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '🏷️',
-    badgeValue: '18 letras · Maher-salal-hasbaz',
+    badgeValue: '18 letras',
     bookId: 23,
     bookName: 'Isaías',
     chapter: 8,
-    verse: 3,
+    verse: 1,
+    endVerse: 3,
     biblicalCitation: 'Isaías 8:1-3',
     verseSnippet:
       'Y me llegué a la profetisa, la cual concibió, y dio a luz un hijo. Y díjome Jehová: Ponle por nombre Maher-salal-hasbaz.',
@@ -168,8 +178,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Hombre Más Longevo de la Historia Registrada',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '⏳',
-    badgeValue: '969 años de vida · Matusalén',
+    badgeValue: '969 años',
     bookId: 1,
     bookName: 'Génesis',
     chapter: 5,
@@ -189,8 +200,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'Los Dos Libros que No Mencionan la Palabra «Dios»',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '👑',
-    badgeValue: 'Ester & Cantares · 0 menciones',
+    badgeValue: '0 menciones',
     bookId: 17,
     bookName: 'Ester',
     chapter: 4,
@@ -210,13 +222,15 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Escrito Más Breve de Todo el Canon',
     category: 'records',
     categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
     emoji: '✉️',
-    badgeValue: '13 versículos · Menos de 250 palabras',
+    badgeValue: '13 versículos',
     bookId: 63,
     bookName: '2 Juan',
     chapter: 1,
     verse: 12,
-    biblicalCitation: '2 Juan 1:1-13',
+    endVerse: 13,
+    biblicalCitation: '2 Juan 1:12-13',
     verseSnippet:
       'Muchos tengo que escribiros, mas no he querido comunicarlo por papel y tinta; mas espero ir a vosotros, y hablar boca a boca...',
     didYouKnow:
@@ -233,8 +247,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'La Tierra Suspendida en el Vacío Espacial',
     category: 'science',
     categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
     emoji: '🌍',
-    badgeValue: 'Gravitación & Astronomía',
+    badgeValue: 'Sobre la nada',
     bookId: 18,
     bookName: 'Job',
     chapter: 26,
@@ -254,8 +269,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'La Esfera Terrestre: El Círculo de la Tierra',
     category: 'science',
     categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
     emoji: '🪐',
-    badgeValue: 'Geofísica Anticipada',
+    badgeValue: 'Tierra redonda',
     bookId: 23,
     bookName: 'Isaías',
     chapter: 40,
@@ -275,8 +291,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'La Vida Está en la Sangre: Hematología Sagrada',
     category: 'science',
     categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
     emoji: '🩸',
-    badgeValue: 'Fisiología & Medicina',
+    badgeValue: 'Vida en sangre',
     bookId: 3,
     bookName: 'Levítico',
     chapter: 17,
@@ -296,12 +313,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Ciclo del Agua y los Circuitos del Viento',
     category: 'science',
     categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
     emoji: '💧',
-    badgeValue: 'Meteorología Milenaria',
+    badgeValue: 'Ciclo del agua',
     bookId: 21,
     bookName: 'Eclesiastés',
     chapter: 1,
-    verse: 7,
+    verse: 6,
+    endVerse: 7,
     biblicalCitation: 'Eclesiastés 1:6-7',
     verseSnippet:
       'Los ríos todos van a la mar, y la mar no se hinche; al lugar de donde los ríos vinieron, allí tornan para correr de nuevo.',
@@ -317,12 +336,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'Cuarentena y Sanidad Antiséptica Milenaria',
     category: 'science',
     categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
     emoji: '🧼',
-    badgeValue: 'Salud Pública · Aislamiento',
+    badgeValue: 'Cuarentena',
     bookId: 3,
     bookName: 'Levítico',
     chapter: 13,
-    verse: 46,
+    verse: 45,
+    endVerse: 46,
     biblicalCitation: 'Levítico 13:45-46',
     verseSnippet:
       'Todo el tiempo que la llaga estuviere en él, será inmundo; estará impuro: habitará solo; fuera del real será su morada.',
@@ -340,12 +361,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'La Estatura y Armadura Real de Goliat',
     category: 'characters',
     categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
     emoji: '⚔️',
-    badgeValue: '~2.90 metros · 5,000 siclos',
+    badgeValue: '~2.90 m altura',
     bookId: 9,
     bookName: '1 Samuel',
     chapter: 17,
     verse: 4,
+    endVerse: 7,
     biblicalCitation: '1 Samuel 17:4-7',
     verseSnippet:
       'Salió entonces del campo de los Filisteos un hombre de los intermedios, que se llamaba Goliat, de Gath, y tenía de altura seis codos y un palmo...',
@@ -361,13 +384,15 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'Sansón y la Victoria con la Quijada de Asno',
     category: 'characters',
     categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
     emoji: '🦁',
-    badgeValue: '1,000 filisteos · Jueces 15',
+    badgeValue: '1,000 filisteos',
     bookId: 7,
     bookName: 'Jueces',
     chapter: 15,
-    verse: 15,
-    biblicalCitation: 'Jueces 15:15',
+    verse: 14,
+    endVerse: 15,
+    biblicalCitation: 'Jueces 15:14-15',
     verseSnippet:
       'Y hallando una quijada de asno fresca aún, extendió la mano y tomóla, e hirió con ella a mil hombres.',
     didYouKnow:
@@ -382,12 +407,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'Aod: El Libertador Zurdo que Salvó a Israel',
     category: 'characters',
     categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
     emoji: '🗡️',
-    badgeValue: 'Estrategia ingeniosa · Zurdo',
+    badgeValue: 'Guerrero zurdo',
     bookId: 7,
     bookName: 'Jueces',
     chapter: 3,
     verse: 15,
+    endVerse: 16,
     biblicalCitation: 'Jueces 3:15-16',
     verseSnippet:
       'Y clamaron los hijos de Israel a Jehová; y suscitóles Jehová salvador, a Aod, hijo de Gera, Benjamita, el cual era zurdo...',
@@ -403,8 +430,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'Moisés a los 120 Años: Ojos Brillantes y Vigor',
     category: 'characters',
     categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
     emoji: '🏔️',
-    badgeValue: '120 años sin desgaste visual',
+    badgeValue: '120 años fuerte',
     bookId: 5,
     bookName: 'Deuteronomio',
     chapter: 34,
@@ -426,12 +454,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Día en que el Sol y la Luna se Detuvieron',
     category: 'miracles',
     categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
     emoji: '☀️',
-    badgeValue: 'Casi un día entero · Josué 10',
+    badgeValue: 'Sol detenido',
     bookId: 6,
     bookName: 'Josué',
     chapter: 10,
     verse: 12,
+    endVerse: 14,
     biblicalCitation: 'Josué 10:12-14',
     verseSnippet:
       'Sol, deténte en Gabaón; y tú, Luna, en el valle de Ajalón. Y el sol se detuvo y la luna se paró, hasta que la gente se hubo vengado de sus enemigos.',
@@ -447,12 +477,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Hacha de Hierro que Flotó en el Jordán',
     category: 'miracles',
     categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
     emoji: '🪓',
-    badgeValue: 'Densidad desafiada · 2 Reyes 6',
+    badgeValue: 'Hierro flotante',
     bookId: 12,
     bookName: '2 Reyes',
     chapter: 6,
-    verse: 6,
+    verse: 5,
+    endVerse: 7,
     biblicalCitation: '2 Reyes 6:5-7',
     verseSnippet:
       'Y el varón de Dios dijo: ¿Dónde cayó? Y él le mostró el lugar. Entonces cortó él un palo, y echólo allí, e hizo nadar el hierro.',
@@ -468,12 +500,14 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'La Sombra que Retrocedió Diez Grados',
     category: 'miracles',
     categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
     emoji: '⏳',
-    badgeValue: '10 grados atrás en el reloj de sol',
+    badgeValue: '10° hacia atrás',
     bookId: 12,
     bookName: '2 Reyes',
     chapter: 20,
-    verse: 11,
+    verse: 9,
+    endVerse: 11,
     biblicalCitation: '2 Reyes 20:9-11',
     verseSnippet:
       'Entonces el profeta Isaías clamó a Jehová; e hizo volver la sombra por los grados que había descendido en el reloj de Acaz, diez grados atrás.',
@@ -489,13 +523,15 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Asna que Habló con Voz Humana',
     category: 'miracles',
     categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
     emoji: '🫏',
-    badgeValue: 'Números 22 · Reprensión animal',
+    badgeValue: 'Asna que habló',
     bookId: 4,
     bookName: 'Números',
     chapter: 22,
     verse: 28,
-    biblicalCitation: 'Números 22:28',
+    endVerse: 30,
+    biblicalCitation: 'Números 22:28-30',
     verseSnippet:
       'Entonces Jehová abrió la boca al asna, la cual dijo a Balaam: ¿Qué te he hecho, que me has herido estas tres veces?',
     didYouKnow:
@@ -510,8 +546,9 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     title: 'El Sudor como Gotas de Sangre en Getsemaní',
     category: 'miracles',
     categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
     emoji: '🩺',
-    badgeValue: 'Hematidrosis médica documentada',
+    badgeValue: 'Hematidrosis',
     bookId: 42,
     bookName: 'Lucas',
     chapter: 22,
@@ -527,6 +564,17 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
       'La agonía de Jesús en Getsemaní nos revela el inmenso costo emocional y físico que pagó por amor a ti antes de llegar a la cruz.',
   },
 ];
+
+/**
+ * Returns formatted string for reader navigation:
+ * e.g. "12-14" if curiosity spans multiple verses, or "12" if single verse.
+ */
+export function getCuriosityHighlightParam(c: BiblicalCuriosity): string {
+  if (c.endVerse && c.endVerse > c.verse) {
+    return `${c.verse}-${c.endVerse}`;
+  }
+  return String(c.verse);
+}
 
 /**
  * Gets a rotating curiosity for today based on the day of the year.
@@ -569,6 +617,8 @@ export function searchCuriosities(query: string): BiblicalCuriosity[] {
       c.deepDive.toLowerCase().includes(normalized) ||
       c.biblicalCitation.toLowerCase().includes(normalized) ||
       c.keyTakeaway.toLowerCase().includes(normalized) ||
-      c.categoryLabel.toLowerCase().includes(normalized)
+      c.categoryLabel.toLowerCase().includes(normalized) ||
+      c.categoryTag.toLowerCase().includes(normalized) ||
+      c.badgeValue?.toLowerCase().includes(normalized)
   );
 }
