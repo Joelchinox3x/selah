@@ -9,6 +9,8 @@ export interface CardBackground {
   category: 'spiritual' | 'minimal';
   type: 'image' | 'solid';
   source?: ImageSourcePropType;
+  source916?: ImageSourcePropType;
+  source1x1?: ImageSourcePropType;
   overlayOpacity?: number;
   bgColor?: string;
   textColor?: string;
@@ -17,7 +19,7 @@ export interface CardBackground {
 }
 
 export const CARD_BACKGROUNDS: CardBackground[] = [
-  // --- FOTOGRAFÍA SAGRADA UNIFICADA 9:16 (1080 x 1920) ---
+  // --- FOTOGRAFÍA SAGRADA (9:16 vertical & 1:1 cuadrado dedicados) ---
   {
     id: 'bg_bible_dawn',
     name: 'Amanecer Bíblico',
@@ -25,6 +27,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_bible_sanctuary.webp'),
+    source916: require('@/assets/backgrounds/bg_bible_sanctuary.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_bible_dawn.webp'),
     overlayOpacity: 0.35,
   },
   {
@@ -34,6 +38,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_prayer_candle.webp'),
+    source916: require('@/assets/backgrounds/bg_prayer_candle.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_prayer_candle.webp'),
     overlayOpacity: 0.30,
   },
   {
@@ -43,6 +49,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_sea_galilee.webp'),
+    source916: require('@/assets/backgrounds/bg_sea_galilee.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_sea_galilee.webp'),
     overlayOpacity: 0.35,
   },
   {
@@ -52,6 +60,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_still_waters.webp'),
+    source916: require('@/assets/backgrounds/bg_still_waters.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_still_waters.webp'),
     overlayOpacity: 0.38,
   },
   {
@@ -61,6 +71,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_green_pastures.webp'),
+    source916: require('@/assets/backgrounds/bg_green_pastures.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_green_pastures.webp'),
     overlayOpacity: 0.35,
   },
   {
@@ -70,6 +82,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_path_light.webp'),
+    source916: require('@/assets/backgrounds/bg_path_light.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_path_light.webp'),
     overlayOpacity: 0.38,
   },
   {
@@ -79,6 +93,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_starry_night.webp'),
+    source916: require('@/assets/backgrounds/bg_starry_night.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_starry_night.webp'),
     overlayOpacity: 0.28,
   },
   {
@@ -88,6 +104,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_mount_sinai.webp'),
+    source916: require('@/assets/backgrounds/bg_mount_sinai.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_mount_sinai_v3.webp'),
     overlayOpacity: 0.35,
   },
   {
@@ -97,6 +115,8 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     category: 'spiritual',
     type: 'image',
     source: require('@/assets/backgrounds/bg_gethsemane_olives.webp'),
+    source916: require('@/assets/backgrounds/bg_gethsemane_olives.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_gethsemane_olives.webp'),
     overlayOpacity: 0.38,
   },
   {
@@ -105,7 +125,9 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     subtitle: 'Vellum milenario y calidez',
     category: 'spiritual',
     type: 'image',
-    source: require('@/assets/backgrounds/bg_sacred_parchment.webp'),
+    source: require('@/assets/backgrounds/bg_sacred_parchment_v3.webp'),
+    source916: require('@/assets/backgrounds/bg_sacred_parchment_v3.webp'),
+    source1x1: require('@/assets/backgrounds/bg_1x1_sacred_parchment_v3.webp'),
     overlayOpacity: 0.38,
   },
 

@@ -239,6 +239,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   };
 
   const isImageBg = currentBg.type === 'image';
+  const activeImageSource = aspectRatio === '1:1'
+    ? (currentBg.source1x1 || currentBg.source)
+    : (currentBg.source916 || currentBg.source);
   const cardTextColor = isImageBg ? '#ffffff' : (currentBg.textColor || theme.text);
   const cardAccentColor = isImageBg ? '#facc15' : (currentBg.accentColor || theme.accent);
   const cardBorderColor = isImageBg ? 'rgba(255,255,255,0.20)' : (currentBg.borderColor || theme.border);
@@ -427,28 +430,40 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                 },
               ]}
             >
-              {isImageBg && currentBg.source ? (
+              {isImageBg && activeImageSource ? (
                 <>
                   <Image
-                    source={currentBg.source}
-                    style={StyleSheet.absoluteFill}
+                    source={activeImageSource}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: previewWidth,
+                      height: previewHeight,
+                    }}
                     resizeMode="cover"
                   />
 
                   {/* Soft transparent overlay so white text is readable */}
                   <View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      {
-                        backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.32})`,
-                      },
-                    ]}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: previewWidth,
+                      height: previewHeight,
+                      backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.32})`,
+                    }}
                   />
 
                   <View
                     style={[
                       styles.cardInnerOverlay,
-                      { justifyContent: getContentJustify() },
+                      {
+                        width: previewWidth,
+                        height: previewHeight,
+                        justifyContent: getContentJustify(),
+                      },
                     ]}
                   >
                     <View style={styles.editorialContent}>
@@ -602,9 +617,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
                       setSelectedBgId(bg.id);
                     }}
                   >
-                    {bg.type === 'image' && bg.source ? (
+                    {bg.type === 'image' && (bg.source || bg.source916) ? (
                       <Image
-                        source={bg.source}
+                        source={aspectRatio === '1:1' ? (bg.source1x1 || bg.source) : (bg.source916 || bg.source)}
                         style={styles.thumbImage}
                         resizeMode="cover"
                       />
@@ -690,20 +705,28 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
           overflow: 'hidden',
         }}
       >
-        {isImageBg && currentBg.source ? (
+        {isImageBg && activeImageSource ? (
           <>
             <Image
-              source={currentBg.source}
-              style={StyleSheet.absoluteFill}
+              source={activeImageSource}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: 1080,
+                height: aspectRatio === '1:1' ? 1080 : 1920,
+              }}
               resizeMode="cover"
             />
             <View
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.32})`,
-                },
-              ]}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: 1080,
+                height: aspectRatio === '1:1' ? 1080 : 1920,
+                backgroundColor: `rgba(0, 0, 0, ${currentBg.overlayOpacity || 0.32})`,
+              }}
             />
             <View
               style={{
