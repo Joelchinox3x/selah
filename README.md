@@ -8,7 +8,7 @@ Aplicación móvil desarrollada en **React Native (Expo SDK ~57)** con arquitect
 
 ### 1. 📖 Lectura Sagrada de Alto Rendimiento (Reina-Valera 1909)
 - **Base de Datos SQLite Local (`bible_readonly.db`)**: 66 libros y 31,102 versículos empaquetados localmente desde `scrollmapper/bible_databases`.
-- **Lector Fluido a 60 FPS**: Renderizado ultraligero con `@shopify/flash-list`.
+- **Lector Fluido a 60 FPS**: Renderizado ultraligero con `FlatList` nativa optimizada.
 - **Selección Múltiple Intuitiva**: Borde izquierdo punteado sutil (`borderStyle: 'dashed'`) y fondo tenue al seleccionar versículos.
 - **Barra de Acciones Flotante**:
   - 4 bolitas de colores pastel (Amarillo, Verde, Azul, Rosa) para resaltado inmediato.

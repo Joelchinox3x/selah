@@ -35,7 +35,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 1
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro",
@@ -44,6 +44,19 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#090d16",
+          "image": "./assets/images/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#090d16",
+            "image": "./assets/images/splash.png"
+          }
+        }
+      ],
       [
         "expo-sqlite",
         {
@@ -67,6 +80,12 @@
         "projectId": "3e650552-a548-4109-b957-5ceabb72ce09"
       }
     },
-    "owner": "joelchino"
+    "owner": "joelchino",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3e650552-a548-4109-b957-5ceabb72ce09"
+    }
   }
 }
