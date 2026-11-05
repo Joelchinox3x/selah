@@ -190,6 +190,21 @@ export async function getVerseById(verseId: number): Promise<Verse | null> {
   );
 }
 
+export async function getVerseByReference(
+  bookId: number,
+  chapter: number,
+  verse: number
+): Promise<Verse | null> {
+  const db = await getBibleDb();
+  return await db.getFirstAsync<Verse>(
+    `SELECT v.id, v.book_id, b.name as book_name, v.chapter, v.verse, v.text
+     FROM verses v
+     JOIN books b ON v.book_id = b.id
+     WHERE v.book_id = ? AND v.chapter = ? AND v.verse = ?`,
+    [bookId, chapter, verse]
+  );
+}
+
 // ================= FTS5 ACCENT-INSENSITIVE SEARCH =================
 export async function searchVerses(
   query: string,

@@ -786,3 +786,20 @@ export const BIBLE_BOOKS_META: Record<number, BookMeta> = {
 export function getBookMeta(bookId: number): BookMeta | undefined {
   return BIBLE_BOOKS_META[bookId];
 }
+
+export function getBookCategory(bookId: number): string {
+  const meta = BIBLE_BOOKS_META[bookId];
+  if (!meta) return 'SANTA ESCRITURA';
+  switch (meta.category) {
+    case 'Pentateuco': return 'PENTATEUCO · LA LEY';
+    case 'Históricos': return bookId === 44 ? 'HECHOS DE LOS APÓSTOLES' : 'LIBROS HISTÓRICOS';
+    case 'Poéticos': return bookId === 19 ? 'POESÍA · CÁNTICOS SAGRADOS' : 'SABIDURÍA Y POESÍA';
+    case 'Profetas Mayores': return 'PROFETAS MAYORES';
+    case 'Profetas Menores': return 'PROFETAS MENORES';
+    case 'Evangelios': return 'LOS EVANGELIOS';
+    case 'Epístolas Paulinas': return 'EPÍSTOLAS PAULINAS';
+    case 'Epístolas Generales': return 'EPÍSTOLAS GENERALES';
+    case 'Profecía': return 'APOCALIPSIS · PROFECÍA';
+    default: return 'SANTA ESCRITURA';
+  }
+}

@@ -23,7 +23,7 @@ import { getTimelinePeriods, getTimelineEvents } from '@/src/services/db/bibleDb
 import { TimelinePeriod, TimelineEvent } from '@/src/types/bible';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
-import { hapticLight, hapticSelection, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
+import { hapticSelection, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 
 export default function TimelineScreen() {
   const router = useRouter();

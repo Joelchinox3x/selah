@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeMode } from '@/src/theme/colors';
 
@@ -26,95 +27,48 @@ interface SettingsState {
   loadSettings: () => Promise<void>;
 }
 
-export const useSettingsStore = create<SettingsState>((set, get) => ({
-  theme: 'sepia', // Modo Sepia por defecto para descanso visual cálido
-  fontSize: 18,
-  lineHeightMultiplier: 1.65,
-  notificationsEnabled: true,
-  morningNotificationTime: '07:00',
-  eveningNotificationTime: '21:30',
-  hapticsEnabled: true,
-  lastReadBookId: 19, // Salmos
-  lastReadChapter: 23, // Salmo 23
-  isLoaded: false,
+export const useSettingsStore = create<SettingsState>()(
+  persist(
+    (set) => ({
+      theme: 'sepia', // Modo Sepia por defecto para descanso visual cálido
+      fontSize: 18,
+      lineHeightMultiplier: 1.65,
+      notificationsEnabled: true,
+      morningNotificationTime: '07:00',
+      eveningNotificationTime: '21:30',
+      hapticsEnabled: true,
+      lastReadBookId: 19, // Salmos
+      lastReadChapter: 23, // Salmo 23
+      isLoaded: true,
 
-  setTheme: (theme) => {
-    set({ theme });
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...get(), theme })
-    ).catch(() => {});
-  },
-
-  setFontSize: (fontSize) => {
-    set({ fontSize });
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...get(), fontSize })
-    ).catch(() => {});
-  },
-
-  setNotificationsEnabled: (notificationsEnabled) => {
-    set({ notificationsEnabled });
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...get(), notificationsEnabled })
-    ).catch(() => {});
-  },
-
-  setMorningTime: (morningNotificationTime) => {
-    set({ morningNotificationTime });
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...get(), morningNotificationTime })
-    ).catch(() => {});
-  },
-
-  setEveningTime: (eveningNotificationTime) => {
-    set({ eveningNotificationTime });
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...get(), eveningNotificationTime })
-    ).catch(() => {});
-  },
-
-  setHapticsEnabled: (hapticsEnabled) => {
-    set({ hapticsEnabled });
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...get(), hapticsEnabled })
-    ).catch(() => {});
-  },
-
-  setLastRead: (lastReadBookId, lastReadChapter) => {
-    set({ lastReadBookId, lastReadChapter });
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...get(), lastReadBookId, lastReadChapter })
-    ).catch(() => {});
-  },
-
-  loadSettings: async () => {
-    try {
-      const saved = await AsyncStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        set({
-          theme: parsed.theme ?? 'sepia',
-          fontSize: parsed.fontSize ?? 18,
-          notificationsEnabled: parsed.notificationsEnabled ?? true,
-          morningNotificationTime: parsed.morningNotificationTime ?? '07:00',
-          eveningNotificationTime: parsed.eveningNotificationTime ?? '21:30',
-          hapticsEnabled: parsed.hapticsEnabled ?? true,
-          lastReadBookId: parsed.lastReadBookId ?? 19,
-          lastReadChapter: parsed.lastReadChapter ?? 23,
-          isLoaded: true,
-        });
-      } else {
+      setTheme: (theme) => set({ theme }),
+      setFontSize: (fontSize) => set({ fontSize }),
+      setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
+      setMorningTime: (morningNotificationTime) => set({ morningNotificationTime }),
+      setEveningTime: (eveningNotificationTime) => set({ eveningNotificationTime }),
+      setHapticsEnabled: (hapticsEnabled) => set({ hapticsEnabled }),
+      setLastRead: (lastReadBookId, lastReadChapter) => set({ lastReadBookId, lastReadChapter }),
+      loadSettings: async () => {
         set({ isLoaded: true });
-      }
-    } catch {
-      set({ isLoaded: true });
+      },
+    }),
+    {
+      name: STORAGE_KEY,
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        theme: state.theme,
+        fontSize: state.fontSize,
+        lineHeightMultiplier: state.lineHeightMultiplier,
+        notificationsEnabled: state.notificationsEnabled,
+        morningNotificationTime: state.morningNotificationTime,
+        eveningNotificationTime: state.eveningNotificationTime,
+        hapticsEnabled: state.hapticsEnabled,
+        lastReadBookId: state.lastReadBookId,
+        lastReadChapter: state.lastReadChapter,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) state.isLoaded = true;
+      },
     }
-  },
-}));
+  )
+);

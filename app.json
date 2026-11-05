@@ -2,7 +2,7 @@
   "expo": {
     "name": "Selah: Biblia & Calma",
     "slug": "selah-bible",
-    "version": "1.0.0",
+    "version": "1.2.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "selahbible",
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "bundler": "metro",

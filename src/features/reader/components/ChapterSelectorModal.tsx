@@ -13,7 +13,7 @@ import { X, BookOpen } from 'lucide-react-native';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticSelection, hapticLight } from '@/src/services/haptics/hapticFeedback';
-import { getBookMeta, BIBLE_BOOKS_META } from '@/src/features/bible/data/bibleBooksMeta';
+import { BIBLE_BOOKS_META } from '@/src/features/bible/data/bibleBooksMeta';
 import { getChaptersWithUserData } from '@/src/services/db/userDb';
 
 interface ChapterSelectorModalProps {

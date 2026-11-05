@@ -22,10 +22,9 @@ import {
   getAllHighlights,
   getAllNotes,
 } from '@/src/services/db/userDb';
-import { getVerseById } from '@/src/services/db/bibleDb';
+import { getVerseByReference } from '@/src/services/db/bibleDb';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes, highlightColors, HighlightColor } from '@/src/theme/colors';
-import { Bookmark as BookmarkType, Highlight, Note } from '@/src/types/bible';
 import { hapticLight, hapticSelection } from '@/src/services/haptics/hapticFeedback';
 
 type TabMode = 'bookmarks' | 'highlights' | 'notes';
@@ -57,7 +56,7 @@ export default function BookmarksScreen() {
         const raw = await getAllBookmarks();
         const enriched: EnrichedItem[] = await Promise.all(
           raw.map(async (b) => {
-            const v = await getVerseById(b.id); // Or query by book_id & chapter & verse
+            const v = await getVerseByReference(b.book_id, b.chapter, b.verse);
             return {
               id: b.id,
               bookId: b.book_id,
@@ -74,7 +73,7 @@ export default function BookmarksScreen() {
         const raw = await getAllHighlights();
         const enriched: EnrichedItem[] = await Promise.all(
           raw.map(async (h) => {
-            const v = await getVerseById(h.id);
+            const v = await getVerseByReference(h.book_id, h.chapter, h.verse);
             return {
               id: h.id,
               bookId: h.book_id,
@@ -92,7 +91,7 @@ export default function BookmarksScreen() {
         const raw = await getAllNotes();
         const enriched: EnrichedItem[] = await Promise.all(
           raw.map(async (n) => {
-            const v = await getVerseById(n.id);
+            const v = await getVerseByReference(n.book_id, n.chapter, n.verse);
             return {
               id: n.id,
               bookId: n.book_id,

@@ -20,7 +20,7 @@ import {
   Users,
 } from 'lucide-react-native';
 import { Screen } from '@/src/components/ui/Screen';
-import { getAllPeople, searchPeople } from '@/src/services/db/bibleDb';
+import { getAllPeople } from '@/src/services/db/bibleDb';
 import { BiblicalPerson } from '@/src/types/bible';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';

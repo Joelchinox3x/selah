@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Compass, Filter, Sparkles } from 'lucide-react-native';
+import { ChevronLeft, Filter } from 'lucide-react-native';
 import { Screen } from '@/src/components/ui/Screen';
 import { BiblicalMapViewer } from '@/src/features/places/components/BiblicalMapViewer';
 import { getAllPlaces } from '@/src/services/db/bibleDb';

@@ -21,6 +21,7 @@ import {
   Church,
   Sparkles,
 } from 'lucide-react-native';
+import Constants from 'expo-constants';
 import { Screen } from '@/src/components/ui/Screen';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes, ThemeMode } from '@/src/theme/colors';
@@ -407,7 +408,7 @@ export default function SettingsScreen() {
         {/* FOOTER / ABOUT */}
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.textMuted }]}>
-            Selah: Biblia & Calma Espiritual · Versión 1.0.0
+            Selah: Biblia & Calma Espiritual · Versión {Constants.expoConfig?.version ?? '1.2.3'}{Constants.expoConfig?.android?.versionCode ? ` (build ${Constants.expoConfig.android.versionCode})` : ''}
           </Text>
           <Text style={[styles.footerSub, { color: theme.textMuted }]}>
             Iglesia Emanuel · En colaboración con Ps. Guillermo Quispe C.

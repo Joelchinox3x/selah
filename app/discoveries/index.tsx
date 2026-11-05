@@ -19,7 +19,6 @@ import {
   Compass,
   ArrowRight,
   Flame,
-  Volume2,
 } from 'lucide-react-native';
 import { Screen } from '@/src/components/ui/Screen';
 import { getDailyDiscoveries, getTodayDiscovery } from '@/src/services/db/bibleDb';
