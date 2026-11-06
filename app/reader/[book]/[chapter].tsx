@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  ViewToken,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -142,6 +143,27 @@ export default function ChapterReaderScreen() {
   const flatListRef = useRef<FlatList<VerseWithUserData>>(null);
   const lastPressRef = useRef<number>(0);
 
+  const currentLocationRef = useRef({ bookId, chapterNumber });
+  useEffect(() => {
+    currentLocationRef.current = { bookId, chapterNumber };
+  }, [bookId, chapterNumber]);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems && viewableItems.length > 0) {
+      const topVerse = viewableItems.find((v) => (v.item as VerseWithUserData)?.verse);
+      if (topVerse && (topVerse.item as VerseWithUserData)?.verse) {
+        const vNum = (topVerse.item as VerseWithUserData).verse;
+        const { bookId: curB, chapterNumber: curCh } = currentLocationRef.current;
+        recordReadingProgress(curB, curCh, vNum, false).catch(() => {});
+      }
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 35,
+    minimumViewTime: 1000,
+  }).current;
+
   // Load chapter data without tearing down screen or causing cyclic re-renders
   const loadChapter = useCallback(async (bId: number, chNum: number) => {
     try {
@@ -176,6 +198,7 @@ export default function ChapterReaderScreen() {
 
         // Smoothly scroll to the first verse in the target range
         const firstVerseNum = targetHighlightVerses[0];
+        recordReadingProgress(bookId, chapterNumber, firstVerseNum, false).catch(() => {});
         setTimeout(() => {
           setVerses((currentVerses) => {
             const targetIndex = currentVerses.findIndex((v) => v.verse === firstVerseNum);
@@ -224,6 +247,7 @@ export default function ChapterReaderScreen() {
     lastPressRef.current = now;
 
     hapticSelection();
+    recordReadingProgress(bookId, chapterNumber, verse.verse, false).catch(() => {});
     setSelectedVerseNumbers((prev) => {
       if (prev.includes(verse.verse)) {
         return prev.filter((num) => num !== verse.verse);
@@ -320,6 +344,9 @@ export default function ChapterReaderScreen() {
 
   const handleNextChapter = () => {
     if (!book) return;
+    // Mark current chapter as completed since reader reached the end
+    recordReadingProgress(bookId, chapterNumber, verses.length || 1, true).catch(() => {});
+
     if (chapterNumber < book.chapters_count) {
       navigateToChapter(bookId, chapterNumber + 1);
     } else {
@@ -487,6 +514,8 @@ export default function ChapterReaderScreen() {
           maxToRenderPerBatch={20}
           windowSize={7}
           removeClippedSubviews={true}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
           onScrollToIndexFailed={(info) => {
             setTimeout(() => {
               try {

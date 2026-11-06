@@ -57,10 +57,20 @@ export async function getUserDb(): Promise<SQLite.SQLiteDatabase> {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       book_id INTEGER NOT NULL,
       chapter INTEGER NOT NULL,
+      last_verse INTEGER DEFAULT 1,
+      completed INTEGER DEFAULT 0,
       last_read_at TEXT NOT NULL,
       UNIQUE(book_id, chapter)
     );
   `);
+
+  // Non-destructive column migrations for existing user databases
+  try {
+    await userDbInstance.execAsync('ALTER TABLE reading_history ADD COLUMN last_verse INTEGER DEFAULT 1;');
+  } catch {}
+  try {
+    await userDbInstance.execAsync('ALTER TABLE reading_history ADD COLUMN completed INTEGER DEFAULT 0;');
+  } catch {}
 
   return userDbInstance;
 }
@@ -268,28 +278,69 @@ export async function deleteMoodLog(id: number): Promise<void> {
 }
 
 // ================= READING HISTORY =================
+export interface LastReadRecord {
+  bookId: number;
+  chapter: number;
+  lastVerse: number;
+  completed: boolean;
+  lastReadAt?: string;
+}
+
 export async function recordReadingProgress(
   bookId: number,
-  chapter: number
+  chapter: number,
+  lastVerse: number = 1,
+  completed: boolean = false
 ): Promise<void> {
   const db = await getUserDb();
   const now = new Date().toISOString();
   await db.runAsync(
-    `INSERT INTO reading_history (book_id, chapter, last_read_at)
-     VALUES (?, ?, ?)
+    `INSERT INTO reading_history (book_id, chapter, last_verse, completed, last_read_at)
+     VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(book_id, chapter)
-     DO UPDATE SET last_read_at = excluded.last_read_at`,
-    [bookId, chapter, now]
+     DO UPDATE SET 
+       last_verse = CASE WHEN excluded.last_verse > 1 THEN excluded.last_verse ELSE reading_history.last_verse END,
+       completed = CASE WHEN excluded.completed = 1 THEN 1 ELSE reading_history.completed END,
+       last_read_at = excluded.last_read_at`,
+    [bookId, chapter, lastVerse, completed ? 1 : 0, now]
   );
 }
 
-export async function getLastRead(): Promise<{ bookId: number; chapter: number; lastReadAt?: string } | null> {
+export async function markChapterCompleted(
+  bookId: number,
+  chapter: number,
+  completed: boolean = true
+): Promise<void> {
   const db = await getUserDb();
-  const row = await db.getFirstAsync<{ book_id: number; chapter: number; last_read_at: string }>(
-    'SELECT book_id, chapter, last_read_at FROM reading_history ORDER BY last_read_at DESC LIMIT 1'
+  const now = new Date().toISOString();
+  await db.runAsync(
+    `INSERT INTO reading_history (book_id, chapter, last_verse, completed, last_read_at)
+     VALUES (?, ?, 1, ?, ?)
+     ON CONFLICT(book_id, chapter)
+     DO UPDATE SET completed = excluded.completed, last_read_at = excluded.last_read_at`,
+    [bookId, chapter, completed ? 1 : 0, now]
+  );
+}
+
+export async function getLastRead(): Promise<LastReadRecord | null> {
+  const db = await getUserDb();
+  const row = await db.getFirstAsync<{
+    book_id: number;
+    chapter: number;
+    last_verse?: number;
+    completed?: number;
+    last_read_at: string;
+  }>(
+    'SELECT book_id, chapter, COALESCE(last_verse, 1) as last_verse, COALESCE(completed, 0) as completed, last_read_at FROM reading_history ORDER BY last_read_at DESC LIMIT 1'
   );
   if (!row) return null;
-  return { bookId: row.book_id, chapter: row.chapter, lastReadAt: row.last_read_at };
+  return {
+    bookId: row.book_id,
+    chapter: row.chapter,
+    lastVerse: row.last_verse || 1,
+    completed: Boolean(row.completed),
+    lastReadAt: row.last_read_at,
+  };
 }
 
 export async function getChaptersWithUserData(bookId: number): Promise<number[]> {

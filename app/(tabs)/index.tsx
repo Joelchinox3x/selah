@@ -28,11 +28,11 @@ import {
   getChapterVerses,
   getTodayDiscovery,
 } from '@/src/services/db/bibleDb';
-import { getLastRead } from '@/src/services/db/userDb';
+import { getLastRead, markChapterCompleted } from '@/src/services/db/userDb';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { MoodCatalogItem, DailyDiscovery } from '@/src/types/bible';
-import { hapticLight } from '@/src/services/haptics/hapticFeedback';
+import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 
 function formatRelativeTime(isoString?: string): string {
   if (!isoString) return 'Recomendado para hoy';
@@ -102,13 +102,31 @@ export default function HomeScreen() {
       const chapter = lastRead?.chapter || defaultRec.chapter;
       const book = await getBookById(bookId);
 
-      // Load verse snippet
+      // Load verse snippet and telemetry
       const verses = await getChapterVerses(bookId, chapter);
-      const snippet = verses.length > 0
-        ? verses[0].text
-        : defaultRec.fallbackSnippet;
+      const totalVerses = verses.length;
+      const lastVerse = Math.min(
+        Math.max(1, lastRead?.lastVerse || 1),
+        totalVerses || 1
+      );
+      const isCompleted = lastRead?.completed ?? false;
+
+      // Prefer showing the verse snippet where user paused if > 1
+      const snippetVerse =
+        lastVerse > 1 && lastVerse <= totalVerses
+          ? verses[lastVerse - 1]
+          : verses[0];
+      const snippet = snippetVerse ? snippetVerse.text : defaultRec.fallbackSnippet;
+
+      // Estimated reading time (~180 words/min)
+      const totalWords = verses.reduce(
+        (sum, v) => sum + v.text.split(/\s+/).filter(Boolean).length,
+        0
+      );
+      const readingMinutes = Math.max(1, Math.round(totalWords / 180));
 
       const totalCh = book?.chapters_count || 150;
+      const nextChapter = chapter < totalCh ? chapter + 1 : null;
       const progressPercent = Math.min(
         100,
         Math.max(10, Math.round((chapter / totalCh) * 100))
@@ -119,9 +137,14 @@ export default function HomeScreen() {
         bookId,
         chapter,
         totalChapters: totalCh,
+        lastVerse,
+        totalVerses,
         snippet,
         progressPercent,
         timeLabel: formatRelativeTime(lastRead?.lastReadAt),
+        readingMinutes,
+        isCompleted,
+        nextChapter,
       });
     } catch (e) {
       console.warn('Error loading home data:', e);
@@ -163,7 +186,26 @@ export default function HomeScreen() {
   const handleContinueReading = () => {
     if (!lastReadInfo) return;
     hapticLight();
-    router.push(`/reader/${lastReadInfo.bookId}/${lastReadInfo.chapter}` as any);
+    const verseParam = lastReadInfo.lastVerse > 1 ? `?highlightVerse=${lastReadInfo.lastVerse}` : '';
+    router.push(`/reader/${lastReadInfo.bookId}/${lastReadInfo.chapter}${verseParam}` as any);
+  };
+
+  const handleNextChapter = () => {
+    if (!lastReadInfo || !lastReadInfo.nextChapter) return;
+    hapticLight();
+    router.push(`/reader/${lastReadInfo.bookId}/${lastReadInfo.nextChapter}` as any);
+  };
+
+  const handleToggleComplete = async () => {
+    if (!lastReadInfo) return;
+    hapticSuccess();
+    const nextStatus = !lastReadInfo.isCompleted;
+    setLastReadInfo((prev) => (prev ? { ...prev, isCompleted: nextStatus } : null));
+    try {
+      await markChapterCompleted(lastReadInfo.bookId, lastReadInfo.chapter, nextStatus);
+    } catch (e) {
+      console.warn('Error marking chapter completed:', e);
+    }
   };
 
   return (
@@ -197,6 +239,8 @@ export default function HomeScreen() {
             lastReadInfo={lastReadInfo}
             theme={theme}
             onPress={handleContinueReading}
+            onNextChapterPress={handleNextChapter}
+            onToggleComplete={handleToggleComplete}
           />
         )}
 
