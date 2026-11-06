@@ -3,14 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Volume2,
-  VolumeX,
   Heart,
-  Palette,
-  Bookmark,
-  Sparkles,
   RotateCw,
-  ChevronRight,
-  BookOpen,
 } from 'lucide-react-native';
 import { DailyDevotional } from '@/src/services/db/bibleDb';
 import { toggleBookmark, getChapterUserData } from '@/src/services/db/userDb';
@@ -40,18 +34,21 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
 
   useEffect(() => {
     if (!devotional) return;
+    // Reset immediately on verse change so rotating doesn't keep previous bookmark state (BUG FIX)
+    setIsSaved(false);
     const { verse } = devotional;
-    // Check if verse is already bookmarked
-    getChapterUserData(verse.book_id, verse.chapter).then((ud) => {
-      if (ud.bookmarks[verse.verse]) {
-        setIsSaved(true);
-      }
-    });
+    getChapterUserData(verse.book_id, verse.chapter)
+      .then((ud) => {
+        setIsSaved(Boolean(ud?.bookmarks && ud.bookmarks[verse.verse]));
+      })
+      .catch(() => {
+        setIsSaved(false);
+      });
   }, [devotional]);
 
   if (!devotional) return null;
 
-  const { verse, theme: topic } = devotional;
+  const { verse } = devotional;
   const citation = `${verse.book_name} ${verse.chapter}:${verse.verse}`;
 
   const handleToggleVoice = () => {
@@ -61,8 +58,9 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
 
   const handleToggleBookmarkAction = async () => {
     hapticSuccess();
+    const nextSaved = !isSaved;
+    setIsSaved(nextSaved);
     await toggleBookmark(verse.book_id, verse.chapter, verse.verse);
-    setIsSaved((prev) => !prev);
   };
 
   const handleOpenChapter = () => {
@@ -83,22 +81,21 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
         },
       ]}
     >
-      {/* Top Badge & Voice Button */}
+      {/* Top Row: Badge on left + 3 compact buttons on right */}
       <View style={styles.topRow}>
         <View style={[styles.badge, { backgroundColor: theme.accentMuted }]}>
           <Text style={[styles.badgeText, { color: theme.accent }]}>
-            VERSÍCULO DEL DÍA •
+            VERSÍCULO DEL DÍA
           </Text>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={styles.topButtonsRow}>
+          {/* 1. Actualizar (renueva un nuevo versículo) */}
           {onRotateVerse && (
             <TouchableOpacity
               style={[
-                styles.audioBtn,
-                {
-                  backgroundColor: theme.surfaceRaised,
-                },
+                styles.topBtn,
+                { backgroundColor: theme.surfaceRaised },
               ]}
               onPress={() => {
                 hapticLight();
@@ -107,13 +104,37 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <RotateCw size={16} color={theme.accent} />
+              <RotateCw size={15} color={theme.accent} />
             </TouchableOpacity>
           )}
 
+          {/* 2. Corazón (guardar en favoritos / tesoros) */}
           <TouchableOpacity
             style={[
-              styles.audioBtn,
+              styles.topBtn,
+              {
+                backgroundColor: isSaved
+                  ? themeMode === 'oled'
+                    ? '#331317'
+                    : '#fee2e2'
+                  : theme.surfaceRaised,
+              },
+            ]}
+            onPress={handleToggleBookmarkAction}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Heart
+              size={15}
+              color={isSaved ? '#ef4444' : theme.text}
+              fill={isSaved ? '#ef4444' : 'transparent'}
+            />
+          </TouchableOpacity>
+
+          {/* 3. Sonido / Escuchar */}
+          <TouchableOpacity
+            style={[
+              styles.topBtn,
               {
                 backgroundColor: isSpeaking ? theme.accent : theme.surfaceRaised,
               },
@@ -122,61 +143,44 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            {isSpeaking ? (
-              <Volume2 size={18} color="#FFFFFF" />
-            ) : (
-              <Volume2 size={18} color={theme.text} />
-            )}
+            <Volume2
+              size={16}
+              color={isSpeaking ? '#FFFFFF' : theme.text}
+            />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Main Scripture Text with Editorial Curved Quotes */}
-      <Text
-        style={[
-          styles.verseText,
-          {
-            color: theme.text,
-          },
-        ]}
+      {/* Main Scripture Text: Tapping navigates to chapter */}
+      <TouchableOpacity
+        onPress={handleOpenChapter}
+        activeOpacity={0.75}
+        style={styles.verseTouchable}
       >
-        “{verse.text}”
-      </Text>
-
-      {/* Citation, Version & Saved Status (Clickable to read full chapter) */}
-      <View style={styles.metaRow}>
-        <TouchableOpacity
-          onPress={handleOpenChapter}
-          activeOpacity={0.75}
-          style={styles.citationTouch}
+        <Text
+          style={[
+            styles.verseText,
+            {
+              color: theme.text,
+            },
+          ]}
         >
-          <View style={styles.citationRow}>
-            <Text style={[styles.citation, { color: theme.text }]}>
-              {citation}
-            </Text>
-            <View style={[styles.readPill, { backgroundColor: theme.surfaceRaised }]}>
-              <Text style={[styles.readPillText, { color: theme.accent }]}>Leer capítulo</Text>
-              <ChevronRight size={12} color={theme.accent} />
-            </View>
-          </View>
-          <Text style={[styles.versionText, { color: theme.textMuted }]}>
-            Reina-Valera 1909 · Tocar para abrir
-          </Text>
-        </TouchableOpacity>
+          “{verse.text}”
+        </Text>
+      </TouchableOpacity>
 
-        <View style={styles.savedStatusWrap}>
-          <Text
-            style={[
-              styles.savedStatusText,
-              { color: isSaved ? theme.accent : theme.textMuted },
-            ]}
-          >
-            {isSaved ? '🤎 Guardado hoy' : '🤍 Guardar'}
-          </Text>
-        </View>
-      </View>
+      {/* Citation aligned to the RIGHT */}
+      <TouchableOpacity
+        onPress={handleOpenChapter}
+        activeOpacity={0.75}
+        style={styles.citationContainer}
+      >
+        <Text style={[styles.citationText, { color: theme.accent }]}>
+          {citation}
+        </Text>
+      </TouchableOpacity>
 
-      {/* 3 Quick Action Buttons (Photo 1) */}
+      {/* 2 Quick Action Buttons: Meditar y Crear tarjeta */}
       <View style={[styles.actionsRow, { borderTopColor: theme.borderSubtle }]}>
         {/* 1. Meditar */}
         <TouchableOpacity
@@ -207,30 +211,6 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
             Crear tarjeta
           </Text>
         </TouchableOpacity>
-
-        {/* 3. Tesoros */}
-        <TouchableOpacity
-          style={[
-            styles.actionBtn,
-            styles.treasureBtn,
-            { backgroundColor: isSaved ? theme.accent : theme.surfaceRaised },
-          ]}
-          onPress={handleToggleBookmarkAction}
-          activeOpacity={0.75}
-        >
-          <Bookmark
-            size={16}
-            color={isSaved ? '#FFFFFF' : theme.text}
-          />
-          <Text
-            style={[
-              styles.actionBtnText,
-              { color: isSaved ? '#FFFFFF' : theme.text },
-            ]}
-          >
-            Tesoros
-          </Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -254,21 +234,29 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   badge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 14,
+    borderRadius: 12,
   },
   badgeText: {
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
-  audioBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  topButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  topBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  verseTouchable: {
+    paddingVertical: 2,
   },
   verseText: {
     fontSize: 20,
@@ -277,64 +265,29 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     fontStyle: 'italic',
   },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginTop: 16,
+  citationContainer: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    marginBottom: 14,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
   },
-  citationTouch: {
-    flex: 1,
-    marginRight: 12,
-  },
-  citationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  citation: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  readPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  readPillText: {
-    fontSize: 11,
+  citationText: {
+    fontSize: 15,
     fontWeight: '700',
-  },
-  versionText: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  savedStatusWrap: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  savedStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 18,
-    paddingTop: 16,
+    paddingTop: 14,
     borderTopWidth: 1,
     gap: 10,
   },
   actionBtn: {
     flex: 1,
-    minHeight: 46,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -345,7 +298,6 @@ const styles = StyleSheet.create({
   actionIcon: {
     fontSize: 15,
   },
-  treasureBtn: {},
   actionBtnText: {
     fontSize: 13,
     fontWeight: '700',
