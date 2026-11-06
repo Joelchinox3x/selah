@@ -15,6 +15,7 @@ import { themes } from '@/src/theme/colors';
 import { hapticSelection, hapticLight } from '@/src/services/haptics/hapticFeedback';
 import { BIBLE_BOOKS_META } from '@/src/features/bible/data/bibleBooksMeta';
 import { getChaptersWithUserData } from '@/src/services/db/userDb';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ChapterSelectorModalProps {
   visible: boolean;
@@ -39,6 +40,7 @@ export const ChapterSelectorModal: React.FC<ChapterSelectorModalProps> = ({
   onClose,
   onSelectChapter,
 }) => {
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
   const isDark = themeMode === 'oled';
@@ -123,6 +125,7 @@ export const ChapterSelectorModal: React.FC<ChapterSelectorModalProps> = ({
                 {
                   backgroundColor: theme.surface,
                   borderColor: theme.border,
+                  paddingBottom: Math.max(insets.bottom, 16) + 12,
                 },
               ]}
             >

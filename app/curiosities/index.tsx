@@ -32,9 +32,11 @@ import {
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight } from '@/src/services/haptics/hapticFeedback';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CuriositiesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
   const isDark = themeMode === 'oled';
@@ -411,7 +413,10 @@ export default function CuriositiesScreen() {
         data={filteredCuriosities}
         keyExtractor={(item) => item.id}
         renderItem={renderCuriosityCard}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: Math.max(insets.bottom, 16) + 32 },
+        ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>

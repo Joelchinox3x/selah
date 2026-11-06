@@ -25,9 +25,11 @@ import { BiblicalPerson, Verse } from '@/src/types/bible';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CharacterDetailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id: string }>();
   const personId = parseInt(params.id || '1', 10);
 
@@ -149,7 +151,10 @@ export default function CharacterDetailScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 16) + 36 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero Card */}

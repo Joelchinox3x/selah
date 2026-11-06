@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,9 +24,11 @@ import {
 import { BiblicalPlace } from '@/src/types/bible';
 import { PLACE_GEO_METADATA } from '../data/placeGeoData';
 import { generateBiblicalMapHtml } from './mapHtmlGenerator';
+import { MapOfflineFallback } from './MapOfflineFallback';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight, hapticSelection } from '@/src/services/haptics/hapticFeedback';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface BiblicalMapViewerProps {
   places: BiblicalPlace[];
@@ -35,6 +37,7 @@ interface BiblicalMapViewerProps {
   onNavigateToCharacter?: (characterId: number) => void;
   onNavigateToReader?: (bookId: number, chapter: number, verse?: number) => void;
   onViewPlaceDetails?: (placeId: number) => void;
+  onViewPlacesList?: () => void;
   height?: DimensionValue;
   showFullControls?: boolean;
 }
@@ -46,9 +49,11 @@ export const BiblicalMapViewer: React.FC<BiblicalMapViewerProps> = ({
   onNavigateToCharacter,
   onNavigateToReader,
   onViewPlaceDetails,
+  onViewPlacesList,
   height = '100%',
   showFullControls = true,
 }) => {
+  const insets = useSafeAreaInsets();
   const webViewRef = useRef<WebView>(null);
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
@@ -59,6 +64,49 @@ export const BiblicalMapViewer: React.FC<BiblicalMapViewerProps> = ({
   const [legendVisible, setLegendVisible] = useState(true);
   const [activeTileLayer, setActiveTileLayer] = useState<'hybrid' | 'relief'>('hybrid');
   const [isMapReady, setIsMapReady] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const checkConnectivity = useCallback(async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch('https://clients3.google.com/generate_204', {
+        method: 'HEAD',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return res.ok || res.status === 204;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    checkConnectivity().then((online: boolean) => {
+      if (mounted && !online) {
+        setIsOffline(true);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [retryCount, checkConnectivity]);
+
+  useEffect(() => {
+    if (isMapReady || isOffline) return;
+    const timer = setTimeout(async () => {
+      if (!isMapReady) {
+        const online = await checkConnectivity();
+        if (!online) {
+          setIsOffline(true);
+        }
+      }
+    }, 7500);
+    return () => clearTimeout(timer);
+  }, [isMapReady, isOffline, checkConnectivity]);
 
   // Sync selectedPlace with focusedPlaceId if changed from parent
   React.useEffect(() => {
@@ -105,7 +153,13 @@ export const BiblicalMapViewer: React.FC<BiblicalMapViewerProps> = ({
   const handleMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'SELECT_PLACE') {
+      if (data.type === 'OFFLINE_DETECTED') {
+        setIsOffline(true);
+      } else if (data.type === 'MAP_READY') {
+        setIsMapReady(true);
+        setIsOffline(false);
+        setLoadError(false);
+      } else if (data.type === 'SELECT_PLACE') {
         hapticSelection();
         setSelectedPlaceId(data.id);
         const found = places.find((p) => p.id === data.id);
@@ -116,6 +170,15 @@ export const BiblicalMapViewer: React.FC<BiblicalMapViewerProps> = ({
     } catch (e) {
       console.warn('Map message error:', e);
     }
+  };
+
+  const handleRetry = () => {
+    hapticLight();
+    setIsOffline(false);
+    setLoadError(false);
+    setIsMapReady(false);
+    setRetryCount((prev) => prev + 1);
+    webViewRef.current?.reload();
   };
 
   const handleLayerSwitch = (layer: 'hybrid' | 'relief') => {
@@ -140,6 +203,18 @@ export const BiblicalMapViewer: React.FC<BiblicalMapViewerProps> = ({
     `);
   };
 
+  if (isOffline || loadError) {
+    return (
+      <View style={[styles.container, { height }]}>
+        <MapOfflineFallback
+          theme={theme}
+          onRetry={handleRetry}
+          onViewPlacesList={onViewPlacesList}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { height }]}>
       {/* 1. Leaflet WebView Container */}
@@ -154,6 +229,8 @@ export const BiblicalMapViewer: React.FC<BiblicalMapViewerProps> = ({
           scrollEnabled={false}
           onMessage={handleMessage}
           onLoadEnd={() => setIsMapReady(true)}
+          onError={() => setIsOffline(true)}
+          onHttpError={() => setIsOffline(true)}
         />
 
         {!isMapReady && (
@@ -265,6 +342,7 @@ export const BiblicalMapViewer: React.FC<BiblicalMapViewerProps> = ({
                   : 'rgba(255, 255, 255, 0.96)',
               borderColor: theme.borderSubtle,
               shadowColor: '#000',
+              bottom: Math.max(insets.bottom, 12) + 10,
             },
           ]}
         >
@@ -445,6 +523,7 @@ export const BiblicalMapViewer: React.FC<BiblicalMapViewerProps> = ({
             {
               backgroundColor: theme.cardBackground,
               borderColor: theme.borderSubtle,
+              bottom: Math.max(insets.bottom, 16) + 10,
             },
           ]}
           onPress={() => {

@@ -24,9 +24,11 @@ import { TimelinePeriod, TimelineEvent } from '@/src/types/bible';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticSelection, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TimelineScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
@@ -246,7 +248,10 @@ export default function TimelineScreen() {
         <FlatList
           data={filteredEvents}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.timelineList}
+          contentContainerStyle={[
+            styles.timelineList,
+            { paddingBottom: Math.max(insets.bottom, 16) + 32 },
+          ]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={styles.timelineHeaderBanner}>

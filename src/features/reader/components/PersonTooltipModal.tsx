@@ -19,6 +19,7 @@ import { BiblicalPerson } from '@/src/types/bible';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface PersonTooltipModalProps {
   visible: boolean;
@@ -33,6 +34,7 @@ export const PersonTooltipModal: React.FC<PersonTooltipModalProps> = ({
   onClose,
   onViewProfile,
 }) => {
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
@@ -67,6 +69,7 @@ export const PersonTooltipModal: React.FC<PersonTooltipModalProps> = ({
                 {
                   backgroundColor: theme.cardBackground,
                   borderColor: theme.borderSubtle,
+                  paddingBottom: Math.max(insets.bottom, 20) + 16,
                 },
               ]}
             >

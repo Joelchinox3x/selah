@@ -182,6 +182,7 @@ export default function HolyLandFullMapScreen() {
             onNavigateToCharacter={handleNavigateToCharacter}
             onNavigateToReader={handleNavigateToReader}
             onViewPlaceDetails={handleViewPlaceDetails}
+            onViewPlacesList={() => router.push('/places' as any)}
             height="100%"
             showFullControls={true}
           />

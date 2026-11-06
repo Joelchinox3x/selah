@@ -160,22 +160,47 @@ export function generateBiblicalMapHtml(options: MapHtmlOptions): string {
 </head>
 <body>
   <div id="map"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22, maxNativeZoom: 20 });
-    var googleRelief = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 20, maxNativeZoom: 18 });
-
-    var baseLayers = {
-      'hybrid': googleHybrid,
-      'relief': googleRelief
-    };
-
-    var map = L.map('map', {
-      center: [${Number(centerCoords.lat)}, ${Number(centerCoords.lng)}],
-      zoom: ${initialZoom},
-      layers: [baseLayers['${activeTileLayer}'] || googleHybrid],
-      zoomControl: false
+    function notifyNativeMessage(msg) {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(msg));
+      }
+    }
+    function notifyOffline() {
+      notifyNativeMessage({ type: 'OFFLINE_DETECTED' });
+    }
+    window.addEventListener('error', function(e) {
+      if (!window.L) {
+        notifyOffline();
+      }
     });
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="notifyOffline()"></script>
+  <script>
+    if (typeof L === 'undefined') {
+      notifyOffline();
+    } else {
+      try {
+        var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22, maxNativeZoom: 20 });
+        var googleRelief = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 20, maxNativeZoom: 18 });
+
+        var baseLayers = {
+          'hybrid': googleHybrid,
+          'relief': googleRelief
+        };
+
+        var map = L.map('map', {
+          center: [${Number(centerCoords.lat)}, ${Number(centerCoords.lng)}],
+          zoom: ${initialZoom},
+          layers: [baseLayers['${activeTileLayer}'] || googleHybrid],
+          zoomControl: false
+        });
+
+        notifyNativeMessage({ type: 'MAP_READY' });
+      } catch (err) {
+        notifyOffline();
+      }
+    }
 
     var placesData = ${placesJson};
     var markersMap = {};

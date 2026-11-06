@@ -26,6 +26,7 @@ import { DailyDiscovery } from '@/src/types/bible';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight, hapticSelection, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CATEGORIES = [
   'Todos',
@@ -38,6 +39,7 @@ const CATEGORIES = [
 
 export default function DiscoveriesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
@@ -188,7 +190,10 @@ export default function DiscoveriesScreen() {
         <FlatList
           data={filteredDiscoveries}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: Math.max(insets.bottom, 16) + 32 },
+          ]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             todayDiscovery ? (

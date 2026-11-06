@@ -25,6 +25,7 @@ import { BiblicalPerson } from '@/src/types/bible';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight, hapticSelection } from '@/src/services/haptics/hapticFeedback';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CATEGORIES = [
   'Todos',
@@ -38,6 +39,7 @@ const CATEGORIES = [
 
 export default function CharactersIndexScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
@@ -208,7 +210,10 @@ export default function CharactersIndexScreen() {
         <FlatList
           data={filteredPeople}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: Math.max(insets.bottom, 16) + 32 },
+          ]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={styles.infoBanner}>

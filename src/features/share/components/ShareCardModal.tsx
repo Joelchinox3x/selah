@@ -26,6 +26,7 @@ import {
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticSuccess, hapticLight } from '@/src/services/haptics/hapticFeedback';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CARD_BACKGROUNDS,
   BackgroundCategory,
@@ -70,6 +71,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   const exportCardRef = useRef<View>(null);
   const prevVisible = useRef(false);
 
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
@@ -291,6 +293,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
             {
               backgroundColor: theme.surface,
               borderColor: theme.border,
+              paddingBottom: Platform.OS === 'ios' ? 28 : Math.max(insets.bottom, 16) + 8,
             },
           ]}
         >

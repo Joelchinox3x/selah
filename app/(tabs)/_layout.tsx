@@ -11,9 +11,13 @@ import {
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
+  const bottomInset = insets.bottom;
 
   return (
     <Tabs
@@ -25,9 +29,9 @@ export default function TabLayout() {
           backgroundColor: theme.surface,
           borderTopColor: theme.borderSubtle,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 64,
+          height: Platform.OS === 'ios' ? 88 : 60 + bottomInset,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+          paddingBottom: Platform.OS === 'ios' ? 28 : (bottomInset > 0 ? bottomInset + 4 : 8),
         },
         tabBarLabelStyle: {
           fontSize: 11,

@@ -19,6 +19,8 @@ import { themes, highlightColors, HighlightColor } from '@/src/theme/colors';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 import { VerseWithUserData } from '@/src/types/bible';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 interface MultiVerseActionBarProps {
   selectedVerses: VerseWithUserData[];
   bookName: string;
@@ -44,6 +46,7 @@ export const MultiVerseActionBar: React.FC<MultiVerseActionBarProps> = ({
   onOpenNoteModal,
   onOpenShareModal,
 }) => {
+  const insets = useSafeAreaInsets();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
   const isDark = themeMode === 'oled';
@@ -66,7 +69,14 @@ export const MultiVerseActionBar: React.FC<MultiVerseActionBarProps> = ({
   const activeColor = selectedVerses[0]?.highlightColor;
 
   return (
-    <View style={styles.floatingContainer}>
+    <View
+      style={[
+        styles.floatingContainer,
+        {
+          bottom: Platform.OS === 'ios' ? 24 : Math.max(insets.bottom, 12) + 8,
+        },
+      ]}
+    >
       <View
         style={[
           styles.barWrapper,
