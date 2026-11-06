@@ -63,38 +63,32 @@ export const ContinueReadingCard: React.FC<ContinueReadingCardProps> = ({
         },
       ]}
     >
-      {/* 1. Header: Badge, Estimated Time & Relative Time */}
+      {/* 1. Header: Badge & Estimated Reading Time (2 clean items, zero clutter) */}
       <View style={styles.continueHeaderRow}>
-        <View style={styles.headerLeftGroup}>
-          <View
-            style={[
-              styles.continueBadge,
-              { backgroundColor: theme.accentMuted },
-            ]}
-          >
-            <BookOpen size={11} color={theme.accent} />
-            <Text style={[styles.continueBadgeText, { color: theme.accent }]}>
-              CONTINUAR LECTURA
-            </Text>
-          </View>
-
-          {/* Reading Time Estimate Badge */}
-          <View
-            style={[
-              styles.timeEstimateBadge,
-              { backgroundColor: theme.surfaceRaised },
-            ]}
-          >
-            <Clock size={11} color={theme.textMuted} />
-            <Text style={[styles.timeEstimateText, { color: theme.textMuted }]}>
-              ~{readingMinutes} min
-            </Text>
-          </View>
+        <View
+          style={[
+            styles.continueBadge,
+            { backgroundColor: theme.accentMuted },
+          ]}
+        >
+          <BookOpen size={11} color={theme.accent} />
+          <Text style={[styles.continueBadgeText, { color: theme.accent }]}>
+            CONTINUAR LECTURA
+          </Text>
         </View>
 
-        <Text style={[styles.continueTimeText, { color: theme.textMuted }]}>
-          {timeLabel}
-        </Text>
+        {/* Reading Time Estimate Badge */}
+        <View
+          style={[
+            styles.timeEstimateBadge,
+            { backgroundColor: theme.surfaceRaised },
+          ]}
+        >
+          <Clock size={11} color={theme.textMuted} />
+          <Text style={[styles.timeEstimateText, { color: theme.textMuted }]}>
+            ~{readingMinutes} min
+          </Text>
+        </View>
       </View>
 
       {/* 2. Main Title Row + Completion Toggle Checkmark */}
@@ -161,6 +155,7 @@ export const ContinueReadingCard: React.FC<ContinueReadingCardProps> = ({
       <View style={styles.progressTelemetryRow}>
         <Text style={[styles.telemetryBookName, { color: theme.text }]}>
           Libro de {bookName}
+          {timeLabel && timeLabel !== 'Recomendado para hoy' ? ` · ${timeLabel}` : ''}
         </Text>
         <Text
           style={[

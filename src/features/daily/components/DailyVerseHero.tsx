@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ImageBackground,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Volume2, Heart, RotateCw } from 'lucide-react-native';
+import { Volume2, Heart, RotateCw, ChevronRight } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { DailyDevotional } from '@/src/services/db/bibleDb';
 import { toggleBookmark, getChapterUserData } from '@/src/services/db/userDb';
@@ -67,9 +67,9 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
   // Dynamic font sizing so both short and long verses fit comfortably in the 1:1 box
   const verseLen = verse.text.length;
   const fontSize =
-    verseLen > 150 ? 15 : verseLen > 100 ? 17 : verseLen > 60 ? 19 : 21;
+    verseLen > 150 ? 15 : verseLen > 100 ? 16.5 : verseLen > 60 ? 18.5 : 21;
   const lineHeight =
-    verseLen > 150 ? 23 : verseLen > 100 ? 26 : verseLen > 60 ? 29 : 32;
+    verseLen > 150 ? 22 : verseLen > 100 ? 24.5 : verseLen > 60 ? 27 : 30;
 
   const handleToggleVoice = () => {
     hapticLight();
@@ -96,28 +96,47 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
         styles.cardContainer,
         {
           borderColor: theme.border,
+          backgroundColor: '#090d16',
           shadowColor: '#000',
         },
       ]}
     >
-      <ImageBackground
+      {/* 1. Dedicated Full-Bleed 1:1 Spiritual Photography */}
+      <Image
         source={bgSource}
-        style={styles.bgImage}
-        imageStyle={styles.imageInner}
-      >
-        {/* Scrim Gradient Overlay for max contrast & readability */}
-        <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
-          <Defs>
-            <LinearGradient id="scrimGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#050811" stopOpacity="0.55" />
-              <Stop offset="0.32" stopColor="#050811" stopOpacity="0.38" />
-              <Stop offset="0.68" stopColor="#050811" stopOpacity="0.65" />
-              <Stop offset="1" stopColor="#050811" stopOpacity="0.90" />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#scrimGrad)" />
-        </Svg>
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
 
+      {/* 2. Guaranteed 100% full-surface dark base tint (eliminates unshaded edge gaps on all Android screens) */}
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: 'rgba(5, 8, 17, 0.40)' },
+        ]}
+      />
+
+      {/* 3. Deep vertical gradient overlay with proper viewBox */}
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        style={StyleSheet.absoluteFill}
+      >
+        <Defs>
+          <LinearGradient id="heroScrimGrad" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+            <Stop offset="0%" stopColor="#050811" stopOpacity="0.75" />
+            <Stop offset="30%" stopColor="#050811" stopOpacity="0.30" />
+            <Stop offset="70%" stopColor="#050811" stopOpacity="0.65" />
+            <Stop offset="100%" stopColor="#050811" stopOpacity="0.95" />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100" height="100" fill="url(#heroScrimGrad)" />
+      </Svg>
+
+      {/* 4. Foreground Content */}
+      <View style={styles.cardContent}>
         {/* Top Row: Badge on left + 3 glass buttons on right */}
         <View style={styles.topRow}>
           <View style={styles.badge}>
@@ -136,7 +155,7 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <RotateCw size={15} color="#fbbf24" />
+                <RotateCw size={14} color="#fbbf24" />
               </TouchableOpacity>
             )}
 
@@ -151,7 +170,7 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Heart
-                size={15}
+                size={14}
                 color={isSaved ? '#ef4444' : '#FFFFFF'}
                 fill={isSaved ? '#ef4444' : 'transparent'}
               />
@@ -168,7 +187,7 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Volume2
-                size={16}
+                size={15}
                 color={isSpeaking ? '#fbbf24' : '#FFFFFF'}
               />
             </TouchableOpacity>
@@ -195,22 +214,11 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
           </Text>
         </TouchableOpacity>
 
-        {/* Bottom Section: Right-aligned Citation + 2 Action Buttons */}
-        <View style={styles.bottomSection}>
-          {/* Citation aligned to the RIGHT */}
-          <TouchableOpacity
-            onPress={handleOpenChapter}
-            activeOpacity={0.75}
-            style={styles.citationContainer}
-          >
-            <Text style={styles.citationText}>{citation}</Text>
-          </TouchableOpacity>
-
-          {/* 2 Quick Action Buttons: Meditar y Crear tarjeta */}
-          <View style={styles.actionsRow}>
-            {/* 1. Meditar */}
+        {/* Bottom Row: [🧘 Meditar] [🎨 Tarjeta] on left, [Juan 8:12 ›] on right */}
+        <View style={styles.bottomRow}>
+          <View style={styles.bottomActionsLeft}>
             <TouchableOpacity
-              style={styles.actionBtn}
+              style={styles.actionPill}
               onPress={() => {
                 hapticLight();
                 onMeditate();
@@ -218,12 +226,11 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
               activeOpacity={0.75}
             >
               <Text style={styles.actionIcon}>🧘</Text>
-              <Text style={styles.actionBtnText}>Meditar</Text>
+              <Text style={styles.actionPillText}>Meditar</Text>
             </TouchableOpacity>
 
-            {/* 2. Crear Tarjeta */}
             <TouchableOpacity
-              style={styles.actionBtn}
+              style={styles.actionPill}
               onPress={() => {
                 hapticLight();
                 onShare();
@@ -231,11 +238,21 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
               activeOpacity={0.75}
             >
               <Text style={styles.actionIcon}>🎨</Text>
-              <Text style={styles.actionBtnText}>Crear tarjeta</Text>
+              <Text style={styles.actionPillText}>Tarjeta</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Citation aligned to the RIGHT */}
+          <TouchableOpacity
+            onPress={handleOpenChapter}
+            activeOpacity={0.75}
+            style={styles.citationBadge}
+          >
+            <Text style={styles.citationText}>{citation}</Text>
+            <ChevronRight size={13} color="#fbbf24" />
+          </TouchableOpacity>
         </View>
-      </ImageBackground>
+      </View>
     </View>
   );
 };
@@ -246,31 +263,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     aspectRatio: 1,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
     marginBottom: 20,
+    position: 'relative',
   },
-  bgImage: {
+  cardContent: {
     flex: 1,
-    padding: 18,
+    padding: 16,
     justifyContent: 'space-between',
-  },
-  imageInner: {
-    borderRadius: 23,
+    zIndex: 2,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    zIndex: 2,
   },
   badge: {
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.50)',
     borderWidth: 1,
     borderColor: 'rgba(245, 158, 11, 0.35)',
   },
@@ -283,95 +298,89 @@ const styles = StyleSheet.create({
   topButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
   },
   topBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.50)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.22)',
   },
   topBtnHeartSaved: {
-    backgroundColor: 'rgba(239, 68, 68, 0.25)',
+    backgroundColor: 'rgba(239, 68, 68, 0.30)',
     borderColor: '#ef4444',
   },
   topBtnAudioActive: {
-    backgroundColor: 'rgba(245, 158, 11, 0.25)',
+    backgroundColor: 'rgba(245, 158, 11, 0.30)',
     borderColor: '#fbbf24',
   },
   verseTouchable: {
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: 8,
-    zIndex: 2,
+    paddingVertical: 6,
   },
   verseText: {
     color: '#FFFFFF',
     fontWeight: '600',
     letterSpacing: -0.2,
     fontStyle: 'italic',
-    textShadowColor: 'rgba(0, 0, 0, 0.85)',
+    textShadowColor: 'rgba(0, 0, 0, 0.95)',
     textShadowOffset: { width: 0, height: 1.5 },
     textShadowRadius: 8,
   },
-  bottomSection: {
-    zIndex: 2,
-  },
-  citationContainer: {
-    alignSelf: 'flex-end',
-    marginBottom: 10,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.25)',
-  },
-  citationText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fbbf24',
-    letterSpacing: 0.3,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  actionsRow: {
+  bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
-    gap: 10,
+    gap: 8,
   },
-  actionBtn: {
-    flex: 1,
-    minHeight: 40,
+  bottomActionsLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
-    borderRadius: 12,
-    paddingHorizontal: 10,
+  },
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 9,
+    borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.50)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.22)',
+    borderColor: 'rgba(255, 255, 255, 0.20)',
   },
   actionIcon: {
-    fontSize: 14,
-  },
-  actionBtnText: {
-    color: '#FFFFFF',
     fontSize: 12,
+  },
+  actionPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: -0.1,
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  citationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.35)',
+  },
+  citationText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#fbbf24',
+    letterSpacing: 0.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowRadius: 4,
   },
 });
