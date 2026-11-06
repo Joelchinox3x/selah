@@ -131,6 +131,15 @@ export default function ChapterReaderScreen() {
   const [lineSpacing, setLineSpacing] = useState<number>(1.75);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
+  // Dynamic initial render count so verses far down (e.g. Juan 11:35) are pre-mounted for instant scroll
+  const initialNumToRender = useMemo(() => {
+    if (targetHighlightVerses.length > 0) {
+      const target = targetHighlightVerses[0];
+      return Math.max(30, target + 15);
+    }
+    return 30;
+  }, [targetHighlightVerses]);
+
   // Selection state
   const [selectedVerseNumbers, setSelectedVerseNumbers] = useState<number[]>([]);
 
@@ -215,7 +224,7 @@ export default function ChapterReaderScreen() {
             }
             return currentVerses;
           });
-        }, 300);
+        }, 350);
       }
     });
   }, [bookId, chapterNumber, rawHighlightParam, loadChapter]);
@@ -510,27 +519,39 @@ export default function ChapterReaderScreen() {
               lineHeightMultiplier={lineSpacing}
             />
           )}
-          initialNumToRender={25}
-          maxToRenderPerBatch={20}
-          windowSize={7}
-          removeClippedSubviews={true}
+          initialNumToRender={initialNumToRender}
+          maxToRenderPerBatch={25}
+          windowSize={11}
+          removeClippedSubviews={false}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           onScrollToIndexFailed={(info) => {
+            const itemHeight = info.averageItemLength > 0 ? info.averageItemLength : 80;
+            const estimatedOffset = Math.max(0, 150 + info.index * itemHeight - 80);
+
+            // 1. Immediately jump to estimated offset so FlatList renders frames in that target range
+            flatListRef.current?.scrollToOffset({
+              offset: estimatedOffset,
+              animated: false,
+            });
+
+            // 2. Once mounted, perform smooth animated scrollToIndex to land precisely at the verse
             setTimeout(() => {
-              try {
-                flatListRef.current?.scrollToIndex({
-                  index: info.index,
-                  viewPosition: 0.12,
-                  animated: true,
-                });
-              } catch (err) {
-                flatListRef.current?.scrollToOffset({
-                  offset: info.averageItemLength * info.index,
-                  animated: true,
-                });
+              if (flatListRef.current) {
+                try {
+                  flatListRef.current.scrollToIndex({
+                    index: info.index,
+                    viewPosition: 0.12,
+                    animated: true,
+                  });
+                } catch (err) {
+                  flatListRef.current?.scrollToOffset({
+                    offset: estimatedOffset,
+                    animated: true,
+                  });
+                }
               }
-            }, 200);
+            }, 120);
           }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
