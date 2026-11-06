@@ -214,34 +214,8 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
           </Text>
         </TouchableOpacity>
 
-        {/* Bottom Row: [🧘 Meditar] [🎨 Tarjeta] on left, [Juan 8:12 ›] on right */}
-        <View style={styles.bottomRow}>
-          <View style={styles.bottomActionsLeft}>
-            <TouchableOpacity
-              style={styles.actionPill}
-              onPress={() => {
-                hapticLight();
-                onMeditate();
-              }}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.actionIcon}>🧘</Text>
-              <Text style={styles.actionPillText}>Meditar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionPill}
-              onPress={() => {
-                hapticLight();
-                onShare();
-              }}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.actionIcon}>🎨</Text>
-              <Text style={styles.actionPillText}>Tarjeta</Text>
-            </TouchableOpacity>
-          </View>
-
+        {/* Bottom Section: Citation aligned to the RIGHT + 2 Action Buttons below it */}
+        <View style={styles.bottomSection}>
           {/* Citation aligned to the RIGHT */}
           <TouchableOpacity
             onPress={handleOpenChapter}
@@ -249,8 +223,36 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
             style={styles.citationBadge}
           >
             <Text style={styles.citationText}>{citation}</Text>
-            <ChevronRight size={13} color="#fbbf24" />
           </TouchableOpacity>
+
+          {/* 2 Quick Action Buttons below: Meditar y Crear tarjeta */}
+          <View style={styles.actionsRow}>
+            {/* 1. Meditar */}
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => {
+                hapticLight();
+                onMeditate();
+              }}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.actionIcon}>🧘</Text>
+              <Text style={styles.actionBtnText}>Meditar</Text>
+            </TouchableOpacity>
+
+            {/* 2. Crear Tarjeta */}
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => {
+                hapticLight();
+                onShare();
+              }}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.actionIcon}>🎨</Text>
+              <Text style={styles.actionBtnText}>Crear tarjeta</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
@@ -272,7 +274,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    padding: 16,
+    padding: 14,
     justifyContent: 'space-between',
     zIndex: 2,
   },
@@ -321,7 +323,7 @@ const styles = StyleSheet.create({
   verseTouchable: {
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   verseText: {
     color: '#FFFFFF',
@@ -332,55 +334,58 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1.5 },
     textShadowRadius: 8,
   },
-  bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  bottomActionsLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 9,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.50)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.20)',
-  },
-  actionIcon: {
-    fontSize: 12,
-  },
-  actionPillText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: -0.1,
+  bottomSection: {
+    zIndex: 2,
+    marginTop: 2,
   },
   citationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+    paddingVertical: 4,
     paddingHorizontal: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(245, 158, 11, 0.35)',
   },
   citationText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#fbbf24',
     letterSpacing: 0.2,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  actionBtn: {
+    flex: 1,
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.50)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+  },
+  actionIcon: {
+    fontSize: 13,
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
