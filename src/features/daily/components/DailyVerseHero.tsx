@@ -5,9 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Volume2, Heart, RotateCw, ChevronRight } from 'lucide-react-native';
+import { Volume2, Heart, RotateCw } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { DailyDevotional } from '@/src/services/db/bibleDb';
 import { toggleBookmark, getChapterUserData } from '@/src/services/db/userDb';
@@ -21,6 +21,7 @@ interface DailyVerseHeroProps {
   onShare: () => void;
   onMeditate: () => void;
   onRotateVerse?: () => void;
+  onOpenPostal: () => void;
 }
 
 export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
@@ -28,17 +29,17 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
   onShare,
   onMeditate,
   onRotateVerse,
+  onOpenPostal,
 }) => {
-  const router = useRouter();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [cardWidth, setCardWidth] = useState<number | null>(null);
 
   useEffect(() => {
     if (!devotional) return;
-    // Reset immediately on verse change so rotating doesn't keep previous bookmark state
     setIsSaved(false);
     const { verse } = devotional;
     getChapterUserData(verse.book_id, verse.chapter)
@@ -50,26 +51,28 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
       });
   }, [devotional]);
 
-  // Dynamically select a beautiful 1:1 spiritual background mapped to the verse
+  // Dynamically select a beautiful spiritual scenery background mapped to the verse
   const bgItem = useMemo(() => {
     if (!devotional) return CARD_BACKGROUNDS[0];
-    const idx = Math.abs(devotional.verse.id) % CARD_BACKGROUNDS.length;
-    return CARD_BACKGROUNDS[idx];
+    const imageList = CARD_BACKGROUNDS.filter((bg) => bg.type === 'image');
+    if (imageList.length === 0) return CARD_BACKGROUNDS[0];
+    const idx = Math.abs(devotional.verse.id) % imageList.length;
+    return imageList[idx];
   }, [devotional?.verse.id]);
 
-  const bgSource = bgItem?.source1x1 || CARD_BACKGROUNDS[0].source1x1;
+  const bgSource = bgItem?.source1x1 || bgItem?.source916 || bgItem?.source || CARD_BACKGROUNDS[0].source;
 
   if (!devotional) return null;
 
   const { verse } = devotional;
   const citation = `${verse.book_name} ${verse.chapter}:${verse.verse}`;
 
-  // Dynamic font sizing so both short and long verses fit comfortably in the 1:1 box
+  // Dynamic font sizing so verse text fits comfortably within the square
   const verseLen = verse.text.length;
   const fontSize =
-    verseLen > 150 ? 15 : verseLen > 100 ? 16.5 : verseLen > 60 ? 18.5 : 21;
+    verseLen > 150 ? 15 : verseLen > 100 ? 16.5 : verseLen > 60 ? 18 : 20;
   const lineHeight =
-    verseLen > 150 ? 22 : verseLen > 100 ? 24.5 : verseLen > 60 ? 27 : 30;
+    verseLen > 150 ? 22 : verseLen > 100 ? 24 : verseLen > 60 ? 26 : 28;
 
   const handleToggleVoice = () => {
     hapticLight();
@@ -83,40 +86,37 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
     await toggleBookmark(verse.book_id, verse.chapter, verse.verse);
   };
 
-  const handleOpenChapter = () => {
-    hapticLight();
-    router.push(
-      `/reader/${verse.book_id}/${verse.chapter}?highlightVerse=${verse.verse}` as any
-    );
-  };
-
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.96}
+      onPress={() => {
+        hapticLight();
+        onOpenPostal();
+      }}
+      onLayout={(e) => {
+        const w = Math.round(e.nativeEvent.layout.width);
+        if (w > 0 && w !== cardWidth) {
+          setCardWidth(w);
+        }
+      }}
       style={[
         styles.cardContainer,
         {
-          borderColor: theme.border,
+          borderColor: 'rgba(255, 255, 255, 0.15)',
           backgroundColor: '#090d16',
           shadowColor: '#000',
         },
+        cardWidth ? { height: cardWidth } : null,
       ]}
     >
-      {/* 1. Dedicated Full-Bleed 1:1 Spiritual Photography */}
+      {/* 1. Full-Bleed Natural Spiritual Photography */}
       <Image
         source={bgSource}
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
       />
 
-      {/* 2. Guaranteed 100% full-surface dark base tint (eliminates unshaded edge gaps on all Android screens) */}
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: 'rgba(5, 8, 17, 0.40)' },
-        ]}
-      />
-
-      {/* 3. Deep vertical gradient overlay with proper viewBox */}
+      {/* 2. Soft, natural vertical gradient (photo stays vibrant and natural) */}
       <Svg
         width="100%"
         height="100%"
@@ -126,16 +126,16 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
       >
         <Defs>
           <LinearGradient id="heroScrimGrad" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
-            <Stop offset="0%" stopColor="#050811" stopOpacity="0.75" />
-            <Stop offset="30%" stopColor="#050811" stopOpacity="0.30" />
-            <Stop offset="70%" stopColor="#050811" stopOpacity="0.65" />
-            <Stop offset="100%" stopColor="#050811" stopOpacity="0.95" />
+            <Stop offset="0%" stopColor="#000000" stopOpacity="0.45" />
+            <Stop offset="25%" stopColor="#000000" stopOpacity="0.15" />
+            <Stop offset="65%" stopColor="#000000" stopOpacity="0.35" />
+            <Stop offset="100%" stopColor="#000000" stopOpacity="0.75" />
           </LinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100" height="100" fill="url(#heroScrimGrad)" />
       </Svg>
 
-      {/* 4. Foreground Content */}
+      {/* 3. Foreground Content */}
       <View style={styles.cardContent}>
         {/* Top Row: Badge on left + 3 glass buttons on right */}
         <View style={styles.topRow}>
@@ -148,7 +148,8 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
             {onRotateVerse && (
               <TouchableOpacity
                 style={styles.topBtn}
-                onPress={() => {
+                onPress={(e) => {
+                  e.stopPropagation?.();
                   hapticLight();
                   onRotateVerse();
                 }}
@@ -165,7 +166,10 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
                 styles.topBtn,
                 isSaved && styles.topBtnHeartSaved,
               ]}
-              onPress={handleToggleBookmarkAction}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                handleToggleBookmarkAction();
+              }}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
@@ -182,7 +186,10 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
                 styles.topBtn,
                 isSpeaking && styles.topBtnAudioActive,
               ]}
-              onPress={handleToggleVoice}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                handleToggleVoice();
+              }}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
@@ -194,12 +201,8 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
           </View>
         </View>
 
-        {/* Center: Main Scripture Text (Tapping navigates to chapter) */}
-        <TouchableOpacity
-          onPress={handleOpenChapter}
-          activeOpacity={0.8}
-          style={styles.verseTouchable}
-        >
+        {/* Center: Main Scripture Text (Tapping anywhere opens full postal) */}
+        <View style={styles.verseTouchable}>
           <Text
             style={[
               styles.verseText,
@@ -208,29 +211,27 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
                 lineHeight,
               },
             ]}
-            numberOfLines={6}
+            numberOfLines={5}
+            ellipsizeMode="tail"
           >
             “{verse.text}”
           </Text>
-        </TouchableOpacity>
+        </View>
 
         {/* Bottom Section: Citation aligned to the RIGHT + 2 Action Buttons below it */}
         <View style={styles.bottomSection}>
           {/* Citation aligned to the RIGHT */}
-          <TouchableOpacity
-            onPress={handleOpenChapter}
-            activeOpacity={0.75}
-            style={styles.citationBadge}
-          >
+          <View style={styles.citationBadge}>
             <Text style={styles.citationText}>{citation}</Text>
-          </TouchableOpacity>
+          </View>
 
           {/* 2 Quick Action Buttons below: Meditar y Crear tarjeta */}
           <View style={styles.actionsRow}>
             {/* 1. Meditar */}
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={() => {
+              onPress={(e) => {
+                e.stopPropagation?.();
                 hapticLight();
                 onMeditate();
               }}
@@ -243,7 +244,8 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
             {/* 2. Crear Tarjeta */}
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={() => {
+              onPress={(e) => {
+                e.stopPropagation?.();
                 hapticLight();
                 onShare();
               }}
@@ -255,18 +257,19 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   cardContainer: {
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 24,
     borderWidth: 1,
-    aspectRatio: 1,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 6,
     marginBottom: 20,
@@ -287,9 +290,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.50)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.35)',
+    borderColor: 'rgba(251, 191, 36, 0.45)',
   },
   badgeText: {
     fontSize: 10,
@@ -308,31 +311,32 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.50)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.22)',
   },
   topBtnHeartSaved: {
-    backgroundColor: 'rgba(239, 68, 68, 0.30)',
+    backgroundColor: 'rgba(239, 68, 68, 0.35)',
     borderColor: '#ef4444',
   },
   topBtnAudioActive: {
-    backgroundColor: 'rgba(245, 158, 11, 0.30)',
+    backgroundColor: 'rgba(245, 158, 11, 0.35)',
     borderColor: '#fbbf24',
   },
   verseTouchable: {
     flex: 1,
     justifyContent: 'center',
     paddingVertical: 4,
+    paddingHorizontal: 4,
   },
   verseText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    fontWeight: '500',
     letterSpacing: -0.2,
-    fontStyle: 'italic',
-    textShadowColor: 'rgba(0, 0, 0, 0.95)',
+    textShadowColor: 'rgba(0, 0, 0, 0.90)',
     textShadowOffset: { width: 0, height: 1.5 },
-    textShadowRadius: 8,
+    textShadowRadius: 6,
   },
   bottomSection: {
     zIndex: 2,
@@ -343,16 +347,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingVertical: 4,
     paddingHorizontal: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: 'rgba(0, 0, 0, 0.50)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.35)',
+    borderColor: 'rgba(251, 191, 36, 0.40)',
   },
   citationText: {
     fontSize: 12.5,
     fontWeight: '800',
     color: '#fbbf24',
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
@@ -372,7 +376,7 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 12,
     paddingHorizontal: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.50)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.22)',
   },

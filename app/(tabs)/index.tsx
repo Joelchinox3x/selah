@@ -11,6 +11,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Screen } from '@/src/components/ui/Screen';
 import { AppHeader } from '@/src/components/ui/AppHeader';
 import { DailyVerseHero } from '@/src/features/daily/components/DailyVerseHero';
+import { DailyVersePostalModal } from '@/src/features/daily/components/DailyVersePostalModal';
 import { DailyCuriosityCard } from '@/src/features/curiosities/components/DailyCuriosityCard';
 import { getTodayCuriosity } from '@/src/features/curiosities/data/biblicalCuriosities';
 import { MeditationModal } from '@/src/features/daily/components/MeditationModal';
@@ -66,6 +67,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [meditationVisible, setMeditationVisible] = useState(false);
+  const [postalModalVisible, setPostalModalVisible] = useState(false);
 
   const todayCuriosity = useMemo(() => getTodayCuriosity(), []);
 
@@ -231,6 +233,7 @@ export default function HomeScreen() {
           onShare={() => setShareModalVisible(true)}
           onMeditate={() => setMeditationVisible(true)}
           onRotateVerse={handleRotateVerse}
+          onOpenPostal={() => setPostalModalVisible(true)}
         />
 
         {/* 2. Continue Reading Card */}
@@ -299,6 +302,28 @@ export default function HomeScreen() {
           }}
         />
       </ScrollView>
+
+      {/* Full-Screen Daily Verse Postal Story Modal */}
+      {devotional && (
+        <DailyVersePostalModal
+          visible={postalModalVisible}
+          devotional={devotional}
+          onClose={() => setPostalModalVisible(false)}
+          onNavigateToReader={(bookId, chapter, verse) => {
+            setPostalModalVisible(false);
+            router.push(`/reader/${bookId}/${chapter}?highlightVerse=${verse}` as any);
+          }}
+          onShare={() => {
+            setPostalModalVisible(false);
+            setShareModalVisible(true);
+          }}
+          onMeditate={() => {
+            setPostalModalVisible(false);
+            setMeditationVisible(true);
+          }}
+          onRotateVerse={handleRotateVerse}
+        />
+      )}
 
       {/* Share Card Modal for Daily Verse */}
       {devotional && (
