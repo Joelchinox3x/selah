@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Heart,
   User,
+  MessageSquare,
 } from 'lucide-react-native';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 
@@ -42,34 +43,23 @@ interface DailyVersePostalBacksideProps {
   onCommentCountChange?: (count: number) => void;
 }
 
-const DEFAULT_SEED_COMMENTS: CommunityComment[] = [
-  {
-    id: 'seed-1',
-    userName: 'Ps. Guillermo Quispe C.',
-    role: 'Pastor Iglesia Emanuel',
-    text: 'Que la paz y la gracia del Señor sobreabunden en cada corazón que hoy medita en esta palabra viva.',
-    createdAt: 'Hoy',
-    isPastor: true,
-  },
-  {
-    id: 'seed-2',
-    userName: 'Hermana María Elena',
-    role: 'Comunidad Selah',
-    text: 'Amén. Justo la promesa que mi familia y yo necesitábamos escuchar en este día para renovar nuestras fuerzas.',
-    createdAt: 'Hace 1 hora',
-    isPastor: false,
-  },
-  {
-    id: 'seed-3',
-    userName: 'David M.',
-    role: 'Comunidad Selah',
-    text: 'La fidelidad de Dios nunca falla. Gloria al Señor por su amor incondicional que nos sostiene cada mañana.',
-    createdAt: 'Hace 3 horas',
-    isPastor: false,
-  },
-];
-
 const STORAGE_KEY_USER_NAME = '@selah_user_reflection_name_v1';
+
+function formatCommentTime(raw: string): string {
+  if (!raw) return 'Hoy';
+  if (raw.toLowerCase().includes('hoy') || raw.toLowerCase().includes('hace')) return raw;
+  try {
+    const normalized = /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(raw) ? raw.replace(' ', 'T') + 'Z' : raw;
+    const date = new Date(normalized);
+    if (!Number.isNaN(date.getTime())) {
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+      const timeStr = date.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
+      return isToday ? `Hoy, ${timeStr}` : `${date.getDate()} ${date.toLocaleString('es-PE', { month: 'short' })}, ${timeStr}`;
+    }
+  } catch (_) {}
+  return raw;
+}
 
 export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> = ({
   verseSlug,
@@ -81,7 +71,7 @@ export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> =
   onCommentCountChange,
 }) => {
   const insets = useSafeAreaInsets();
-  const [comments, setComments] = useState<CommunityComment[]>(DEFAULT_SEED_COMMENTS);
+  const [comments, setComments] = useState<CommunityComment[]>([]);
   const [inputText, setInputText] = useState('');
   const [userName, setUserName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -107,6 +97,7 @@ export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> =
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setComments([]);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
 
@@ -120,13 +111,14 @@ export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> =
       .then((data) => {
         clearTimeout(timer);
         if (!isMounted) return;
-        if (data && Array.isArray(data.comments) && data.comments.length > 0) {
-          setComments(data.comments);
-          onCommentCountChangeRef.current?.(data.comments.length);
-        }
+        const fetched = Array.isArray(data?.comments) ? data.comments : [];
+        setComments(fetched);
+        onCommentCountChangeRef.current?.(fetched.length);
       })
       .catch((err) => {
         if (!isMounted) return;
+        setComments([]);
+        onCommentCountChangeRef.current?.(0);
         console.warn('Comments fetch info:', err?.message || err);
       })
       .finally(() => {
@@ -251,6 +243,17 @@ export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> =
           </View>
         )}
 
+        {/* Empty state when no reflections yet */}
+        {!loading && comments.length === 0 && (
+          <View style={styles.emptyBox}>
+            <MessageSquare size={28} color="#475569" />
+            <Text style={styles.emptyTitle}>Todavía no hay reflexiones</Text>
+            <Text style={styles.emptyText}>
+              Sé el primero en compartir lo que Dios habló hoy a tu corazón sobre este pasaje.
+            </Text>
+          </View>
+        )}
+
         {/* Comments Feed - De frente empieza el muro */}
         {comments.map((item) => {
           const initials = (item.userName || 'S')
@@ -293,7 +296,7 @@ export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> =
                     <Text style={styles.roleText}>{item.role}</Text>
                   </View>
                 </View>
-                <Text style={styles.timeText}>{item.createdAt}</Text>
+                <Text style={styles.timeText}>{formatCommentTime(item.createdAt)}</Text>
               </View>
 
               <Text style={styles.commentBody}>{item.text}</Text>
@@ -446,6 +449,25 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 12,
     color: '#94a3b8',
+  },
+  emptyBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 44,
+    paddingHorizontal: 24,
+    gap: 10,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#cbd5e1',
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 19,
   },
   commentCard: {
     backgroundColor: '#0f172a',

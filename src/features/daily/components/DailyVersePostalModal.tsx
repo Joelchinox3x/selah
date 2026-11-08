@@ -146,9 +146,9 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
 
   // Live community metrics (Likes, Shares, Comments)
   const [metrics, setMetrics] = useState({
-    likes: 142,
-    shares: 58,
-    comments: 24,
+    likes: 0,
+    shares: 0,
+    comments: 0,
   });
 
   const handleCommentCountChange = useCallback((cnt: number) => {
@@ -199,9 +199,9 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
       .then((data) => {
         if (data && data.data) {
           setMetrics({
-            likes: data.data.likes ?? 142,
-            shares: data.data.shares ?? 58,
-            comments: data.data.comments ?? 24,
+            likes: data.data.likes ?? 0,
+            shares: data.data.shares ?? 0,
+            comments: data.data.comments ?? 0,
           });
         }
       })
