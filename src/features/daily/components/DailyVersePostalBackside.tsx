@@ -15,12 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   X,
   Send,
-  RotateCcw,
+  ArrowLeft,
   ShieldCheck,
   Heart,
-  BookOpen,
   User,
-  Sparkles,
 } from 'lucide-react-native';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 
@@ -199,43 +197,43 @@ export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> =
 
   return (
     <View style={styles.container}>
-      {/* 1. Postal Backside Header */}
+      {/* 1. Clean Postal Backside Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 8, 20) }]}>
-        {/* Flip to Front Button */}
+        {/* Back Arrow to flip to Front */}
         <TouchableOpacity
-          style={styles.flipBtn}
+          style={styles.iconCircleBtn}
           onPress={onFlipToFront}
           activeOpacity={0.75}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Volver a la postal"
         >
-          <RotateCcw size={16} color="#fbbf24" />
-          <Text style={styles.flipBtnText}>Ver Postal</Text>
+          <ArrowLeft size={20} color="#f8fafc" />
         </TouchableOpacity>
 
-        {/* Center Title Badge */}
+        {/* Center Title */}
         <View style={styles.headerTitleWrap}>
-          <View style={styles.badgeRow}>
-            <Sparkles size={11} color="#fbbf24" />
-            <Text style={styles.badgeText}>REVERSO DE LA POSTAL</Text>
-          </View>
+          <Text style={styles.headerTitle}>Muro de Reflexión</Text>
           <Text style={styles.headerCitation}>{verseCitation}</Text>
         </View>
 
         {/* Close Button */}
         <TouchableOpacity
-          style={styles.closeBtn}
+          style={styles.iconCircleBtn}
           onPress={() => {
             hapticLight();
             onClose();
           }}
           activeOpacity={0.75}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar"
         >
           <X size={20} color="#cbd5e1" />
         </TouchableOpacity>
       </View>
 
-      {/* 2. Scrollable Content ("Baja y baja") */}
+      {/* 2. Scrollable Content ("Baja y baja") - De frente empieza el muro */}
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollList}
@@ -246,51 +244,14 @@ export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> =
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Postal Stamp & Scripture Summary Card */}
-        <View style={styles.postmarkCard}>
-          <View style={styles.postmarkHeader}>
-            <View style={styles.postmarkStamp}>
-              <Text style={styles.postmarkStampText}>✦ SELAH POSTAL</Text>
-              <Text style={styles.postmarkStampSub}>EDICIÓN DIARIA</Text>
-              <View style={styles.postmarkLines}>
-                <View style={styles.postmarkLine} />
-                <View style={styles.postmarkLine} />
-                <View style={styles.postmarkLine} />
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.readChapterBtn}
-              onPress={onGoToReader}
-              activeOpacity={0.8}
-            >
-              <BookOpen size={14} color="#fbbf24" />
-              <Text style={styles.readChapterBtnText}>Leer capítulo</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.scriptureQuote} numberOfLines={3}>
-            «{verseText}»
-          </Text>
-          <Text style={styles.scriptureRef}>— {verseCitation} (RVR1909)</Text>
-        </View>
-
-        {/* Section Divider */}
-        <View style={styles.sectionDivider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerLabel}>MURO DE REFLEXIÓN & TESTIMONIOS</Text>
-          {loading && <ActivityIndicator size="small" color="#fbbf24" style={{ marginLeft: 6 }} />}
-          <View style={styles.dividerLine} />
-        </View>
-
         {loading && comments.length === 0 && (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="small" color="#fbbf24" />
-            <Text style={styles.loadingText}>Cargando testimonios de la comunidad...</Text>
+            <Text style={styles.loadingText}>Cargando reflexiones...</Text>
           </View>
         )}
 
-        {/* Comments Feed */}
+        {/* Comments Feed - De frente empieza el muro */}
         {comments.map((item) => {
           const initials = (item.userName || 'S')
             .trim()
@@ -444,149 +405,36 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.08)',
     backgroundColor: '#0c1322',
   },
-  flipBtn: {
-    flexDirection: 'row',
+  iconCircleBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(251, 191, 36, 0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.28)',
-  },
-  flipBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#fbbf24',
-    letterSpacing: 0.3,
+    justifyContent: 'center',
   },
   headerTitleWrap: {
     alignItems: 'center',
     gap: 2,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#fbbf24',
-    letterSpacing: 0.8,
-  },
-  headerCitation: {
-    fontSize: 15,
+  headerTitle: {
+    fontSize: 16,
     fontWeight: '800',
     color: '#ffffff',
+    letterSpacing: 0.2,
   },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerCitation: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fbbf24',
+    letterSpacing: 0.4,
   },
   scrollList: {
     flex: 1,
   },
   scrollContent: {
     padding: 16,
-    gap: 14,
-  },
-  postmarkCard: {
-    backgroundColor: '#0f172a',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.22)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  postmarkHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  postmarkStamp: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#fbbf24',
-    backgroundColor: 'rgba(251, 191, 36, 0.06)',
-  },
-  postmarkStampText: {
-    fontSize: 9,
-    fontWeight: '900',
-    color: '#fbbf24',
-    letterSpacing: 0.6,
-  },
-  postmarkStampSub: {
-    fontSize: 8,
-    fontWeight: '600',
-    color: '#cbd5e1',
-    letterSpacing: 0.4,
-  },
-  postmarkLines: {
-    flexDirection: 'row',
-    gap: 2,
-    marginTop: 2,
-  },
-  postmarkLine: {
-    height: 1,
-    flex: 1,
-    backgroundColor: 'rgba(251, 191, 36, 0.4)',
-  },
-  readChapterBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  readChapterBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fbbf24',
-  },
-  scriptureQuote: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    lineHeight: 20,
-    color: '#e2e8f0',
-  },
-  scriptureRef: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fbbf24',
-    marginTop: 6,
-  },
-  sectionDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginVertical: 4,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  dividerLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#64748b',
-    letterSpacing: 0.8,
+    gap: 12,
   },
   loadingBox: {
     flexDirection: 'row',
