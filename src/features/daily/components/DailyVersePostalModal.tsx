@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Modal,
   View,
@@ -12,6 +12,9 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
+import { captureRef, releaseCapture } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import { PostalImageExport } from './PostalImageExport';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -27,6 +30,11 @@ import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { DailyDevotional } from '@/src/services/db/bibleDb';
 import { toggleBookmark, getChapterUserData } from '@/src/services/db/userDb';
 import { CARD_BACKGROUNDS, getVerseBackground } from '@/src/features/share/data/cardBackgrounds';
+import {
+  getDynamicVerseBackground,
+  loadCachedRemoteBackgrounds,
+  syncRemoteBackgrounds,
+} from '@/src/services/backgroundsService';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 import { CommunityReflectionsModal } from './CommunityReflectionsModal';
 import { DailyVerseActionSheet } from './DailyVerseActionSheet';
@@ -36,7 +44,7 @@ interface DailyVersePostalModalProps {
   devotional: DailyDevotional | null;
   onClose: () => void;
   onNavigateToReader: (bookId: number, chapter: number, verse: number) => void;
-  onShare: () => void;
+  onShare: (backgroundId: string) => void;
   onMeditate: () => void;
   onRotateVerse?: () => void;
 }
@@ -60,6 +68,12 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
   );
 
   const [controlsVisible, setControlsVisible] = useState(true);
+  const exportRef = useRef<View>(null);
+  const exportBusy = useRef(false);
+  const [exportRequested, setExportRequested] = useState(false);
+  const exportReady = useRef<{ resolve: () => void; reject: (reason: Error) => void } | null>(null);
+  const imageLoaded = useRef(false);
+  const exportLaidOut = useRef(false);
   const [isSaved, setIsSaved] = useState(false);
   const [bgIndexOffset, setBgIndexOffset] = useState(0);
 
@@ -137,10 +151,16 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
     }, 2500);
   };
 
-  // Full-bleed 9:16 vertical scenery background
+  // Cargar fondos remotos en segundo plano
+  useEffect(() => {
+    loadCachedRemoteBackgrounds();
+    syncRemoteBackgrounds();
+  }, []);
+
+  // Full-bleed 9:16 vertical scenery background (locales + remotos sincronizados)
   const bgItem = useMemo(() => {
     if (!devotional) return CARD_BACKGROUNDS[0];
-    return getVerseBackground(devotional.verse.id, bgIndexOffset);
+    return getDynamicVerseBackground(devotional.verse.id, bgIndexOffset);
   }, [devotional?.verse.id, bgIndexOffset]);
 
   const bgSource = bgItem?.source916 || bgItem?.source || CARD_BACKGROUNDS[0].source;
@@ -204,7 +224,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
         body: JSON.stringify({ verse: cleanSlug, action: 'share' }),
       }).catch(() => {});
     } catch {
-      onShare();
+      onShare(bgItem.id);
     }
   };
 
@@ -235,6 +255,47 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
     }
   };
 
+  const notifyExportReady = () => {
+    if (imageLoaded.current && exportLaidOut.current) exportReady.current?.resolve();
+  };
+
+  const handleShareImage = async () => {
+    if (exportBusy.current) return;
+    exportBusy.current = true;
+    let uri: string | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      if (!(await Sharing.isAvailableAsync())) {
+        showToast('Compartir imágenes no está disponible en este dispositivo');
+        return;
+      }
+      showToast('Preparando imagen…');
+      imageLoaded.current = false;
+      exportLaidOut.current = false;
+      const ready = new Promise<void>((resolve, reject) => {
+        exportReady.current = { resolve, reject };
+        timeout = setTimeout(() => reject(new Error('La imagen tardó demasiado en cargar')), 15000);
+      });
+      setExportRequested(true);
+      await ready;
+      // Wait for the loaded image and text to be painted before native capture.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      if (!exportRef.current) throw new Error('No se pudo preparar la postal');
+      uri = await captureRef(exportRef, { format: 'jpg', quality: 0.95, result: 'tmpfile', width: 1080, height: 1920 });
+      setToastMessage(null);
+      await Sharing.shareAsync(uri, { mimeType: 'image/jpeg', UTI: 'public.jpeg', dialogTitle: `Compartir ${citation}` });
+    } catch (error) {
+      console.warn('Error sharing postal image:', error);
+      showToast('No se pudo crear la imagen. Intenta nuevamente.');
+    } finally {
+      if (timeout) clearTimeout(timeout);
+      if (uri) releaseCapture(uri);
+      exportReady.current = null;
+      setExportRequested(false);
+      exportBusy.current = false;
+    }
+  };
+
   return (
     <Modal
       visible={visible && isFocused}
@@ -256,12 +317,30 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
         />
 
         {/* 1. Full-screen 9:16 vertical scenery background */}
-        <Image source={bgSource} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image
+          source={bgSource}
+          style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
+          resizeMode="cover"
+        />
 
         {/* 2. Gradient scrim for contrast */}
-        <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+        <Svg
+          height="100%"
+          width="100%"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+        >
           <Defs>
-            <LinearGradient id="postalGrad" x1="0" y1="0" x2="0" y2="1">
+            <LinearGradient
+              id="postalGrad"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="100"
+              gradientUnits="userSpaceOnUse"
+            >
               <Stop offset="0%" stopColor="#000000" stopOpacity="0.45" />
               <Stop offset="22%" stopColor="#000000" stopOpacity="0.15" />
               <Stop offset="65%" stopColor="#000000" stopOpacity="0.30" />
@@ -345,10 +424,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
             <Text style={[styles.verseBody, { fontSize, lineHeight }]}>
               {verse.text}
             </Text>
-            <View
-              pointerEvents={controlsVisible ? 'auto' : 'none'}
-              style={[styles.readingRow, { opacity: controlsVisible ? 1 : 0 }]}
-            >
+            <View style={styles.readingRow}>
               <TouchableOpacity
                 style={styles.citationButton}
                 onPress={handleGoToReader}
@@ -361,6 +437,8 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
             </View>
           </View>
         </ScrollView>
+
+        <Text pointerEvents="none" style={styles.postalSignature}>✦ SELAH</Text>
 
         {/* 5. Bottom Engagement Bar (4 perfectly aligned action buttons) */}
         <View
@@ -411,10 +489,12 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
             <Text style={styles.bottomActionLabel}>{metrics.comments}</Text>
           </TouchableOpacity>
 
-          {/* 3. Compartir (texto limpio y corto) */}
+          {/* 3. Compartir la postal lista como imagen */}
           <TouchableOpacity
             style={styles.bottomActionItem}
-            onPress={handleQuickShare}
+            onPress={handleShareImage}
+            accessibilityRole="button"
+            accessibilityLabel="Compartir postal como imagen"
             activeOpacity={0.75}
           >
             <View style={styles.iconBox}>
@@ -429,7 +509,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
             onPress={() => {
               hapticLight();
               onClose();
-              onShare();
+              onShare(bgItem.id);
             }}
             activeOpacity={0.75}
           >
@@ -440,6 +520,20 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
           </TouchableOpacity>
         </View>
 
+        {exportRequested && bgSource && (
+          <PostalImageExport
+            ref={exportRef}
+            source={bgSource}
+            text={verse.text}
+            citation={citation}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            onImageLoad={() => { imageLoaded.current = true; notifyExportReady(); }}
+            onImageError={() => exportReady.current?.reject(new Error('No se pudo cargar el fondo'))}
+            onLayout={() => { exportLaidOut.current = true; notifyExportReady(); }}
+          />
+        )}
+
         {/* Modals: Action Sheet (3 dots) & Community Reflections (Opción A) */}
         <DailyVerseActionSheet
           visible={actionSheetVisible}
@@ -448,10 +542,11 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
           onCopyVerse={handleCopyVerse}
           onCopyLink={handleCopyLink}
           onShare={handleQuickShare}
+          onShareImage={handleShareImage}
           onToggleBookmark={handleToggleBookmark}
           onDesignCard={() => {
             onClose();
-            onShare();
+            onShare(bgItem.id);
           }}
           onReadFullChapter={handleGoToReader}
           onClose={() => setActionSheetVisible(false)}
@@ -541,7 +636,9 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   verseSection: {
-    alignItems: 'flex-start',
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 20,
   },
   readingRow: {
     flexDirection: 'row',
@@ -565,6 +662,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
   },
   verseBody: {
+    textAlign: 'center',
     color: '#FFFFFF',
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
     fontWeight: '600',
@@ -572,6 +670,18 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.80)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
+  },
+  postalSignature: {
+    alignSelf: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 3,
+    color: 'rgba(255, 255, 255, 0.65)',
+    textShadowColor: 'rgba(0, 0, 0, 0.90)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   bottomBar: {
     flexDirection: 'row',

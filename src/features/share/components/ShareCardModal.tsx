@@ -30,7 +30,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CARD_BACKGROUNDS,
   BackgroundCategory,
+  CardBackground,
 } from '../data/cardBackgrounds';
+import {
+  getCombinedBackgrounds,
+  syncRemoteBackgrounds,
+  loadCachedRemoteBackgrounds,
+} from '@/src/services/backgroundsService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -88,17 +94,27 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
     prevVisible.current = visible;
   }, [visible, initialBackgroundId, initialAspectRatio]);
 
+  const [allBackgrounds, setAllBackgrounds] = useState<CardBackground[]>(() =>
+    getCombinedBackgrounds(aspectRatio)
+  );
+
+  useEffect(() => {
+    loadCachedRemoteBackgrounds().then(() => setAllBackgrounds(getCombinedBackgrounds(aspectRatio)));
+    syncRemoteBackgrounds().then(() => setAllBackgrounds(getCombinedBackgrounds(aspectRatio)));
+  }, [aspectRatio]);
+
   const currentBg = useMemo(() => {
     return (
-      CARD_BACKGROUNDS.find((bg) => bg.id === selectedBgId) ||
+      allBackgrounds.find((bg) => bg.id === selectedBgId) ||
+      allBackgrounds[0] ||
       CARD_BACKGROUNDS[0]
     );
-  }, [selectedBgId]);
+  }, [selectedBgId, allBackgrounds]);
 
   const filteredBackgrounds = useMemo(() => {
-    if (activeCategory === 'all') return CARD_BACKGROUNDS;
-    return CARD_BACKGROUNDS.filter((bg) => bg.category === activeCategory);
-  }, [activeCategory]);
+    if (activeCategory === 'all') return allBackgrounds;
+    return allBackgrounds.filter((bg) => bg.category === activeCategory);
+  }, [activeCategory, allBackgrounds]);
 
   // Preview dimensions (exact 9:16 ratio matching the 1080x1920 image with 0 cropping)
   const previewWidth = aspectRatio === '1:1' ? Math.min(SCREEN_WIDTH - 64, 270) : 210;

@@ -6,10 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Copy,
+  Image as ImageIcon,
   Link2,
   Share2,
   Bookmark,
@@ -26,6 +28,7 @@ interface DailyVerseActionSheetProps {
   onCopyVerse: () => void;
   onCopyLink: () => void;
   onShare: () => void;
+  onShareImage: () => void;
   onToggleBookmark: () => void;
   onDesignCard: () => void;
   onReadFullChapter: () => void;
@@ -39,6 +42,7 @@ export const DailyVerseActionSheet: React.FC<DailyVerseActionSheetProps> = ({
   onCopyVerse,
   onCopyLink,
   onShare,
+  onShareImage,
   onToggleBookmark,
   onDesignCard,
   onReadFullChapter,
@@ -85,8 +89,7 @@ export const DailyVerseActionSheet: React.FC<DailyVerseActionSheetProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* 6 Actions requested by the user */}
-          <View style={styles.actionsList}>
+          <ScrollView style={styles.actionsScroll} contentContainerStyle={styles.actionsList} showsVerticalScrollIndicator={false}>
             {/* 1. Copiar versículo */}
             <TouchableOpacity
               style={styles.actionItem}
@@ -128,7 +131,22 @@ export const DailyVerseActionSheet: React.FC<DailyVerseActionSheetProps> = ({
               </View>
               <View style={styles.actionTextWrap}>
                 <Text style={styles.actionTitle}>Compartir en WhatsApp o redes</Text>
-                <Text style={styles.actionDesc}>Envía la tarjeta con vista previa enriquecida</Text>
+                <Text style={styles.actionDesc}>Comparte el texto y su enlace web</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => handleAction(onShareImage)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+            >
+              <View style={[styles.iconCircle, { backgroundColor: 'rgba(56, 189, 248, 0.12)' }]}>
+                <ImageIcon size={19} color="#38bdf8" />
+              </View>
+              <View style={styles.actionTextWrap}>
+                <Text style={styles.actionTitle}>Compartir como imagen</Text>
+                <Text style={styles.actionDesc}>Foto, versículo y referencia, listos para enviar</Text>
               </View>
             </TouchableOpacity>
 
@@ -189,7 +207,7 @@ export const DailyVerseActionSheet: React.FC<DailyVerseActionSheetProps> = ({
                 <Text style={styles.actionDesc}>Abre el contexto bíblico completo sin conexión</Text>
               </View>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
 
           {/* Cancel button */}
           <TouchableOpacity
@@ -215,6 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.65)',
   },
   sheetContainer: {
+    maxHeight: '90%',
     backgroundColor: '#0c121e',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -266,6 +285,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionsScroll: {
+    flexShrink: 1,
   },
   actionsList: {
     paddingVertical: 8,

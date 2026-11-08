@@ -71,6 +71,7 @@ export default function HomeScreen() {
   const [verseBusy, setVerseBusy] = useState(false);
   const verseChanging = useRef(false);
   const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [shareCardOptions, setShareCardOptions] = useState<{ backgroundId: string; aspectRatio: '1:1' | '9:16' } | null>(null);
   const [meditationVisible, setMeditationVisible] = useState(false);
   const [postalModalVisible, setPostalModalVisible] = useState(false);
 
@@ -251,7 +252,10 @@ export default function HomeScreen() {
         {/* 1. Daily Devotional Hero (Photo 1) */}
         <DailyVerseHero
           devotional={devotional}
-          onShare={() => setShareModalVisible(true)}
+          onShare={() => {
+            setShareCardOptions(null);
+            setShareModalVisible(true);
+          }}
           onMeditate={() => setMeditationVisible(true)}
           onRotateVerse={handleRotateVerse}
           onOpenPostal={() => setPostalModalVisible(true)}
@@ -340,7 +344,8 @@ export default function HomeScreen() {
           onNavigateToReader={(bookId, chapter, verse) => {
             router.push(`/reader/${bookId}/${chapter}?highlightVerse=${verse}` as any);
           }}
-          onShare={() => {
+          onShare={(backgroundId) => {
+            setShareCardOptions({ backgroundId, aspectRatio: '9:16' });
             setPostalModalVisible(false);
             setShareModalVisible(true);
           }}
@@ -356,8 +361,8 @@ export default function HomeScreen() {
       {devotional && (
         <ShareCardModal
           visible={shareModalVisible}
-          initialBackgroundId={getVerseBackground(devotional.verse.id).id}
-          initialAspectRatio="1:1"
+          initialBackgroundId={shareCardOptions?.backgroundId ?? getVerseBackground(devotional.verse.id).id}
+          initialAspectRatio={shareCardOptions?.aspectRatio ?? '1:1'}
           versesText={devotional.verse.text}
           referenceText={`${devotional.verse.book_name} ${devotional.verse.chapter}:${devotional.verse.verse}`}
           onClose={() => setShareModalVisible(false)}
