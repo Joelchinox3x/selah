@@ -7,21 +7,24 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import { Volume2, Heart, RotateCw } from 'lucide-react-native';
+import { Volume2, Heart, RotateCw, ArrowLeft } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { DailyDevotional } from '@/src/services/db/bibleDb';
 import { toggleBookmark, getChapterUserData } from '@/src/services/db/userDb';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
-import { CARD_BACKGROUNDS } from '@/src/features/share/data/cardBackgrounds';
+import { CARD_BACKGROUNDS, getVerseBackground } from '@/src/features/share/data/cardBackgrounds';
 
 interface DailyVerseHeroProps {
   devotional: DailyDevotional | null;
   onShare: () => void;
   onMeditate: () => void;
   onRotateVerse?: () => void;
+  onPreviousVerse: () => void;
+  verseBusy?: boolean;
   onOpenPostal: () => void;
+  onReadVerse: () => void;
 }
 
 export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
@@ -29,7 +32,10 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
   onShare,
   onMeditate,
   onRotateVerse,
+  onPreviousVerse,
+  verseBusy = false,
   onOpenPostal,
+  onReadVerse,
 }) => {
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
@@ -54,10 +60,7 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
   // Dynamically select a beautiful spiritual scenery background mapped to the verse
   const bgItem = useMemo(() => {
     if (!devotional) return CARD_BACKGROUNDS[0];
-    const imageList = CARD_BACKGROUNDS.filter((bg) => bg.type === 'image');
-    if (imageList.length === 0) return CARD_BACKGROUNDS[0];
-    const idx = Math.abs(devotional.verse.id) % imageList.length;
-    return imageList[idx];
+    return getVerseBackground(devotional.verse.id);
   }, [devotional?.verse.id]);
 
   const bgSource = bgItem?.source1x1 || bgItem?.source916 || bgItem?.source || CARD_BACKGROUNDS[0].source;
@@ -112,7 +115,7 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
       {/* 1. Full-Bleed Natural Spiritual Photography */}
       <Image
         source={bgSource}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
         resizeMode="cover"
       />
 
@@ -144,10 +147,29 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
           </View>
 
           <View style={styles.topButtonsRow}>
+            <TouchableOpacity
+              style={[styles.topBtn, (!devotional.canGoBack || verseBusy) && { opacity: 0.35 }]}
+              disabled={!devotional.canGoBack || verseBusy}
+              accessibilityRole="button"
+              accessibilityLabel="Volver al versículo anterior"
+              accessibilityState={{ disabled: !devotional.canGoBack || verseBusy }}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                hapticLight();
+                onPreviousVerse();
+              }}
+              activeOpacity={0.7}
+              hitSlop={5}
+            >
+              <ArrowLeft size={14} color="#FFFFFF" />
+            </TouchableOpacity>
             {/* 1. Actualizar (renueva un nuevo versículo) */}
             {onRotateVerse && (
               <TouchableOpacity
-                style={styles.topBtn}
+                style={[styles.topBtn, verseBusy && { opacity: 0.35 }]}
+                disabled={verseBusy}
+                accessibilityRole="button"
+                accessibilityLabel="Mostrar otro versículo al azar"
                 onPress={(e) => {
                   e.stopPropagation?.();
                   hapticLight();
@@ -216,15 +238,23 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
           >
             “{verse.text}”
           </Text>
+          <TouchableOpacity
+            style={styles.citationLink}
+            accessibilityRole="button"
+            accessibilityLabel={`Leer ${citation} en la Biblia`}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              hapticLight();
+              onReadVerse();
+            }}
+            activeOpacity={0.75}
+            hitSlop={8}
+          >
+            <Text style={styles.citationText}>{citation}</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Bottom Section: Citation aligned to the RIGHT + 2 Action Buttons below it */}
         <View style={styles.bottomSection}>
-          {/* Citation aligned to the RIGHT */}
-          <View style={styles.citationBadge}>
-            <Text style={styles.citationText}>{citation}</Text>
-          </View>
-
           {/* 2 Quick Action Buttons below: Meditar y Crear tarjeta */}
           <View style={styles.actionsRow}>
             {/* 1. Meditar */}
@@ -287,7 +317,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   badge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 7,
     paddingVertical: 5,
     borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
@@ -295,15 +325,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(251, 191, 36, 0.45)',
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     color: '#fbbf24',
-    letterSpacing: 0.8,
+    letterSpacing: 0.3,
   },
   topButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   topBtn: {
     width: 34,
@@ -342,9 +372,9 @@ const styles = StyleSheet.create({
     zIndex: 2,
     marginTop: 2,
   },
-  citationBadge: {
+  citationLink: {
     alignSelf: 'flex-end',
-    marginBottom: 8,
+    marginTop: 8,
     paddingVertical: 4,
     paddingHorizontal: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.50)',

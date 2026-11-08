@@ -166,3 +166,9 @@ export const CARD_BACKGROUNDS: CardBackground[] = [
     borderColor: '#fed7aa',
   },
 ];
+
+export function getVerseBackground(verseId: number, offset = 0): CardBackground {
+  const images = CARD_BACKGROUNDS.filter((bg) => bg.type === 'image');
+  if (images.length === 0) return CARD_BACKGROUNDS[0];
+  return images[(Math.abs(verseId) + offset) % images.length];
+}

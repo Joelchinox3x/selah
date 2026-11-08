@@ -42,6 +42,8 @@ interface ShareCardModalProps {
   visible: boolean;
   versesText: string;
   referenceText: string;
+  initialBackgroundId?: string;
+  initialAspectRatio?: AspectRatioMode;
   onClose: () => void;
 }
 
@@ -57,11 +59,13 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   visible,
   versesText,
   referenceText,
+  initialBackgroundId,
+  initialAspectRatio = '9:16',
   onClose,
 }) => {
   // All hooks declared unconditionally at the very top
-  const [aspectRatio, setAspectRatio] = useState<AspectRatioMode>('9:16');
-  const [selectedBgId, setSelectedBgId] = useState<string>(() => getRandomImageBgId());
+  const [aspectRatio, setAspectRatio] = useState<AspectRatioMode>(initialAspectRatio);
+  const [selectedBgId, setSelectedBgId] = useState<string>(() => initialBackgroundId || getRandomImageBgId());
   const [fontPreset, setFontPreset] = useState<TypographyPreset>('classic');
   const [textPosition, setTextPosition] = useState<TextVerticalPosition>('center');
   const [activeCategory, setActiveCategory] = useState<BackgroundCategory>('all');
@@ -75,13 +79,14 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
 
-  // Whenever modal opens from closed to open, pick a new random photographic background
+  // Reset each opening to the caller's background and format.
   useEffect(() => {
     if (visible && !prevVisible.current) {
-      setSelectedBgId(getRandomImageBgId());
+      setSelectedBgId(initialBackgroundId || getRandomImageBgId());
+      setAspectRatio(initialAspectRatio);
     }
     prevVisible.current = visible;
-  }, [visible]);
+  }, [visible, initialBackgroundId, initialAspectRatio]);
 
   const currentBg = useMemo(() => {
     return (

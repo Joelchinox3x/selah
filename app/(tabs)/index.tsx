@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View,
+  AppState,
   Text,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,8 @@ import { DailyCuriosityCard } from '@/src/features/curiosities/components/DailyC
 import { getTodayCuriosity } from '@/src/features/curiosities/data/biblicalCuriosities';
 import { MeditationModal } from '@/src/features/daily/components/MeditationModal';
 import { MoodBubbleCard } from '@/src/features/mood/components/MoodBubbleCard';
+import { localDateKey } from '@/src/features/daily/data/devotionalSelection';
+import { getVerseBackground } from '@/src/features/share/data/cardBackgrounds';
 import { ShareCardModal } from '@/src/features/share/components/ShareCardModal';
 import { ContinueReadingCard, LastReadInfo } from '@/src/features/home/components/ContinueReadingCard';
 import { CalmaBanner } from '@/src/features/home/components/CalmaBanner';
@@ -65,6 +68,8 @@ export default function HomeScreen() {
   const [moods, setMoods] = useState<MoodCatalogItem[]>([]);
   const [lastReadInfo, setLastReadInfo] = useState<LastReadInfo | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [verseBusy, setVerseBusy] = useState(false);
+  const verseChanging = useRef(false);
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [meditationVisible, setMeditationVisible] = useState(false);
   const [postalModalVisible, setPostalModalVisible] = useState(false);
@@ -129,10 +134,6 @@ export default function HomeScreen() {
 
       const totalCh = book?.chapters_count || 150;
       const nextChapter = chapter < totalCh ? chapter + 1 : null;
-      const progressPercent = Math.min(
-        100,
-        Math.max(10, Math.round((chapter / totalCh) * 100))
-      );
 
       setLastReadInfo({
         bookName: book?.name || 'Salmos',
@@ -142,10 +143,10 @@ export default function HomeScreen() {
         lastVerse,
         totalVerses,
         snippet,
-        progressPercent,
         timeLabel: formatRelativeTime(lastRead?.lastReadAt),
         readingMinutes,
         isCompleted,
+        hasReadingHistory: Boolean(lastRead),
         nextChapter,
       });
     } catch (e) {
@@ -155,8 +156,8 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      if (!postalModalVisible) loadData();
+    }, [loadData, postalModalVisible])
   );
 
   const onRefresh = async () => {
@@ -165,14 +166,34 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const handleRotateVerse = async () => {
+  const changeVerse = async (previous = false) => {
+    if (verseChanging.current) return;
+    verseChanging.current = true;
+    setVerseBusy(true);
     try {
-      const nextDev = await getDailyDevotional({ randomize: true });
+      const nextDev = await getDailyDevotional(previous ? { previous: true } : { randomize: true });
       setDevotional(nextDev);
     } catch (e) {
-      console.warn('Error rotating devotional:', e);
+      console.warn('Error changing devotional:', e);
+    } finally {
+      verseChanging.current = false;
+      setVerseBusy(false);
     }
   };
+  const handleRotateVerse = () => changeVerse();
+  const handlePreviousVerse = () => changeVerse(true);
+
+  useEffect(() => {
+    const checkNewDay = () => {
+      if (!devotional || devotional.dateKey === localDateKey(new Date()) || verseChanging.current) return;
+      getDailyDevotional().then(setDevotional).catch((e) => console.warn('Error refreshing daily verse:', e));
+    };
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkNewDay();
+    });
+    const timer = setInterval(checkNewDay, 30_000);
+    return () => { subscription.remove(); clearInterval(timer); };
+  }, [devotional?.dateKey]);
 
   const handleOpenCalma = () => {
     hapticLight();
@@ -234,6 +255,13 @@ export default function HomeScreen() {
           onMeditate={() => setMeditationVisible(true)}
           onRotateVerse={handleRotateVerse}
           onOpenPostal={() => setPostalModalVisible(true)}
+          onPreviousVerse={handlePreviousVerse}
+          verseBusy={verseBusy}
+          onReadVerse={() => {
+            if (!devotional) return;
+            const { verse } = devotional;
+            router.push(`/reader/${verse.book_id}/${verse.chapter}?highlightVerse=${verse.verse}` as any);
+          }}
         />
 
         {/* 2. Continue Reading Card */}
@@ -310,7 +338,6 @@ export default function HomeScreen() {
           devotional={devotional}
           onClose={() => setPostalModalVisible(false)}
           onNavigateToReader={(bookId, chapter, verse) => {
-            setPostalModalVisible(false);
             router.push(`/reader/${bookId}/${chapter}?highlightVerse=${verse}` as any);
           }}
           onShare={() => {
@@ -329,6 +356,8 @@ export default function HomeScreen() {
       {devotional && (
         <ShareCardModal
           visible={shareModalVisible}
+          initialBackgroundId={getVerseBackground(devotional.verse.id).id}
+          initialAspectRatio="1:1"
           versesText={devotional.verse.text}
           referenceText={`${devotional.verse.book_name} ${devotional.verse.chapter}:${devotional.verse.verse}`}
           onClose={() => setShareModalVisible(false)}

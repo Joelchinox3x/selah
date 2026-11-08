@@ -1,3 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEVOTIONAL_CATALOG } from '@/src/features/daily/data/devotionalCatalog';
+import { selectDevotional, parseDevotionalSelection } from '@/src/features/daily/data/devotionalSelection';
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 import {
@@ -367,77 +370,43 @@ export async function getRandomCalmingVerse(): Promise<Verse> {
 
 // ================= DAILY DEVOTIONAL VERSE =================
 export interface DailyDevotional {
+  canGoBack: boolean;
   verse: Verse;
   dateKey: string;
   theme: string;
   reflection: string;
 }
 
-const DEVOTIONAL_THEMES = [
-  { verseId: 14237, theme: 'Paz en la provisión', reflection: 'Descansa hoy sabiendo que no caminas en escasez: Dios es tu pastor y su gracia cuida cada uno de tus pasos.' },
-  { verseId: 29449, theme: 'Rendición y Quietud', reflection: 'Convierte cada pensamiento de afán en una plegaria sincera. Su paz sobrepasará hoy todo tu entendimiento.' },
-  { verseId: 18462, theme: 'Fuerza en la debilidad', reflection: 'No temas al porvenir ni a las tareas del día. La diestra de su justicia es el sustento que nunca falla.' },
-  { verseId: 23488, theme: 'El alivio del cansancio', reflection: 'Si sientes el alma agotada, Jesús no te pide más esfuerzo: te ofrece un abrazo seguro y reposo verdadero.' },
-  { verseId: 26696, theme: 'La paz que permanece', reflection: 'El mundo ofrece calma momentánea, pero la paz de Cristo es un ancla inamovible en medio de cualquier marea.' },
-  { verseId: 16461, theme: 'Confianza plena', reflection: 'No necesitas resolver todas las incógnitas hoy. Confía de corazón en Aquel que ya conoce todo tu sendero.' },
-  { verseId: 19647, theme: 'Pensamientos de bien', reflection: 'Los designios de Dios para tu vida están llenos de esperanza y futuro. Camina en confianza hoy.' },
-  { verseId: 14616, theme: 'Nuestro refugio', reflection: 'Dios es nuestro amparo y fortaleza, pronto auxilio en las tribulaciones. Quédate en silencio y descansa.' },
-  { verseId: 28145, theme: 'Propósito en todo', reflection: 'Aun lo que parece confuso o difícil está siendo entretejido por Dios para un bien mayor en tu vida.' },
-  { verseId: 18452, theme: 'Alas como de águilas', reflection: 'Los que esperan en el Señor renovarán sus fuerzas; correrán y no se cansarán, caminarán sin fatigarse.' },
-  { verseId: 15397, theme: 'Morar bajo su sombra', reflection: 'El que habita al abrigo del Altísimo morará seguro bajo las alas de su protección todopoderosa.' },
-  { verseId: 15552, theme: 'Gratitud que sana', reflection: 'Bendice hoy al Señor y no olvides ninguno de sus beneficios cotidianos en tu caminar.' },
-  { verseId: 30272, theme: 'Sabiduría divina', reflection: 'Si sientes incertidumbre, pide sabiduría a Dios: Él da con generosidad y sin reproche.' },
-  { verseId: 30473, theme: 'Descargar la solicitud', reflection: 'Echa hoy toda tu ansiedad sobre Él, con la plena certeza de que Dios cuida tiernamente de ti.' },
-  { verseId: 30174, theme: 'Certeza inamovible', reflection: 'La fe no es ver el camino despejado, sino avanzar confiando en la mano que te guía.' },
-  { verseId: 16084, theme: 'Socorro que no duerme', reflection: 'Tu ayuda viene de Jehová, creador de los cielos y la tierra, quien cuida tu salida y tu entrada.' },
-  { verseId: 14287, theme: 'Luz en la oscuridad', reflection: 'Jehová es mi luz y salvación: ¿a quién temeré? Su presencia ahuyenta todo temor.' },
-  { verseId: 23316, theme: 'El orden de las cosas', reflection: 'Busca hoy el reino de Dios y su justicia, y todo lo necesario te será provisto con generosidad.' },
-  { verseId: 18134, theme: 'Mente en calma', reflection: 'Tú guardarás en perfecta paz a aquel cuyo pensamiento en ti persevera, porque en ti confía.' },
-  { verseId: 14397, theme: 'Probar su bondad', reflection: 'Gusta y ve cuán bueno es el Señor; dichosa el alma que en Él halla verdadero refugio.' },
-  { verseId: 29456, theme: 'Fuerza interior', reflection: 'Todo lo puedo en Cristo que me fortalece; ninguna circunstancia es más grande que su gracia.' },
-  { verseId: 14455, theme: 'El deleite del alma', reflection: 'Deléitate en el Señor, y Él concederá los deseos más nobles y profundos de tu corazón.' },
-  { verseId: 26394, theme: 'Luz de vida', reflection: 'El que me sigue no andará en tinieblas, sino que tendrá la luz viva que ilumina todo sendero.' },
-  { verseId: 28317, theme: 'Abundancia de esperanza', reflection: 'Que el Dios de esperanza te llene de todo gozo y paz en el creer para que abundes en esperanza.' },
-  { verseId: 16004, theme: 'Lámpara a mis pies', reflection: 'Lámpara es a mis pies tu palabra y lumbrera a mi camino; cada promesa alumbra tu jornada.' },
-  { verseId: 29638, theme: 'Alegría constante', reflection: 'Estad siempre gozosos, orad sin cesar y dad gracias en todo momento.' },
-  { verseId: 14833, theme: 'Silencio y esperanza', reflection: 'En Dios solamente reposa, alma mía, porque de Él viene tu esperanza inquebrantable.' },
-  { verseId: 16844, theme: 'Encomendar tus pasos', reflection: 'Pon tus obras en las manos de Dios, y tus planes serán afirmados en su perfecta voluntad.' },
-  { verseId: 5861, theme: 'Valentía y aliento', reflection: 'Sé fuerte y valiente; no temas ni desmayes, porque Jehová tu Dios va contigo dondequiera que vayas.' },
-  { verseId: 16254, theme: 'Creación admirable', reflection: 'Te alabo porque formidables y maravillosas son tus obras; tu amor me formó con propósito.' },
-  { verseId: 26492, theme: 'Vida abundante', reflection: 'Yo he venido para que tengan vida, y para que la tengan en abundancia y plenitud.' },
-];
+const DEVOTIONAL_STORAGE_KEY = 'selah.daily-devotional.v1';
+const DEVOTIONAL_IDS = DEVOTIONAL_CATALOG.map((entry) => entry.verseId);
+let devotionalQueue: Promise<unknown> = Promise.resolve();
 
-export async function getDailyDevotional(options?: { date?: Date; randomize?: boolean }): Promise<DailyDevotional> {
-  const targetDate = options?.date || new Date();
-  const year = targetDate.getFullYear();
-  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-  const day = String(targetDate.getDate()).padStart(2, '0');
-  const dateKey = `${year}-${month}-${day}`;
-
-  let devotionalMeta;
-  if (options?.randomize) {
-    const randIndex = Math.floor(Math.random() * DEVOTIONAL_THEMES.length);
-    devotionalMeta = DEVOTIONAL_THEMES[randIndex];
-  } else {
-    // Deterministic index by day of the year (rotates every single day)
-    const startOfYear = new Date(year, 0, 0);
-    const diff = targetDate.getTime() - startOfYear.getTime();
-    const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
-    devotionalMeta = DEVOTIONAL_THEMES[dayOfYear % DEVOTIONAL_THEMES.length];
-  }
-
-  let verse = await getVerseById(devotionalMeta.verseId);
-
-  if (!verse) {
-    verse = await getRandomCalmingVerse();
-  }
-
-  return {
-    verse,
-    dateKey,
-    theme: devotionalMeta.theme,
-    reflection: devotionalMeta.reflection,
-  };
+export function getDailyDevotional(options?: {
+  date?: Date;
+  randomize?: boolean;
+  previous?: boolean;
+}): Promise<DailyDevotional> {
+  const task = devotionalQueue.then(async () => {
+    // Date previews (notification scheduling) must never replace today's saved choice.
+    const preview = options?.date !== undefined;
+    const saved = preview ? null : parseDevotionalSelection(await AsyncStorage.getItem(DEVOTIONAL_STORAGE_KEY));
+    const selection = selectDevotional(saved, DEVOTIONAL_IDS, options?.date || new Date(),
+      options?.previous ? 'previous' : options?.randomize ? 'random' : 'current');
+    const id = selection.history[selection.history.length - 1];
+    const meta = DEVOTIONAL_CATALOG.find((entry) => entry.verseId === id)!;
+    const verse = await getVerseById(id);
+    if (!verse) throw new Error(`Versículo del catálogo no encontrado: ${id}`);
+    if (!preview) await AsyncStorage.setItem(DEVOTIONAL_STORAGE_KEY, JSON.stringify(selection));
+    return {
+      verse,
+      dateKey: selection.dateKey,
+      theme: meta.theme,
+      reflection: meta.reflection,
+      canGoBack: selection.history.length > 1,
+    };
+  });
+  devotionalQueue = task.catch(() => undefined);
+  return task;
 }
 
 // ================= BIBLICAL PEOPLE (EL ÁRBOL HUMANO & SMART READER) =================
