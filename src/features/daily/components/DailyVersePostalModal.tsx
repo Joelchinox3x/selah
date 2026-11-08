@@ -11,9 +11,11 @@ import {
   StatusBar,
   ScrollView,
   Pressable,
+  Animated,
 } from 'react-native';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import { shareVerseImage, assertImageCaptionSharingAvailable } from '@/src/features/share/utils/shareVerseImage';
+import { getVerseShareUrl } from '@/src/features/share/utils/verseShare';
 import { PostalImageExport } from './PostalImageExport';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,7 +38,7 @@ import {
   syncRemoteBackgrounds,
 } from '@/src/services/backgroundsService';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
-import { CommunityReflectionsModal } from './CommunityReflectionsModal';
+import { DailyVersePostalBackside } from './DailyVersePostalBackside';
 import { DailyVerseActionSheet } from './DailyVerseActionSheet';
 
 interface DailyVersePostalModalProps {
@@ -77,10 +79,70 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
   const [isSaved, setIsSaved] = useState(false);
   const [bgIndexOffset, setBgIndexOffset] = useState(0);
 
-  // Modals state
+  // Modals & 3D Flip Postal state
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
-  const [reflectionsVisible, setReflectionsVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // 3D Flip Card Animation State
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  // Reset flip when modal closes or changes verse
+  useEffect(() => {
+    if (!visible) {
+      setIsFlipped(false);
+      animatedValue.setValue(0);
+    }
+  }, [visible, animatedValue]);
+
+  const flipToBack = useCallback(() => {
+    hapticLight();
+    setIsFlipped(true);
+    Animated.spring(animatedValue, {
+      toValue: 180,
+      friction: 8,
+      tension: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [animatedValue]);
+
+  const flipToFront = useCallback(() => {
+    hapticLight();
+    Animated.spring(animatedValue, {
+      toValue: 0,
+      friction: 8,
+      tension: 10,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsFlipped(false);
+    });
+  }, [animatedValue]);
+
+  const frontRotateY = animatedValue.interpolate({
+    inputRange: [0, 180],
+    outputRange: ['0deg', '180deg'],
+  });
+  const backRotateY = animatedValue.interpolate({
+    inputRange: [0, 180],
+    outputRange: ['180deg', '360deg'],
+  });
+  const frontOpacity = animatedValue.interpolate({
+    inputRange: [89, 90],
+    outputRange: [1, 0],
+  });
+  const backOpacity = animatedValue.interpolate({
+    inputRange: [89, 90],
+    outputRange: [0, 1],
+  });
+
+  const frontAnimatedStyle = {
+    transform: [{ perspective: 1200 }, { rotateY: frontRotateY }],
+    opacity: frontOpacity,
+  };
+  const backAnimatedStyle = {
+    transform: [{ perspective: 1200 }, { rotateY: backRotateY }],
+    opacity: backOpacity,
+  };
 
   // Live community metrics (Likes, Shares, Comments)
   const [metrics, setMetrics] = useState({
@@ -88,6 +150,10 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
     shares: 58,
     comments: 24,
   });
+
+  const handleCommentCountChange = useCallback((cnt: number) => {
+    setMetrics((m) => (m.comments === cnt ? m : { ...m, comments: cnt }));
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -229,29 +295,27 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
   };
 
   const handleCopyVerse = async () => {
-    const textToCopy = `«${verse.text}»\n— ${verse.book_name} ${verse.chapter}:${verse.verse} (RVR1909)`;
     try {
-      await Share.share({
-        message: textToCopy,
-        title: `${verse.book_name} ${verse.chapter}:${verse.verse}`,
-      });
-      showToast('📋 Versículo preparado para copiar');
-    } catch {
-      showToast('📋 Texto listo');
+      // Lazy import keeps older APKs usable until the new native build is installed.
+      const Clipboard = await import('expo-clipboard');
+      const copied = await Clipboard.setStringAsync(`«${verse.text}»\n— ${verse.book_name} ${verse.chapter}:${verse.verse}`);
+      if (!copied) throw new Error('Clipboard write failed');
+      showToast('Versículo copiado');
+    } catch (error) {
+      console.warn('Error copying verse:', error);
+      showToast('No se pudo copiar. Comprueba que tengas la nueva APK instalada.');
     }
   };
 
   const handleCopyLink = async () => {
-    const linkToCopy = `https://selah.boxtiove.com/v/${cleanSlug}`;
     try {
-      await Share.share({
-        message: linkToCopy,
-        url: linkToCopy,
-        title: 'Enlace de Selah Biblia',
-      });
-      showToast('🔗 Enlace web listo');
-    } catch {
-      showToast('🔗 Enlace copiado');
+      const Clipboard = await import('expo-clipboard');
+      const copied = await Clipboard.setStringAsync(getVerseShareUrl(verse.book_name, verse.chapter, verse.verse));
+      if (!copied) throw new Error('Clipboard write failed');
+      showToast('Enlace copiado');
+    } catch (error) {
+      console.warn('Error copying verse link:', error);
+      showToast('No se pudo copiar. Comprueba que tengas la nueva APK instalada.');
     }
   };
 
@@ -265,10 +329,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
     let uri: string | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      if (!(await Sharing.isAvailableAsync())) {
-        showToast('Compartir imágenes no está disponible en este dispositivo');
-        return;
-      }
+      assertImageCaptionSharingAvailable();
       showToast('Preparando imagen…');
       imageLoaded.current = false;
       exportLaidOut.current = false;
@@ -283,10 +344,10 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
       if (!exportRef.current) throw new Error('No se pudo preparar la postal');
       uri = await captureRef(exportRef, { format: 'jpg', quality: 0.95, result: 'tmpfile', width: 1080, height: 1920 });
       setToastMessage(null);
-      await Sharing.shareAsync(uri, { mimeType: 'image/jpeg', UTI: 'public.jpeg', dialogTitle: `Compartir ${citation}` });
+      await shareVerseImage(uri, getVerseShareUrl(verse.book_name, verse.chapter, verse.verse), citation);
     } catch (error) {
       console.warn('Error sharing postal image:', error);
-      showToast('No se pudo crear la imagen. Intenta nuevamente.');
+      showToast(error instanceof Error ? error.message : 'No se pudo compartir. Intenta nuevamente.');
     } finally {
       if (timeout) clearTimeout(timeout);
       if (uri) releaseCapture(uri);
@@ -302,224 +363,252 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (isFlipped) {
+          flipToFront();
+        } else {
+          onClose();
+        }
+      }}
     >
-      <Pressable
-        style={styles.container}
-        onPress={() => setControlsVisible((current) => !current)}
-        accessible={false}
-      >
+      <View style={styles.container}>
         <StatusBar
-          hidden={!controlsVisible}
+          hidden={!controlsVisible && !isFlipped}
           barStyle="light-content"
           translucent
           backgroundColor="transparent"
         />
 
-        {/* 1. Full-screen 9:16 vertical scenery background */}
-        <Image
-          source={bgSource}
-          style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
-          resizeMode="cover"
-        />
-
-        {/* 2. Gradient scrim for contrast */}
-        <Svg
-          height="100%"
-          width="100%"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          pointerEvents="none"
-          style={StyleSheet.absoluteFill}
+        {/* 1. FRONT FACE (Cara A: Postal Fotográfica 9:16) */}
+        <Animated.View
+          pointerEvents={isFlipped ? 'none' : 'auto'}
+          style={[styles.cardSide, frontAnimatedStyle, { zIndex: isFlipped ? 0 : 10 }]}
         >
-          <Defs>
-            <LinearGradient
-              id="postalGrad"
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="100"
-              gradientUnits="userSpaceOnUse"
-            >
-              <Stop offset="0%" stopColor="#000000" stopOpacity="0.45" />
-              <Stop offset="22%" stopColor="#000000" stopOpacity="0.15" />
-              <Stop offset="65%" stopColor="#000000" stopOpacity="0.30" />
-              <Stop offset="100%" stopColor="#000000" stopOpacity="0.75" />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100" height="100" fill="url(#postalGrad)" />
-        </Svg>
-
-        {/* Floating Toast Notification */}
-        {toastMessage && (
-          <View style={[styles.toast, { top: Math.max(insets.top + 60, 72) }]}>
-            <Text style={styles.toastText}>{toastMessage}</Text>
-          </View>
-        )}
-
-        {/* 3. Top Action Bar: Close (X) on left, 3 dots on right */}
-        <View
-          pointerEvents={controlsVisible ? 'auto' : 'none'}
-          style={[
-            styles.topBar,
-            {
-              opacity: controlsVisible ? 1 : 0,
-              paddingTop: Math.max(insets.top + 10, 24),
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.iconCircleBtn}
-            onPress={() => {
-              hapticLight();
-              onClose();
-            }}
-            activeOpacity={0.75}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setControlsVisible((current) => !current)}
+            accessible={false}
           >
-            <X size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+            {/* 1. Full-screen 9:16 vertical scenery background */}
+            <Image
+              source={bgSource}
+              style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
+              resizeMode="cover"
+            />
 
-          <View style={styles.topRightActions}>
-            {/* Rotate Verse Action */}
-            {onRotateVerse && (
+            {/* 2. Gradient scrim for contrast */}
+            <Svg
+              height="100%"
+              width="100%"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}
+            >
+              <Defs>
+                <LinearGradient
+                  id="postalGrad"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="100"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <Stop offset="0%" stopColor="#000000" stopOpacity="0.45" />
+                  <Stop offset="22%" stopColor="#000000" stopOpacity="0.15" />
+                  <Stop offset="65%" stopColor="#000000" stopOpacity="0.30" />
+                  <Stop offset="100%" stopColor="#000000" stopOpacity="0.75" />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100" height="100" fill="url(#postalGrad)" />
+            </Svg>
+
+            {/* Floating Toast Notification */}
+            {toastMessage && (
+              <View style={[styles.toast, { top: Math.max(insets.top + 60, 72) }]}>
+                <Text style={styles.toastText}>{toastMessage}</Text>
+              </View>
+            )}
+
+            {/* 3. Top Action Bar: Close (X) on left, 3 dots on right */}
+            <View
+              pointerEvents={controlsVisible ? 'auto' : 'none'}
+              style={[
+                styles.topBar,
+                {
+                  opacity: controlsVisible ? 1 : 0,
+                  paddingTop: Math.max(insets.top + 10, 24),
+                },
+              ]}
+            >
               <TouchableOpacity
                 style={styles.iconCircleBtn}
                 onPress={() => {
                   hapticLight();
-                  onRotateVerse();
+                  onClose();
                 }}
                 activeOpacity={0.75}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <RotateCw size={19} color="#FFFFFF" />
+                <X size={24} color="#FFFFFF" />
               </TouchableOpacity>
-            )}
 
-            {/* 3-dots Menu Button */}
-            <TouchableOpacity
-              style={styles.iconCircleBtn}
-              onPress={() => {
-                hapticLight();
-                setActionSheetVisible(true);
-              }}
-              activeOpacity={0.75}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              <View style={styles.topRightActions}>
+                {/* Rotate Verse Action */}
+                {onRotateVerse && (
+                  <TouchableOpacity
+                    style={styles.iconCircleBtn}
+                    onPress={() => {
+                      hapticLight();
+                      onRotateVerse();
+                    }}
+                    activeOpacity={0.75}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <RotateCw size={19} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
+
+                {/* 3-dots Menu Button */}
+                <TouchableOpacity
+                  style={styles.iconCircleBtn}
+                  onPress={() => {
+                    hapticLight();
+                    setActionSheetVisible(true);
+                  }}
+                  activeOpacity={0.75}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <MoreHorizontal size={22} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 4. Postal heading, scripture, and direct links to Bible */}
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={styles.contentContainer}
+              showsVerticalScrollIndicator={false}
             >
-              <MoreHorizontal size={22} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </View>
+              <Text style={[styles.categoryTitle, { opacity: controlsVisible ? 1 : 0 }]}>
+                Versículo del día
+              </Text>
+              <View style={styles.verseSection}>
+                <Text style={[styles.verseBody, { fontSize, lineHeight }]}>
+                  {verse.text}
+                </Text>
+                <View style={styles.readingRow}>
+                  <TouchableOpacity
+                    style={styles.citationButton}
+                    onPress={handleGoToReader}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Leer ${citation} en la Biblia`}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.citationTitle}>{citation}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
 
-        {/* 4. Postal heading, scripture, and direct links to Bible */}
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={[styles.categoryTitle, { opacity: controlsVisible ? 1 : 0 }]}>
-            Versículo del día
-          </Text>
-          <View style={styles.verseSection}>
-            <Text style={[styles.verseBody, { fontSize, lineHeight }]}>
-              {verse.text}
-            </Text>
-            <View style={styles.readingRow}>
-              <TouchableOpacity
-                style={styles.citationButton}
-                onPress={handleGoToReader}
-                accessibilityRole="button"
-                accessibilityLabel={`Leer ${citation} en la Biblia`}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.citationTitle}>{citation}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
+            <Text pointerEvents="none" style={styles.postalSignature}>✦ SELAH</Text>
 
-        <Text pointerEvents="none" style={styles.postalSignature}>✦ SELAH</Text>
-
-        {/* 5. Bottom Engagement Bar (4 perfectly aligned action buttons) */}
-        <View
-          pointerEvents={controlsVisible ? 'auto' : 'none'}
-          style={[
-            styles.bottomBar,
-            {
-              opacity: controlsVisible ? 1 : 0,
-              paddingBottom: Math.max(insets.bottom + 12, 24),
-            },
-          ]}
-        >
-          {/* 1. Me Gusta / Guardar */}
-          <TouchableOpacity
-            style={styles.bottomActionItem}
-            onPress={handleToggleBookmark}
-            activeOpacity={0.75}
-          >
-            <View style={styles.iconBox}>
-              <Heart
-                size={24}
-                color={isSaved ? '#ef4444' : '#FFFFFF'}
-                fill={isSaved ? '#ef4444' : 'transparent'}
-              />
-            </View>
-            <Text
+            {/* 5. Bottom Engagement Bar (4 perfectly aligned action buttons) */}
+            <View
+              pointerEvents={controlsVisible ? 'auto' : 'none'}
               style={[
-                styles.bottomActionLabel,
-                isSaved && styles.bottomActionLabelActive,
+                styles.bottomBar,
+                {
+                  opacity: controlsVisible ? 1 : 0,
+                  paddingBottom: Math.max(insets.bottom + 12, 24),
+                },
               ]}
             >
-              {metrics.likes}
-            </Text>
-          </TouchableOpacity>
+              {/* 1. Me Gusta / Guardar */}
+              <TouchableOpacity
+                style={styles.bottomActionItem}
+                onPress={handleToggleBookmark}
+                activeOpacity={0.75}
+              >
+                <View style={styles.iconBox}>
+                  <Heart
+                    size={24}
+                    color={isSaved ? '#ef4444' : '#FFFFFF'}
+                    fill={isSaved ? '#ef4444' : 'transparent'}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.bottomActionLabel,
+                    isSaved && styles.bottomActionLabelActive,
+                  ]}
+                >
+                  {metrics.likes}
+                </Text>
+              </TouchableOpacity>
 
-          {/* 2. Comentarios / Muro de Reflexiones (Opción A) */}
-          <TouchableOpacity
-            style={styles.bottomActionItem}
-            onPress={() => {
-              hapticLight();
-              setReflectionsVisible(true);
-            }}
-            activeOpacity={0.75}
-          >
-            <View style={styles.iconBox}>
-              <MessageSquare size={24} color="#FFFFFF" />
+              {/* 2. Girar Postal / Muro de Reflexiones (3D Flip) */}
+              <TouchableOpacity
+                style={styles.bottomActionItem}
+                onPress={flipToBack}
+                activeOpacity={0.75}
+              >
+                <View style={styles.iconBox}>
+                  <MessageSquare size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.bottomActionLabel}>{metrics.comments}</Text>
+              </TouchableOpacity>
+
+              {/* 3. Compartir la postal lista como imagen */}
+              <TouchableOpacity
+                style={styles.bottomActionItem}
+                onPress={handleShareImage}
+                accessibilityRole="button"
+                accessibilityLabel="Compartir postal como imagen"
+                activeOpacity={0.75}
+              >
+                <View style={styles.iconBox}>
+                  <Share2 size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.bottomActionLabel}>{metrics.shares}</Text>
+              </TouchableOpacity>
+
+              {/* 4. Crear Tarjeta con Imagen (Alineado exactamente) */}
+              <TouchableOpacity
+                style={styles.bottomActionItem}
+                onPress={() => {
+                  hapticLight();
+                  onClose();
+                  onShare(bgItem.id);
+                }}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.iconBox, styles.thumbnailCard]}>
+                  <Layers size={17} color="#fbbf24" />
+                </View>
+                <Text style={styles.bottomActionLabel}>Crear</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.bottomActionLabel}>{metrics.comments}</Text>
-          </TouchableOpacity>
+          </Pressable>
+        </Animated.View>
 
-          {/* 3. Compartir la postal lista como imagen */}
-          <TouchableOpacity
-            style={styles.bottomActionItem}
-            onPress={handleShareImage}
-            accessibilityRole="button"
-            accessibilityLabel="Compartir postal como imagen"
-            activeOpacity={0.75}
-          >
-            <View style={styles.iconBox}>
-              <Share2 size={24} color="#FFFFFF" />
-            </View>
-            <Text style={styles.bottomActionLabel}>{metrics.shares}</Text>
-          </TouchableOpacity>
+        {/* 2. BACK FACE (Cara B: 3D Reverso de la Postal) */}
+        <Animated.View
+          pointerEvents={isFlipped ? 'auto' : 'none'}
+          style={[styles.cardSide, backAnimatedStyle, { zIndex: isFlipped ? 10 : 0 }]}
+        >
+          <DailyVersePostalBackside
+            verseSlug={cleanSlug}
+            verseCitation={citation}
+            verseText={verse.text}
+            onFlipToFront={flipToFront}
+            onClose={onClose}
+            onGoToReader={handleGoToReader}
+            onCommentCountChange={handleCommentCountChange}
+          />
+        </Animated.View>
 
-          {/* 4. Crear Tarjeta con Imagen (Alineado exactamente) */}
-          <TouchableOpacity
-            style={styles.bottomActionItem}
-            onPress={() => {
-              hapticLight();
-              onClose();
-              onShare(bgItem.id);
-            }}
-            activeOpacity={0.75}
-          >
-            <View style={[styles.iconBox, styles.thumbnailCard]}>
-              <Layers size={17} color="#fbbf24" />
-            </View>
-            <Text style={styles.bottomActionLabel}>Crear</Text>
-          </TouchableOpacity>
-        </View>
-
+        {/* Export Postal Image Component */}
         {exportRequested && bgSource && (
           <PostalImageExport
             ref={exportRef}
@@ -534,7 +623,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
           />
         )}
 
-        {/* Modals: Action Sheet (3 dots) & Community Reflections (Opción A) */}
+        {/* 3-dots Action Sheet */}
         <DailyVerseActionSheet
           visible={actionSheetVisible}
           verseCitation={citation}
@@ -542,26 +631,16 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
           onCopyVerse={handleCopyVerse}
           onCopyLink={handleCopyLink}
           onShare={handleQuickShare}
-          onShareImage={handleShareImage}
           onToggleBookmark={handleToggleBookmark}
           onDesignCard={() => {
             onClose();
             onShare(bgItem.id);
           }}
           onReadFullChapter={handleGoToReader}
+          onFlipPostal={flipToBack}
           onClose={() => setActionSheetVisible(false)}
         />
-
-        <CommunityReflectionsModal
-          visible={reflectionsVisible}
-          verseSlug={cleanSlug}
-          verseCitation={citation}
-          onClose={() => setReflectionsVisible(false)}
-          onCommentCountChange={(cnt) =>
-            setMetrics((m) => ({ ...m, comments: cnt }))
-          }
-        />
-      </Pressable>
+      </View>
     </Modal>
   );
 };
@@ -570,7 +649,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#050811',
-    justifyContent: 'space-between',
+  },
+  cardSide: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+    backfaceVisibility: 'hidden',
   },
   toast: {
     position: 'absolute',

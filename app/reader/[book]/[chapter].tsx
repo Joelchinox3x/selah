@@ -1,3 +1,4 @@
+import { getVerseShareUrl } from '@/src/features/share/utils/verseShare';
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
@@ -686,6 +687,9 @@ export default function ChapterReaderScreen() {
         visible={shareModalVisible}
         versesText={shareText}
         referenceText={shareRefText}
+        shareUrl={book && selectedVersesList.length > 0
+          ? getVerseShareUrl(book.name, chapterNumber, selectedVersesList[0].verse)
+          : ''}
         onClose={() => setShareModalVisible(false)}
       />
 

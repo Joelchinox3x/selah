@@ -2,7 +2,7 @@
   "expo": {
     "name": "Selah: Biblia & Calma",
     "slug": "selah-bible",
-    "version": "1.2.3",
+    "version": "1.2.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "selahbible",
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 4,
+      "versionCode": 5,
       "intentFilters": [
         {
           "action": "VIEW",
@@ -75,6 +75,14 @@
         {
           "icon": "./assets/images/icon.png",
           "color": "#10b981"
+        }
+      ],
+      [
+        "react-native-share",
+        {
+          "enableBase64ShareAndroid": false,
+          "ios": [],
+          "android": []
         }
       ]
     ],

@@ -1,3 +1,4 @@
+import { getVerseShareUrl } from '@/src/features/share/utils/verseShare';
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View,
@@ -361,6 +362,7 @@ export default function HomeScreen() {
       {devotional && (
         <ShareCardModal
           visible={shareModalVisible}
+          shareUrl={getVerseShareUrl(devotional.verse.book_name, devotional.verse.chapter, devotional.verse.verse)}
           initialBackgroundId={shareCardOptions?.backgroundId ?? getVerseBackground(devotional.verse.id).id}
           initialAspectRatio={shareCardOptions?.aspectRatio ?? '1:1'}
           versesText={devotional.verse.text}

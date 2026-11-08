@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   View,
+  Alert,
   Text,
   Modal,
   StyleSheet,
@@ -12,7 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import { shareVerseImage, assertImageCaptionSharingAvailable } from '../utils/shareVerseImage';
 import {
   X,
   Share2,
@@ -48,6 +49,7 @@ interface ShareCardModalProps {
   visible: boolean;
   versesText: string;
   referenceText: string;
+  shareUrl: string;
   initialBackgroundId?: string;
   initialAspectRatio?: AspectRatioMode;
   onClose: () => void;
@@ -65,6 +67,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   visible,
   versesText,
   referenceText,
+  shareUrl,
   initialBackgroundId,
   initialAspectRatio = '9:16',
   onClose,
@@ -262,8 +265,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
       setIsExporting(true);
 
       if (!exportCardRef.current) return;
+      assertImageCaptionSharingAvailable();
 
-      // Hardware-accelerated fast JPEG capture (instant, sub-100ms, zero lag!)
+      // Capture the designed card before sharing it with the verse link.
       const uri = await captureRef(exportCardRef, {
         format: 'jpg',
         quality: 0.92,
@@ -272,14 +276,10 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
 
       hapticSuccess();
 
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'image/jpeg',
-          dialogTitle: `Compartir ${cleanRef}`,
-        });
-      }
+      await shareVerseImage(uri, shareUrl, cleanRef);
     } catch (err) {
       console.warn('Error exporting shareable card:', err);
+      Alert.alert('No se pudo compartir', err instanceof Error ? err.message : 'Intenta nuevamente.');
     } finally {
       setIsExporting(false);
     }

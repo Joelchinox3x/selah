@@ -1,24 +1,7 @@
-import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Pressable,
-  ScrollView,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  Copy,
-  Image as ImageIcon,
-  Link2,
-  Share2,
-  Bookmark,
-  Palette,
-  BookOpen,
-  X,
-} from 'lucide-react-native';
+import { Copy, Link2, Share2, Bookmark, Palette, BookOpen, X, ChevronRight, ArrowLeft, RotateCcw } from 'lucide-react-native';
 import { hapticLight } from '@/src/services/haptics/hapticFeedback';
 
 interface DailyVerseActionSheetProps {
@@ -28,196 +11,82 @@ interface DailyVerseActionSheetProps {
   onCopyVerse: () => void;
   onCopyLink: () => void;
   onShare: () => void;
-  onShareImage: () => void;
   onToggleBookmark: () => void;
   onDesignCard: () => void;
   onReadFullChapter: () => void;
+  onFlipPostal?: () => void;
   onClose: () => void;
 }
 
 export const DailyVerseActionSheet: React.FC<DailyVerseActionSheetProps> = ({
-  visible,
-  verseCitation,
-  isSaved,
-  onCopyVerse,
-  onCopyLink,
-  onShare,
-  onShareImage,
-  onToggleBookmark,
-  onDesignCard,
-  onReadFullChapter,
-  onClose,
+  visible, verseCitation, isSaved, onCopyVerse, onCopyLink, onShare,
+  onToggleBookmark, onDesignCard, onReadFullChapter, onFlipPostal, onClose,
 }) => {
   const insets = useSafeAreaInsets();
+  const [copyMenu, setCopyMenu] = useState(false);
+  useEffect(() => { if (visible) setCopyMenu(false); }, [visible]);
 
   const handleAction = (action: () => void) => {
     hapticLight();
     onClose();
-    setTimeout(() => {
-      action();
-    }, 150);
+    setTimeout(action, 150);
   };
 
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View
-          style={[styles.sheetContainer, { paddingBottom: Math.max(insets.bottom + 8, 20) }]}
-          onStartShouldSetResponder={() => true}
-        >
-          {/* Drag Indicator */}
-          <View style={styles.indicatorWrap}>
-            <View style={styles.dragIndicator} />
-          </View>
+  const mainActions = [
+    ...(onFlipPostal ? [{
+      key: 'flip-postal',
+      icon: RotateCcw,
+      color: '#34d399',
+      title: 'Girar al reverso de la postal',
+      description: 'Muro de reflexión y testimonios de la comunidad',
+      action: () => handleAction(onFlipPostal),
+    }] : []),
+    { key: 'share-text', icon: Share2, color: '#fbbf24', title: 'Compartir texto y enlace', description: 'Envía el versículo y su enlace, sin imagen', action: () => handleAction(onShare) },
+    { key: 'copy', icon: Copy, color: '#38bdf8', title: 'Copiar…', description: 'Elige el texto del versículo o su enlace', action: () => { hapticLight(); setCopyMenu(true); } },
+    { key: 'bookmark', icon: Bookmark, color: isSaved ? '#ef4444' : '#f43f5e', title: isSaved ? 'Quitar de favoritos' : 'Guardar en favoritos', description: isSaved ? 'Retira el versículo de tu colección' : 'Conserva el versículo en tu colección', action: () => handleAction(onToggleBookmark) },
+    { key: 'design', icon: Palette, color: '#a855f7', title: 'Personalizar postal', description: 'Ajusta la foto, el formato y la tipografía', action: () => handleAction(onDesignCard) },
+    { key: 'read', icon: BookOpen, color: '#fbbf24', title: 'Leer capítulo completo', description: 'Abre el pasaje en la Biblia', action: () => handleAction(onReadFullChapter) },
+  ];
+  const copyActions = [
+    { key: 'copy-text', icon: Copy, color: '#38bdf8', title: 'Texto del versículo', description: 'Copia el texto bíblico y su referencia', action: () => handleAction(onCopyVerse) },
+    { key: 'copy-link', icon: Link2, color: '#34d399', title: 'Enlace', description: 'Copia el enlace para abrir el versículo en Selah', action: () => handleAction(onCopyLink) },
+  ];
 
-          {/* Header */}
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={() => copyMenu ? setCopyMenu(false) : onClose()}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <View style={[styles.sheetContainer, { paddingBottom: Math.max(insets.bottom + 8, 20) }]} onStartShouldSetResponder={() => true}>
+          <View style={styles.indicatorWrap}><View style={styles.dragIndicator} /></View>
           <View style={styles.header}>
-            <View>
-              <Text style={styles.headerSubtitle}>OPCIONES DEL VERSÍCULO</Text>
+            <View style={styles.headerText}>
+              <Text style={styles.headerSubtitle}>{copyMenu ? 'COPIAR' : 'OPCIONES DEL VERSÍCULO'}</Text>
               <Text style={styles.headerCitation}>{verseCitation}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={() => {
-                hapticLight();
-                onClose();
-              }}
-              activeOpacity={0.7}
-              hitSlop={10}
-            >
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Cerrar opciones">
               <X size={18} color="#94a3b8" />
             </TouchableOpacity>
           </View>
-
           <ScrollView style={styles.actionsScroll} contentContainerStyle={styles.actionsList} showsVerticalScrollIndicator={false}>
-            {/* 1. Copiar versículo */}
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleAction(onCopyVerse)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(56, 189, 248, 0.12)' }]}>
-                <Copy size={19} color="#38bdf8" />
-              </View>
-              <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Copiar versículo</Text>
-                <Text style={styles.actionDesc}>Copia el texto bíblico y la cita</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* 2. Copiar enlace web */}
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleAction(onCopyLink)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(52, 211, 153, 0.12)' }]}>
-                <Link2 size={19} color="#34d399" />
-              </View>
-              <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Copiar enlace web</Text>
-                <Text style={styles.actionDesc}>Enlace corto para redes y estados</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* 3. Compartir en WhatsApp o redes */}
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleAction(onShare)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
-                <Share2 size={19} color="#fbbf24" />
-              </View>
-              <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Compartir en WhatsApp o redes</Text>
-                <Text style={styles.actionDesc}>Comparte el texto y su enlace web</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleAction(onShareImage)}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-            >
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(56, 189, 248, 0.12)' }]}>
-                <ImageIcon size={19} color="#38bdf8" />
-              </View>
-              <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Compartir como imagen</Text>
-                <Text style={styles.actionDesc}>Foto, versículo y referencia, listos para enviar</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* 4. Guardar en mis versículos favoritos */}
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleAction(onToggleBookmark)}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  styles.iconCircle,
-                  { backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.15)' : 'rgba(244, 63, 94, 0.12)' },
-                ]}
-              >
-                <Bookmark
-                  size={19}
-                  color={isSaved ? '#ef4444' : '#f43f5e'}
-                  fill={isSaved ? '#ef4444' : 'transparent'}
-                />
-              </View>
-              <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>
-                  {isSaved ? 'Quitar de mis favoritos' : 'Guardar en mis versículos favoritos'}
-                </Text>
-                <Text style={styles.actionDesc}>
-                  {isSaved ? 'Eliminar de tu colección guardada' : 'Colecciona versículos para meditar'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* 5. Diseñar postal / tarjeta con imagen */}
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleAction(onDesignCard)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(168, 85, 247, 0.12)' }]}>
-                <Palette size={19} color="#a855f7" />
-              </View>
-              <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Diseñar postal / tarjeta con imagen</Text>
-                <Text style={styles.actionDesc}>Personaliza fondos y tipografías para compartir</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* 6. Leer capítulo completo en la Biblia */}
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleAction(onReadFullChapter)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(217, 119, 6, 0.15)' }]}>
-                <BookOpen size={19} color="#fbbf24" />
-              </View>
-              <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Leer capítulo completo en la Biblia</Text>
-                <Text style={styles.actionDesc}>Abre el contexto bíblico completo sin conexión</Text>
-              </View>
-            </TouchableOpacity>
+            {copyMenu && (
+              <TouchableOpacity style={styles.backRow} onPress={() => { hapticLight(); setCopyMenu(false); }} accessibilityRole="button">
+                <ArrowLeft size={18} color="#94a3b8" />
+                <Text style={styles.actionDesc}>Volver a las opciones</Text>
+              </TouchableOpacity>
+            )}
+            {(copyMenu ? copyActions : mainActions).map(({ key, icon: Icon, color, title, description, action }) => (
+              <TouchableOpacity key={key} style={styles.actionItem} onPress={action} activeOpacity={0.7} accessibilityRole="button">
+                <View style={[styles.iconCircle, { backgroundColor: `${color}1F` }]}>
+                  <Icon size={19} color={color} fill={key === 'bookmark' && isSaved ? color : 'none'} />
+                </View>
+                <View style={styles.actionTextWrap}>
+                  <Text style={styles.actionTitle}>{title}</Text>
+                  <Text style={styles.actionDesc}>{description}</Text>
+                </View>
+                {key === 'copy' && <ChevronRight size={17} color="#94a3b8" />}
+              </TouchableOpacity>
+            ))}
           </ScrollView>
-
-          {/* Cancel button */}
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={() => {
-              hapticLight();
-              onClose();
-            }}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.8} accessibilityRole="button">
             <Text style={styles.cancelBtnText}>Cancelar</Text>
           </TouchableOpacity>
         </View>
@@ -265,6 +134,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
+  headerText: { flex: 1, paddingRight: 12 },
+  backRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6 },
   headerSubtitle: {
     fontSize: 10,
     fontWeight: '800',
@@ -279,9 +150,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
