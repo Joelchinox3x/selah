@@ -1,4 +1,5 @@
-import React from 'react';
+import { getCommunityName, saveCommunityName } from '@/src/features/daily/services/communityIdentity';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Switch,
+  TextInput,
   Alert,
 } from 'react-native';
 import {
@@ -29,6 +31,16 @@ import { scheduleSliding14DayNotifications } from '@/src/services/notifications/
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 
 export default function SettingsScreen() {
+  const [communityName, setCommunityName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  useEffect(() => { let active = true; getCommunityName().then((name) => { if (active) setCommunityName(name); }).catch(() => undefined); return () => { active = false; }; }, []);
+  const handleSaveCommunityName = async () => {
+    if (savingName) return;
+    setSavingName(true);
+    try { await saveCommunityName(communityName); Alert.alert('Nombre guardado', 'Se usará al publicar nuevos comentarios.'); }
+    catch { Alert.alert('No se pudo guardar', 'Intenta nuevamente.'); }
+    finally { setSavingName(false); }
+  };
   const themeMode = useSettingsStore((s) => s.theme);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
@@ -78,6 +90,14 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Mi nombre en la comunidad</Text>
+          <Text style={{ color: theme.textMuted, fontSize: 13, lineHeight: 20, marginBottom: 10 }}>Configúralo una vez para tus comentarios. Si lo dejas vacío, aparecerá “Hermano/a en Cristo”.</Text>
+          <TextInput accessibilityLabel="Nombre para tus comentarios" value={communityName} onChangeText={setCommunityName} maxLength={60} placeholder="Tu nombre (opcional)" placeholderTextColor={theme.textMuted} autoCapitalize="words" style={{ minHeight: 44, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: theme.border, color: theme.text, backgroundColor: theme.cardBackground }} />
+          <TouchableOpacity onPress={handleSaveCommunityName} disabled={savingName} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center', marginTop: 8, borderRadius: 12, backgroundColor: theme.accentMuted }}>
+            <Text style={{ color: theme.accent, fontWeight: '700' }}>{savingName ? 'Guardando…' : 'Guardar nombre'}</Text>
+          </TouchableOpacity>
+        </View>
         {/* THEME SELECTOR */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>

@@ -375,6 +375,10 @@ export interface DailyDevotional {
   dateKey: string;
   theme: string;
   reflection: string;
+  title?: string;
+  author?: string;
+  isSpecialDay?: boolean;
+  specialTag?: string | null;
 }
 
 const DEVOTIONAL_STORAGE_KEY = 'selah.daily-devotional.v1';
@@ -397,11 +401,60 @@ export function getDailyDevotional(options?: {
     const verse = await getVerseById(id);
     if (!verse) throw new Error(`Versículo del catálogo no encontrado: ${id}`);
     if (!preview) await AsyncStorage.setItem(DEVOTIONAL_STORAGE_KEY, JSON.stringify(selection));
+
+    let theme = meta.theme;
+    let reflection = meta.reflection;
+    let title: string | undefined = undefined;
+    let author: string | undefined = 'Ps. Guillermo Quispe C.';
+    let isSpecialDay: boolean | undefined = undefined;
+    let specialTag: string | null | undefined = undefined;
+
+    // Check cached online calendar data if available
+    const cacheKey = `selah.calendar-cache.${selection.dateKey}`;
+    try {
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.reflection) {
+          theme = parsed.theme || theme;
+          reflection = parsed.reflection;
+          title = parsed.title;
+          author = parsed.author || author;
+          isSpecialDay = parsed.isSpecialDay;
+          specialTag = parsed.specialTag;
+        }
+      }
+    } catch {}
+
+    // Silent background sync if online (never blocks offline response)
+    if (!preview && typeof fetch !== 'undefined') {
+      (async () => {
+        try {
+          const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const timeoutId = controller ? setTimeout(() => controller.abort(), 3500) : null;
+          const res = await fetch(`https://selah.boxtiove.com/api/devotional-calendar?date=${selection.dateKey}`, {
+            signal: controller?.signal,
+          });
+          if (timeoutId) clearTimeout(timeoutId);
+          if (res && res.ok) {
+            const data = await res.json();
+            if (data && data.success) {
+              await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
+            }
+          }
+        } catch {}
+      })().catch(() => {});
+    }
+
     return {
       verse,
       dateKey: selection.dateKey,
-      theme: meta.theme,
-      reflection: meta.reflection,
+      theme,
+      reflection,
+      title,
+      author,
+      isSpecialDay,
+      specialTag,
       canGoBack: selection.history.length > 1,
     };
   });

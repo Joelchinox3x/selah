@@ -7,6 +7,9 @@ interface DailyVersePostalBacksideProps {
   verseSlug: string;
   verseCitation: string;
   verseText: string;
+  pastoralReflection?: string;
+  pastoralTitle?: string;
+  pastoralTheme?: string;
   onFlipToFront: () => void;
   onClose: () => void;
   onGoToReader: () => void;
@@ -15,13 +18,17 @@ interface DailyVersePostalBacksideProps {
 
 // Reuse the same wall inside the existing 3D postal rather than maintaining two designs.
 export const DailyVersePostalBackside: React.FC<DailyVersePostalBacksideProps> = ({
-  active = true, verseSlug, verseCitation, onFlipToFront, onClose, onGoToReader, onCommentCountChange,
+  active = true, verseSlug, verseCitation, verseText, pastoralReflection, pastoralTitle, pastoralTheme, onFlipToFront, onClose, onGoToReader, onCommentCountChange,
 }) => (
   <CommunityReflectionsModal
     embedded
     visible={active}
     verseSlug={verseSlug}
     verseCitation={verseCitation}
+    verseText={verseText}
+    pastoralReflection={pastoralReflection}
+    pastoralTitle={pastoralTitle}
+    pastoralTheme={pastoralTheme}
     onBack={onFlipToFront}
     onClose={onClose}
     onGoToReader={onGoToReader}

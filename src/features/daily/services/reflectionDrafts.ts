@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-export interface ReflectionDraft { name: string; text: string }
+export interface ReflectionDraft { name: string; text: string; parentId?: string; replyToId?: string; replyToName?: string; clientRequestId?: string }
 const cache = new Map<string, ReflectionDraft>();
 let writes: Promise<unknown> = Promise.resolve();
 const stored = new Map<string, string>();
@@ -13,7 +13,7 @@ export async function loadReflectionDraft(slug: string): Promise<ReflectionDraft
   let draft: ReflectionDraft = { name: '', text: '' };
   try {
     const parsed = raw ? JSON.parse(raw) : null;
-    if (typeof parsed?.name === 'string' && typeof parsed?.text === 'string') draft = { name: parsed.name.slice(0, 60), text: parsed.text.slice(0, 400) };
+    if (typeof parsed?.name === 'string' && typeof parsed?.text === 'string') draft = { name: parsed.name.slice(0, 60), text: parsed.text.slice(0, 400), parentId: typeof parsed.parentId === 'string' ? parsed.parentId : undefined, replyToId: typeof parsed.replyToId === 'string' ? parsed.replyToId : undefined, replyToName: typeof parsed.replyToName === 'string' ? parsed.replyToName : undefined, clientRequestId: typeof parsed.clientRequestId === 'string' ? parsed.clientRequestId : undefined };
   } catch { /* A damaged draft must not block writing a new reflection. */ }
   if (!draft.name) {
     draft.name = (await AsyncStorage.getItem('@selah_user_reflection_name_v1') ?? '').slice(0, 60);
@@ -29,8 +29,7 @@ export function saveReflectionDraft(slug: string, draft: ReflectionDraft): Promi
     if (stored.get(slug) === serialized) return;
     await AsyncStorage.setItem(key(slug), serialized);
     stored.set(slug, serialized);
-    const name = cache.get(slug)?.name.trim();
-    if (name) await AsyncStorage.setItem('@selah_user_reflection_name_v1', name);
+
   });
   writes = pending.catch(() => undefined);
   return pending;

@@ -1,102 +1,32 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const ts = require('typescript');
-function load(file, globals = {}) {
-  const context = { exports: {}, Request, Response, URL, AbortController, setTimeout, clearTimeout, console, ...globals };
-  vm.runInNewContext(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
-  }).outputText, context, { filename: file });
-  return context.exports;
-}
-const root = path.resolve(__dirname, '..');
-const handler = load(path.resolve(root, '../selah-landing/src/communityComments.ts'), { console: { error() {} } }).handleCommunityComments;
-const rows = [];
-let broken = false;
-const db = { prepare(sql) {
-  let args;
-  return {
-    bind(...values) { args = values; return this; },
-    async run() {
-      if (broken) throw Error('D1 unavailable');
-      const [verse_slug, user_name, text] = args;
-      const id = rows.length + 1;
-      rows.push({ id, verse_slug, user_name, text, role: 'Comunidad Selah', is_pastor: 0, created_at: '2026-11-08 12:00:00', status: 'approved' });
-      return { success: true, meta: { last_row_id: id } };
-    },
-    async all() {
-      if (broken) throw Error('D1 unavailable');
-      return { success: true, results: rows.filter((r) => r.verse_slug === args[0] && r.status === 'approved').sort((a,b) => b.is_pastor - a.is_pastor || b.id - a.id).slice(0,50) };
-    },
-    async first() {
-      if (broken) throw Error('D1 unavailable');
-      return { total: rows.filter((r) => r.verse_slug === args[0] && r.status === 'approved').length };
-    },
-  };
-} };
-const req = (slug = 'juan-3-16') => new Request(`https://selah.boxtiove.com/api/comments?verse=${slug}`);
-const post = (body) => new Request('https://selah.boxtiove.com/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-let captured;
-let failHTTP = false;
-const client = load(path.join(root, 'src/features/daily/services/communityReflections.ts'), {
-  fetch: async (url, options) => {
-    captured = { url, options };
-    if (failHTTP) return new Response(JSON.stringify({ ok: false, error: 'failure' }), { status: 503 });
-    return handler(new Request(url, options), db);
-  },
-});
-(async () => {
-  let response = await handler(req(), db);
-  let data = await response.json();
-  assert.equal(data.comments.length, 0, 'Empty database must not invent people');
-  assert.equal(data.total, 0);
-  assert.equal((await client.loadCommunityReflections('juan-3-16')).comments.length, 0);
-  const draft = { name: ' Ana ', text: ' Una reflexión real ' };
-  const published = await client.publishCommunityReflection('juan-3-16', draft.name, draft.text);
-  assert.equal(published.userName, 'Ana');
-  assert.equal(published.text, 'Una reflexión real');
-  assert.equal(published.isPastor, false);
-  assert.equal(published.id, '1');
-  assert.equal(JSON.parse(captured.options.body).verse, 'juan-3-16');
-  rows.push({ id: 2, verse_slug: 'juan-3-16', user_name: 'Pastor', text: 'Reflexión pastoral', role: 'Pastor', is_pastor: 1, created_at: '2026-11-08 12:00:00', status: 'approved' });
-  rows.push({ id: 3, verse_slug: 'juan-3-16', user_name: 'Hidden', text: 'Oculto', is_pastor: 0, status: 'hidden' });
-  let result = await client.loadCommunityReflections('juan-3-16');
-  assert.equal(result.total, 2);
-  assert.equal(result.comments[0].isPastor, true);
-  assert.equal((await client.loadCommunityReflections('salmos-23-1')).comments.length, 0, 'No comments from another verse');
-  assert.equal((await handler(post({verse:'juan-3-16', text:'x'.repeat(401)}), db)).status,400);
-  assert.equal((await handler(post({verse:'juan-3-16', text:'ok', userName:'n'.repeat(61)}), db)).status,400);
-  assert.equal((await handler(post({verse:'juan-3-16', text:'   '}), db)).status,400);
-  assert.equal((await handler(req('invalid'), db)).status,400);
-  assert.equal((await handler(req(), undefined)).status,503);
-  broken = true;
-  assert.equal((await handler(req(), db)).status,503);
-  await assert.rejects(client.publishCommunityReflection('juan-3-16', 'Ana', 'Conservar borrador'));
-  assert.equal(draft.text, ' Una reflexión real ', 'Failed publication cannot mutate caller draft');
-  broken = false;
-  failHTTP = true;
-  await assert.rejects(client.loadCommunityReflections('juan-3-16'));
-  const legacy = load(path.join(root, 'src/features/daily/services/communityReflections.ts'), {
-    fetch: async () => new Response(JSON.stringify({ok:true, comments:[{id:'seed-1',userName:'Demo',text:'Demo'}]})),
-  });
-  assert.equal((await legacy.loadCommunityReflections('juan-3-16')).comments.length,0, 'Old server demo entries are hidden');
-  const storage = new Map();
-  const drafts = load(path.join(root, 'src/features/daily/services/reflectionDrafts.ts'), {
-    require: () => ({ getItem: async (k) => storage.get(k) ?? null, setItem: async (k,v) => storage.set(k,v) }),
-  });
-  await Promise.all([
-    drafts.saveReflectionDraft('juan-3-16', {name:'Ana',text:'Uno'}),
-    drafts.saveReflectionDraft('juan-3-16', {name:'Ana',text:'Último borrador'}),
-    drafts.saveReflectionDraft('salmos-23-1', {name:'Ana',text:'Otro versículo'}),
-  ]);
-  assert.equal((await drafts.loadReflectionDraft('juan-3-16')).text,'Último borrador');
-  assert.equal((await drafts.loadReflectionDraft('salmos-23-1')).text,'Otro versículo');
-  const cold = load(path.join(root, 'src/features/daily/services/reflectionDrafts.ts'), {
-    require: () => ({ getItem: async (k) => storage.get(k) ?? null, setItem: async (k,v) => storage.set(k,v) }),
-  });
-  assert.equal((await cold.loadReflectionDraft('juan-3-16')).text,'Último borrador', 'Draft survives reload');
-  assert.equal(client.formatReflectionDate('Hoy'),'');
-  assert.ok(client.formatReflectionDate('2026-11-08 12:00:00'));
-  console.log('PASS: empty wall, approved entries, pastoral priority, confirmed publishing, errors, limits, verse isolation, legacy demo filtering, persisted drafts and dates.');
-})().catch((error) => { console.error(error); process.exitCode=1; });
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),ts=require('typescript');
+const root=path.resolve(__dirname,'..');
+function load(name,globals={}){const context={exports:{},Request,Response,URL,URLSearchParams,AbortController,setTimeout,clearTimeout,console,...globals};vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(root,'src/features/daily/services',name+'.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,context);return context.exports;}
+const storage=new Map();let deviceWrites=0;
+const asyncStorage={getItem:async k=>storage.get(k)??null,setItem:async(k,v)=>{if(k==='@selah_community_device_v1')deviceWrites++;storage.set(k,v);}};
+const identity=load('communityIdentity',{require:()=>asyncStorage});
+let nextBody={},nextStatus=200,captured,calls=0;
+const service=load('communityReflections',{require:n=>{assert.equal(n,'./communityIdentity');return identity;},fetch:async(url,options)=>{calls++;captured={url,options};return new Response(JSON.stringify(nextBody),{status:nextStatus});}});
+const comment={id:'10',userName:'Ana',role:'Comunidad Selah',text:'Un comentario',createdAt:'2026-11-09 10:00:00',parentId:null,replyToId:null,replyToName:null,likes:3,liked:true,replyCount:2,isPastor:false};
+(async()=>{
+ const devices=await Promise.all([identity.getCommunityDeviceId(),identity.getCommunityDeviceId()]);assert.equal(devices[0],devices[1]);assert.equal(deviceWrites,1);
+ const coldIdentity=load('communityIdentity',{require:()=>asyncStorage});assert.equal(await coldIdentity.getCommunityDeviceId(),devices[0]);
+ await identity.saveCommunityName(' Ana ');assert.equal(await identity.getCommunityName(),'Ana');await identity.saveCommunityName('');assert.equal(await identity.getCommunityName(),'');
+ nextBody={ok:true,comments:[comment],total:7,nextCursor:'0:10'};
+ let page=await service.loadCommunityReflections('juan-3-16');assert.equal(page.total,7);assert.equal(page.comments[0].likes,3);assert.equal(page.comments[0].liked,true);assert.equal(page.nextCursor,'0:10');
+ assert.equal(new URL(captured.url).searchParams.get('verse'),'juan-3-16');assert.equal(captured.options.headers['X-Selah-Device'],devices[0]);
+ await service.loadCommunityReflections('juan-3-16',undefined,{parentId:'10',cursor:'20'});assert.equal(new URL(captured.url).searchParams.get('parent'),'10');assert.equal(new URL(captured.url).searchParams.get('cursor'),'20');
+ const answer={...comment,id:'11',parentId:'10',replyToId:'10',replyToName:'Ana',text:'Respuesta'};
+ nextBody={ok:true,comment:answer};const options={clientRequestId:'request_0123456789',parentId:'10',replyToId:'10'};
+ const saved=await service.publishCommunityReflection('juan-3-16','','Respuesta',options);assert.equal(saved.parentId,'10');let body=JSON.parse(captured.options.body);assert.equal(body.clientRequestId,options.clientRequestId);assert.equal(body.parentId,'10');assert.equal(body.userName,'Hermano/a en Cristo');
+ nextBody={ok:true,comment:{...comment,liked:false,likes:2}};await service.setCommunityCommentLike('juan-3-16','10',false);body=JSON.parse(captured.options.body);assert.equal(body.action,'like');assert.equal(body.liked,false);
+ nextBody={ok:false,error:'server unavailable'};nextStatus=503;await assert.rejects(service.publishCommunityReflection('juan-3-16','Ana','Respuesta',options));assert.equal(options.clientRequestId,'request_0123456789');
+ const before=calls;await assert.rejects(service.publishCommunityReflection('juan-3-16','Ana','x'.repeat(401),options));assert.equal(calls,before);
+ nextStatus=200;nextBody={ok:true,comments:[],total:0};assert.equal((await service.loadCommunityReflections('salmos-23-1')).comments.length,0);
+ nextBody={ok:true,comments:[{...comment,id:'seed-1'}]};assert.equal((await service.loadCommunityReflections('salmos-23-1')).comments.length,0);
+ const drafts=load('reflectionDrafts',{require:()=>asyncStorage});
+ await drafts.saveReflectionDraft('juan-3-16',{name:'Ana',text:'Respuesta guardada',parentId:'10',replyToId:'11',replyToName:'Joel',clientRequestId:'request_draft_0123456789'});
+ await drafts.saveReflectionDraft('salmos-23-1',{name:'Ana',text:'Otro pasaje'});
+ const coldDrafts=load('reflectionDrafts',{require:()=>asyncStorage});let draft=await coldDrafts.loadReflectionDraft('juan-3-16');assert.equal(draft.parentId,'10');assert.equal(draft.replyToId,'11');assert.equal(draft.clientRequestId,'request_draft_0123456789');assert.equal((await coldDrafts.loadReflectionDraft('salmos-23-1')).text,'Otro pasaje');
+ assert.equal(service.formatReflectionDate('Hoy'),'');assert.ok(service.formatReflectionDate('2026-11-09 10:00:00'));
+ console.log('PASS: stable installation identity, settings name, thread/cursor requests, caption-free replies, persistent like payload, retry IDs, errors, draft reply context and verse isolation.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

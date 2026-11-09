@@ -8,6 +8,19 @@ export function localDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+export function getDayOfYear(date: Date): number {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  const currentUtc = Date.UTC(year, month, day);
+  const startUtc = Date.UTC(year, 0, 1);
+  const diffDays = Math.floor((currentUtc - startUtc) / 86400000);
+  let dayOfYear = diffDays + 1;
+  if (dayOfYear > 365) dayOfYear = 365;
+  if (dayOfYear < 1) dayOfYear = 1;
+  return dayOfYear;
+}
+
 export function selectDevotional(
   saved: DevotionalSelection | null,
   ids: readonly number[],
@@ -19,9 +32,9 @@ export function selectDevotional(
   const dateKey = localDateKey(date);
   const validIds = new Set(ids);
   const seen = [...new Set((saved?.seen ?? []).filter((id) => validIds.has(id)))];
-  // UTC arithmetic on local calendar fields avoids daylight-saving offsets.
-  const day = Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
-  const principal = ids[((day % ids.length) + ids.length) % ids.length];
+  // Deterministic 365-day calendar mapping: Day 1 (Jan 1) -> index 0, Day 365 (Dec 31) -> index 364
+  const dayOfYear = getDayOfYear(date);
+  const principal = ids[(dayOfYear - 1) % ids.length];
   let history = saved?.dateKey === dateKey
     ? saved.history.filter((id) => validIds.has(id)) : [];
   if (!history.length) history = [principal];
