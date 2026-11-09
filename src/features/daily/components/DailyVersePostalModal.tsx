@@ -50,6 +50,7 @@ interface DailyVersePostalModalProps {
   onShare: (backgroundId: string) => void;
   onMeditate: () => void;
   onRotateVerse?: () => void;
+  initialFlipped?: boolean;
 }
 
 export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
@@ -60,6 +61,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
   onShare,
   onMeditate,
   onRotateVerse,
+  initialFlipped = false,
 }) => {
   const insets = useSafeAreaInsets();
   const selectedTheme = useSettingsStore((state) => state.theme);
@@ -89,13 +91,16 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
   const animatedValue = useRef(new Animated.Value(0)).current;
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Reset flip when modal closes or changes verse
+  // Reset or set initial flip when modal visibility changes
   useEffect(() => {
     if (!visible) {
       setIsFlipped(false);
       animatedValue.setValue(0);
+    } else if (initialFlipped) {
+      setIsFlipped(true);
+      animatedValue.setValue(180);
     }
-  }, [visible, animatedValue]);
+  }, [visible, initialFlipped, animatedValue]);
 
   const flipToBack = useCallback(() => {
     hapticLight();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Search, User } from 'lucide-react-native';
+import { ChevronLeft, Search, User, Bell } from 'lucide-react-native';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { hapticLight } from '@/src/services/haptics/hapticFeedback';
@@ -16,6 +16,8 @@ interface AppHeaderProps {
   onBack?: () => void;
   onSearchPress?: () => void;
   onProfilePress?: () => void;
+  onNotificationsPress?: () => void;
+  hasUnreadNotifications?: boolean;
   rightAction?: React.ReactNode;
 }
 
@@ -27,6 +29,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onBack,
   onSearchPress,
   onProfilePress,
+  onNotificationsPress,
+  hasUnreadNotifications = false,
   rightAction,
 }) => {
   const router = useRouter();
@@ -81,12 +85,33 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <Text style={[styles.brandText, { color: theme.text }]}>SELAH</Text>
         </View>
 
-        {/* Action Buttons Right (Search + Profile) */}
+        {/* Action Buttons Right (Notifications + Search + Profile) */}
         <View style={styles.rightActionsRow}>
           {rightAction ? (
             rightAction
           ) : (
             <>
+              {onNotificationsPress && (
+                <TouchableOpacity
+                  style={[
+                    styles.iconButton,
+                    { backgroundColor: theme.surfaceRaised },
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    onNotificationsPress();
+                  }}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel="Notificaciones de comunidad"
+                >
+                  <Bell size={18} color={theme.text} />
+                  {hasUnreadNotifications && (
+                    <View style={styles.unreadDot} />
+                  )}
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 style={[
                   styles.iconButton,
@@ -193,6 +218,17 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#f59e0b',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
   },
   leftDetailContainer: {
     flex: 1,

@@ -14,6 +14,9 @@ import { Screen } from '@/src/components/ui/Screen';
 import { AppHeader } from '@/src/components/ui/AppHeader';
 import { DailyVerseHero } from '@/src/features/daily/components/DailyVerseHero';
 import { DailyVersePostalModal } from '@/src/features/daily/components/DailyVersePostalModal';
+import { PastDevotionalsCarousel } from '@/src/features/daily/components/PastDevotionalsCarousel';
+import { CommunityNotificationsModal } from '@/src/features/notifications/components/CommunityNotificationsModal';
+import { getNotifications } from '@/src/features/notifications/services/notificationsStore';
 import { DailyCuriosityCard } from '@/src/features/curiosities/components/DailyCuriosityCard';
 import { getTodayCuriosity } from '@/src/features/curiosities/data/biblicalCuriosities';
 import { MeditationModal } from '@/src/features/daily/components/MeditationModal';
@@ -75,21 +78,27 @@ export default function HomeScreen() {
   const [shareCardOptions, setShareCardOptions] = useState<{ backgroundId: string; aspectRatio: '1:1' | '9:16' } | null>(null);
   const [meditationVisible, setMeditationVisible] = useState(false);
   const [postalModalVisible, setPostalModalVisible] = useState(false);
+  const [selectedPostalDevotional, setSelectedPostalDevotional] = useState<DailyDevotional | null>(null);
+  const [postalInitialFlipped, setPostalInitialFlipped] = useState(false);
+  const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
   const todayCuriosity = useMemo(() => getTodayCuriosity(), []);
 
   const loadData = useCallback(async () => {
     try {
-      const [dev, moodList, lastRead, disc] = await Promise.all([
+      const [dev, moodList, lastRead, disc, notifs] = await Promise.all([
         getDailyDevotional(),
         getMoodCatalog(),
         getLastRead(),
         getTodayDiscovery(),
+        getNotifications(),
       ]);
 
       setDevotional(dev);
       setMoods(moodList);
       setTodayDiscovery(disc);
+      setHasUnreadNotifications(notifs.some((n) => !n.isRead));
 
       // Rotating daily reading pool when user has no active reading history
       const ROTATING_READINGS = [
@@ -233,10 +242,42 @@ export default function HomeScreen() {
     }
   };
 
+  const handleSelectNotification = async (item: { verseSlug: string; verseCitation: string }) => {
+    setNotificationsModalVisible(false);
+    let targetDev = devotional;
+    try {
+      const today = new Date();
+      for (let i = 0; i <= 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const past = await getDailyDevotional({ date: d });
+        const cit = `${past.verse.book_name} ${past.verse.chapter}:${past.verse.verse}`.toLowerCase();
+        if (
+          cit.includes(item.verseCitation.toLowerCase()) ||
+          item.verseCitation.toLowerCase().includes(cit) ||
+          (item.verseSlug && cit.replace(/[\s:]+/g, '-').includes(item.verseSlug))
+        ) {
+          targetDev = past;
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn('Error matching notification verse:', e);
+    }
+
+    setSelectedPostalDevotional(targetDev || devotional);
+    setPostalInitialFlipped(true);
+    setPostalModalVisible(true);
+  };
+
   return (
     <Screen safeTop safeBottom={false}>
-      {/* Top Header with official logo & brand */}
-      <AppHeader variant="main" />
+      {/* Top Header with official logo, notifications bell & search/profile */}
+      <AppHeader
+        variant="main"
+        onNotificationsPress={() => setNotificationsModalVisible(true)}
+        hasUnreadNotifications={hasUnreadNotifications}
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -259,13 +300,27 @@ export default function HomeScreen() {
           }}
           onMeditate={() => setMeditationVisible(true)}
           onRotateVerse={handleRotateVerse}
-          onOpenPostal={() => setPostalModalVisible(true)}
+          onOpenPostal={() => {
+            setSelectedPostalDevotional(devotional);
+            setPostalInitialFlipped(false);
+            setPostalModalVisible(true);
+          }}
           onPreviousVerse={handlePreviousVerse}
           verseBusy={verseBusy}
           onReadVerse={() => {
             if (!devotional) return;
             const { verse } = devotional;
             router.push(`/reader/${verse.book_id}/${verse.chapter}?highlightVerse=${verse.verse}` as any);
+          }}
+        />
+
+        {/* 1.5. Historial de Versículos de Días Anteriores (Últimos 7 días) */}
+        <PastDevotionalsCarousel
+          theme={theme}
+          onSelectDevotional={(pastDev) => {
+            setSelectedPostalDevotional(pastDev);
+            setPostalInitialFlipped(false);
+            setPostalModalVisible(true);
           }}
         />
 
@@ -337,11 +392,15 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Full-Screen Daily Verse Postal Story Modal */}
-      {devotional && (
+      {(selectedPostalDevotional || devotional) && (
         <DailyVersePostalModal
           visible={postalModalVisible}
-          devotional={devotional}
-          onClose={() => setPostalModalVisible(false)}
+          devotional={selectedPostalDevotional || devotional}
+          initialFlipped={postalInitialFlipped}
+          onClose={() => {
+            setPostalModalVisible(false);
+            setPostalInitialFlipped(false);
+          }}
           onNavigateToReader={(bookId, chapter, verse) => {
             router.push(`/reader/${bookId}/${chapter}?highlightVerse=${verse}` as any);
           }}
@@ -357,6 +416,14 @@ export default function HomeScreen() {
           onRotateVerse={handleRotateVerse}
         />
       )}
+
+      {/* Community Notifications Sliding Modal */}
+      <CommunityNotificationsModal
+        visible={notificationsModalVisible}
+        onClose={() => setNotificationsModalVisible(false)}
+        onSelectVerse={handleSelectNotification}
+        onUnreadChange={setHasUnreadNotifications}
+      />
 
       {/* Share Card Modal for Daily Verse */}
       {devotional && (
