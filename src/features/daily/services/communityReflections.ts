@@ -1,6 +1,6 @@
 import { getCommunityDeviceId } from './communityIdentity';
 export interface CommunityComment {
-  id: string; userName: string; role: string; text: string; createdAt: string; isPastor?: boolean;
+  id: string; userName: string; role: string; text: string; createdAt: string; isPastor?: boolean; isPinned?: boolean;
   parentId: string | null; replyToId: string | null; replyToName: string | null;
   likes: number; liked: boolean; replyCount: number; parentReplyCount?: number;
 }
@@ -12,7 +12,8 @@ function parseComment(value: unknown): CommunityComment | null {
   if ((typeof v.id !== 'string' && typeof v.id !== 'number') || String(v.id).startsWith('seed-') || typeof v.text !== 'string' || typeof v.userName !== 'string') return null;
   return {
     id: String(v.id), userName: v.userName.trim() || 'Hermano/a en Cristo', text: v.text,
-    role: typeof v.role === 'string' ? v.role : 'Comunidad Selah', createdAt: typeof v.createdAt === 'string' ? v.createdAt : '', isPastor: v.isPastor === true,
+    role: typeof v.role === 'string' ? v.role : 'Comunidad Selah', createdAt: typeof v.createdAt === 'string' ? v.createdAt : '',
+    isPastor: v.isPastor === true, isPinned: v.isPinned === true,
     parentId: v.parentId == null ? null : String(v.parentId), replyToId: v.replyToId == null ? null : String(v.replyToId), replyToName: typeof v.replyToName === 'string' ? v.replyToName : null,
     likes: typeof v.likes === 'number' && v.likes >= 0 ? v.likes : 0, liked: v.liked === true,
     replyCount: typeof v.replyCount === 'number' && v.replyCount >= 0 ? v.replyCount : 0,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, useWindowDimensions, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Send, ShieldCheck, ArrowLeft, Heart, ChevronDown, MoreHorizontal, EyeOff } from 'lucide-react-native';
+import { X, Send, ShieldCheck, ArrowLeft, Heart, ChevronDown, MoreHorizontal, EyeOff, Pin } from 'lucide-react-native';
 import { themes, ThemePalette } from '@/src/theme/colors';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
@@ -9,6 +9,7 @@ import { CommunityComment, loadCommunityReflections, publishCommunityReflection,
 import { getCommunityName, newCommunityRequestId } from '../services/communityIdentity';
 import { loadReflectionDraft, saveReflectionDraft, ReflectionDraft } from '../services/reflectionDrafts';
 import { saveMyPublishedReflection } from '../services/myReflectionsStore';
+import { hasProfanity } from '../services/profanityFilter';
 export type { CommunityComment } from '../services/communityReflections';
 
 interface Props {
@@ -148,6 +149,12 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   };
   const handleSend = async () => {
     if (submitLock.current || loading || !draftReady || !draft.text.trim()) return;
+    const profanity = hasProfanity(draft.text);
+    if (profanity.blocked) {
+      hapticLight();
+      setSendError('Tu reflexión contiene palabras inapropiadas para esta comunidad de fe. Por favor, edítala con respeto.');
+      return;
+    }
     submitLock.current = true; setSubmitting(true); setSendError(''); setFeedback('');
     const version = generation.current;
     const sent = { ...draft, clientRequestId: draft.clientRequestId || newCommunityRequestId() };
@@ -189,9 +196,15 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
       <TouchableOpacity style={styles.compactAction} hitSlop={8} onPress={() => showComment(item.id)} accessibilityRole="button"><Text style={styles.linkText}>Mostrar</Text></TouchableOpacity>
     </View>
   ) : (
-    <View style={[styles.comment, child && styles.child]}>
+    <View style={[styles.comment, item.isPinned && !child && styles.pinnedComment, child && styles.child]}>
       <View style={styles.avatar}><Text style={styles.initials}>{item.userName.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'S'}</Text></View>
       <View style={styles.commentContent}>
+        {item.isPinned && !child && (
+          <View style={styles.pinnedBadge}>
+            <Pin size={11} color="#d97706" />
+            <Text style={styles.pinnedBadgeText}>Testimonio Destacado</Text>
+          </View>
+        )}
         <View style={styles.metaRow}>
           <View style={styles.nameRow}><Text style={styles.author}>{item.userName}</Text>{item.isPastor && <View style={styles.tag}><ShieldCheck size={12} color={theme.accent} /><Text style={styles.tagText}>Pastoral</Text></View>}<Text style={styles.date}>· {formatReflectionDate(item.createdAt)}</Text></View>
           <TouchableOpacity style={styles.menuButton} hitSlop={8} onPress={() => setMenuComment(item)} accessibilityRole="button" accessibilityLabel={`Opciones del comentario de ${item.userName}`}><MoreHorizontal size={18} color={theme.textMuted} /></TouchableOpacity>
@@ -303,6 +316,9 @@ const makeStyles = (theme: ThemePalette) => StyleSheet.create({
   pastoralTitle: { fontSize: 14, fontWeight: '700', color: theme.text, marginBottom: 6 },
   pastoralText: { fontSize: 13, lineHeight: 20, color: theme.text, fontStyle: 'italic', opacity: 0.95 },
   thread: { marginBottom: 5 }, comment: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 }, child: { marginTop: 2 },
+  pinnedComment: { backgroundColor: 'rgba(217, 119, 6, 0.07)', borderColor: 'rgba(217, 119, 6, 0.35)', borderWidth: 1, borderRadius: 14, padding: 10, marginBottom: 4 },
+  pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(217, 119, 6, 0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start', marginBottom: 4 },
+  pinnedBadgeText: { fontSize: 11, fontWeight: '700', color: '#d97706' },
   avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: theme.surfaceRaised, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   initials: { fontSize: 10, fontWeight: '700', color: theme.accent }, commentContent: { flex: 1 },
   metaRow: { minHeight: 28, flexDirection: 'row', alignItems: 'center' }, nameRow: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
