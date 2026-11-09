@@ -900,5 +900,930 @@ export const DEVOTIONAL_CATALOG: readonly DevotionalEntry[] = [
     "verseId": 29541,
     "theme": "Servicio, humildad y propósito",
     "reflection": "Haz tus tareas con honestidad y cuidado, recordando la dignidad de quienes reciben tu trabajo."
+  },
+  {
+    "verseId": 13963,
+    "theme": "Paz y descanso",
+    "reflection": "Despierta con gratitud reconociendo que la mano de Dios cuidó de ti mientras dormías."
+  },
+  {
+    "verseId": 14320,
+    "theme": "Paz y descanso",
+    "reflection": "La paz de Dios no es ausencia de dificultades, sino la presencia constante de su poder en ti."
+  },
+  {
+    "verseId": 14458,
+    "theme": "Paz y descanso",
+    "reflection": "Acalla la prisa interior y espera en los tiempos perfectos del Señor sin inquietarte."
+  },
+  {
+    "verseId": 15280,
+    "theme": "Paz y descanso",
+    "reflection": "Haz una pausa para escuchar la voz apacible de Dios en medio del bullicio cotidiano."
+  },
+  {
+    "verseId": 16064,
+    "theme": "Paz y descanso",
+    "reflection": "Fundamentar tus decisiones en la palabra de Dios guarda tu corazón de tropiezos y angustias."
+  },
+  {
+    "verseId": 16124,
+    "theme": "Paz y descanso",
+    "reflection": "Confía en que Dios sigue obrando a tu favor aun cuando cierras los ojos para descansar."
+  },
+  {
+    "verseId": 16151,
+    "theme": "Paz y descanso",
+    "reflection": "Descansa en la providencia del Padre celestial con la sencillez y ternura de un hijo."
+  },
+  {
+    "verseId": 16480,
+    "theme": "Paz y descanso",
+    "reflection": "Entrega tus temores nocturnos al Señor y permite que su protección te brinde un reposo apacible."
+  },
+  {
+    "verseId": 16803,
+    "theme": "Paz y descanso",
+    "reflection": "Cultiva la serenidad en tu interior, sabiendo que la paz del corazón renueva también el cuerpo."
+  },
+  {
+    "verseId": 16875,
+    "theme": "Paz y descanso",
+    "reflection": "Valora la armonía y la tranquilidad en tu hogar por encima de cualquier ganancia pasajera."
+  },
+  {
+    "verseId": 18277,
+    "theme": "Paz y descanso",
+    "reflection": "Vivir rectamente conforme a la voluntad de Dios produce una serenidad profunda y duradera."
+  },
+  {
+    "verseId": 18734,
+    "theme": "Paz y descanso",
+    "reflection": "Aunque todo a tu alrededor sea incierto, el pacto de paz del Señor permanece inquebrantable."
+  },
+  {
+    "verseId": 24363,
+    "theme": "Paz y descanso",
+    "reflection": "Jesús tiene poder soberano sobre cualquier tempestad que hoy agite tus emociones."
+  },
+  {
+    "verseId": 24973,
+    "theme": "Paz y descanso",
+    "reflection": "Permite que la luz de Cristo guíe hoy cada uno de tus pasos hacia la reconciliación y la paz."
+  },
+  {
+    "verseId": 28049,
+    "theme": "Paz y descanso",
+    "reflection": "Celebra la bendición de estar en paz con Dios; su gracia te abraza en Cristo."
+  },
+  {
+    "verseId": 29695,
+    "theme": "Paz y descanso",
+    "reflection": "Pide al Señor de paz que llene tu día de sosiego en cualquier circunstancia."
+  },
+  {
+    "verseId": 15858,
+    "theme": "Paz y descanso",
+    "reflection": "Camina con tranquilidad delante del Señor en la tierra de los vivientes, sabiendo que Él cuida de ti."
+  },
+  {
+    "verseId": 14040,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Dios no se olvida del afligido; tu esperanza en Él jamás quedará defraudada."
+  },
+  {
+    "verseId": 14387,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Espera con paciencia en el Señor; Él es tu escudo protector y tu auxilio oportuno."
+  },
+  {
+    "verseId": 14389,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Que tu mirada descanse en la misericordia de Dios conforme aguardas su respuesta."
+  },
+  {
+    "verseId": 14561,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Recuerda a tu alma abatida que todavía alabarás a Dios por su salvación y presencia."
+  },
+  {
+    "verseId": 15948,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Aferra tu fe a las promesas divinas que traen consuelo y firmeza en tiempos de prueba."
+  },
+  {
+    "verseId": 15949,
+    "theme": "Esperanza y consuelo",
+    "reflection": "En medio de la aflicción, la palabra del Señor infunde aliento y renueva tu espíritu."
+  },
+  {
+    "verseId": 16347,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Dichoso quien pone su auxilio en el Dios de la creación y hace de su esperanza un hogar."
+  },
+  {
+    "verseId": 20379,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Declara hoy que tu mayor porción y herencia es el Señor, y mantén viva tu esperanza."
+  },
+  {
+    "verseId": 20381,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Aprende a esperar en quietud y silencio la salvación amorosa que Dios prepara para ti."
+  },
+  {
+    "verseId": 28141,
+    "theme": "Esperanza y consuelo",
+    "reflection": "La esperanza que se ve no es esperanza; mantén la fe en lo que Dios todavía está forjando."
+  },
+  {
+    "verseId": 28258,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Alégrate en la esperanza, persevera en medio de la tribulación y permanece constante en la oración."
+  },
+  {
+    "verseId": 28804,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Alaba al Padre de misericordias y Dios de toda consolación, quien entiende cada lágrima."
+  },
+  {
+    "verseId": 28805,
+    "theme": "Esperanza y consuelo",
+    "reflection": "El consuelo que recibes de Dios en tu dolor te capacitará para alentar y sanar a otros mañana."
+  },
+  {
+    "verseId": 29922,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Camina con la mirada puesta en la promesa gloriosa de Cristo, fuente inagotable de esperanza."
+  },
+  {
+    "verseId": 14454,
+    "theme": "Confianza y dirección",
+    "reflection": "Confía en Dios, haz el bien a quienes te rodean y habita en la tierra con serenidad."
+  },
+  {
+    "verseId": 14474,
+    "theme": "Confianza y dirección",
+    "reflection": "Cada uno de tus pasos es afirmado por el Señor cuando tu deseo es agradarle."
+  },
+  {
+    "verseId": 14649,
+    "theme": "Confianza y dirección",
+    "reflection": "El Dios eterno es nuestro guía fiel; Él caminará a nuestro lado en cada etapa de la vida."
+  },
+  {
+    "verseId": 15045,
+    "theme": "Confianza y dirección",
+    "reflection": "Déjate instruir por el consejo divino hoy, seguro de que Dios cuida de tu destino."
+  },
+  {
+    "verseId": 16302,
+    "theme": "Confianza y dirección",
+    "reflection": "Comienza tu mañana recordando el amor de Dios y rogando que te muestre por dónde caminar."
+  },
+  {
+    "verseId": 16509,
+    "theme": "Confianza y dirección",
+    "reflection": "La senda del justo es como la luz de la aurora, que va brillando más hasta el día pleno."
+  },
+  {
+    "verseId": 18239,
+    "theme": "Confianza y dirección",
+    "reflection": "Presta atención a la voz apacible del Espíritu que te indica el rumbo correcto por el cual andar."
+  },
+  {
+    "verseId": 18497,
+    "theme": "Confianza y dirección",
+    "reflection": "Dios guiará tus pasos por caminos desconocidos y transformará la incertidumbre en claridad."
+  },
+  {
+    "verseId": 18632,
+    "theme": "Confianza y dirección",
+    "reflection": "El Señor es tu Redentor, quien te enseña para tu provecho y te conduce por sendas de bendición."
+  },
+  {
+    "verseId": 14446,
+    "theme": "Amor y compasión",
+    "reflection": "¡Cuán preciosa es la misericordia de Dios! Bajo sus alas encuentras un refugio seguro de amor."
+  },
+  {
+    "verseId": 14843,
+    "theme": "Amor y compasión",
+    "reflection": "El amor incondicional de Dios vale más que la vida misma; llena hoy tus labios de su alabanza."
+  },
+  {
+    "verseId": 15300,
+    "theme": "Amor y compasión",
+    "reflection": "Celebra que el Señor es compasivo, paciente, lleno de gracia y fiel a sus promesas."
+  },
+  {
+    "verseId": 15558,
+    "theme": "Amor y compasión",
+    "reflection": "El Señor es lento para enojarse y abundante en misericordia; acércate confiado a su perdón."
+  },
+  {
+    "verseId": 15563,
+    "theme": "Amor y compasión",
+    "reflection": "Como un padre ama tiernamente a sus hijos, así se compadece el Señor de quienes le honran."
+  },
+  {
+    "verseId": 19695,
+    "theme": "Amor y compasión",
+    "reflection": "Dios te ha amado con un amor eterno; por eso extiende sobre ti su compasión cada mañana."
+  },
+  {
+    "verseId": 22683,
+    "theme": "Amor y compasión",
+    "reflection": "No hay Dios como nuestro Señor, que perdona la falta y se deleita en mostrar misericordia."
+  },
+  {
+    "verseId": 23416,
+    "theme": "Amor y compasión",
+    "reflection": "Mira a quienes te rodean con la compasión de Jesús, sensible a sus necesidades y cargas."
+  },
+  {
+    "verseId": 28056,
+    "theme": "Amor y compasión",
+    "reflection": "Dios demostró su amor incomparable al entregar a Cristo por nosotros aun en nuestra debilidad."
+  },
+  {
+    "verseId": 28156,
+    "theme": "Amor y compasión",
+    "reflection": "Nada creado en el cielo o en la tierra podrá jamás separarte del amor de Dios en Cristo Jesús."
+  },
+  {
+    "verseId": 29270,
+    "theme": "Amor y compasión",
+    "reflection": "Pide ser capaz de comprender la anchura, la longitud, la profundidad y la altura del amor de Cristo."
+  },
+  {
+    "verseId": 30598,
+    "theme": "Amor y compasión",
+    "reflection": "No limitemos el amor a simples palabras; demostrémoslo con acciones sinceras y generosas."
+  },
+  {
+    "verseId": 15457,
+    "theme": "Gratitud y alegría",
+    "reflection": "Entra a la presencia de Dios con un corazón agradecido y aclamaciones de fiesta espiritual."
+  },
+  {
+    "verseId": 15551,
+    "theme": "Gratitud y alegría",
+    "reflection": "Invita a todo tu ser a bendecir el santo nombre de Dios sin olvidar sus innumerables beneficios."
+  },
+  {
+    "verseId": 16119,
+    "theme": "Gratitud y alegría",
+    "reflection": "Reconoce las grandes cosas que Dios ha hecho contigo y comparte esa alegría con quienes te rodean."
+  },
+  {
+    "verseId": 16353,
+    "theme": "Gratitud y alegría",
+    "reflection": "Cantar alabanzas a Dios es bueno, agradable y renueva las fuerzas de quienes le buscan."
+  },
+  {
+    "verseId": 22786,
+    "theme": "Gratitud y alegría",
+    "reflection": "Aun cuando falten los frutos terrenales, decide alegrarte en el Dios de tu salvación."
+  },
+  {
+    "verseId": 25384,
+    "theme": "Gratitud y alegría",
+    "reflection": "Regocíjate sobre todo en que tu nombre está escrito en el libro de la vida celestial."
+  },
+  {
+    "verseId": 14331,
+    "theme": "Gratitud y alegría",
+    "reflection": "Dios puede transformar tu lamento en danza y vestirte de alegría para honrar su nombre."
+  },
+  {
+    "verseId": 15804,
+    "theme": "Sabiduría y palabras",
+    "reflection": "El temor reverente al Señor es el principio de la sabiduría que alumbra la mente del justo."
+  },
+  {
+    "verseId": 15910,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Guarda la palabra de Dios en lo íntimo de tu corazón para protegerte del error y del pecado."
+  },
+  {
+    "verseId": 16280,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Ruega al Señor que ponga un centinela en tus labios para hablar con prudencia y amor."
+  },
+  {
+    "verseId": 16498,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Valora la sabiduría divina por encima de cualquier ganancia material y cuídala con empeño."
+  },
+  {
+    "verseId": 16831,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Qué satisfacción produce dar la palabra oportuna; pide a Dios discreción para hablar a tiempo."
+  },
+  {
+    "verseId": 16923,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Nuestras palabras tienen poder para construir o derribar; utilízalas siempre para sembrar vida."
+  },
+  {
+    "verseId": 17125,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Una palabra dicha en el momento oportuno es tan hermosa como manzana de oro en engastes de plata."
+  },
+  {
+    "verseId": 29302,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Que de tus labios solo salgan palabras constructivas que aporten gracia y edificación a quien escucha."
+  },
+  {
+    "verseId": 29549,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Que tu conversación sea siempre agradable y sabia, sabiendo responder con respeto a cada persona."
+  },
+  {
+    "verseId": 1923,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "El Señor es tu cántico y tu fuerza inagotable; en Él encuentras la salvación que te sostiene."
+  },
+  {
+    "verseId": 15265,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Dichoso aquel que halla en Dios sus fuerzas y camina con determinación hacia sus propósitos."
+  },
+  {
+    "verseId": 12504,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "No te desanimes en el camino, porque el gozo que proviene del Señor es tu verdadera fortaleza."
+  },
+  {
+    "verseId": 29348,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Fortalécete en la presencia del Señor y en la grandeza de su fuerza invencible."
+  },
+  {
+    "verseId": 30215,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Mantén tu mirada fija en Jesús, autor y perfeccionador de nuestra fe, quien venció en la cruz."
+  },
+  {
+    "verseId": 30279,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Bienaventurado quien resiste con paciencia la prueba, pues recibirá la corona de la vida eterna."
+  },
+  {
+    "verseId": 10832,
+    "theme": "Fe y oración",
+    "reflection": "Busca continuamente la presencia y el poder del Señor con un corazón humilde y dispuesto."
+  },
+  {
+    "verseId": 11339,
+    "theme": "Fe y oración",
+    "reflection": "Humíllate, ora y busca el rostro de Dios; Él escucha desde el cielo y sana a su pueblo."
+  },
+  {
+    "verseId": 14110,
+    "theme": "Fe y oración",
+    "reflection": "Dios atiende con ternura tu súplica sincera; inclina su oído a las palabras de tu clamor."
+  },
+  {
+    "verseId": 14893,
+    "theme": "Fe y oración",
+    "reflection": "Ten la certeza de que Dios escucha tus oraciones y atiende la voz de tus ruegos más íntimos."
+  },
+  {
+    "verseId": 15292,
+    "theme": "Fe y oración",
+    "reflection": "En el día de angustia clama al Señor con fe, sabiendo que Él responderá con amor y cuidado."
+  },
+  {
+    "verseId": 19649,
+    "theme": "Fe y oración",
+    "reflection": "Buscarás a Dios y lo encontrarás con certeza cuando lo busques con todo tu corazón."
+  },
+  {
+    "verseId": 23849,
+    "theme": "Fe y oración",
+    "reflection": "Todo lo que pidas en oración con fe viva, creyendo en el poder soberano de Dios, lo recibirás."
+  },
+  {
+    "verseId": 25690,
+    "theme": "Fe y oración",
+    "reflection": "Persevera en la oración diaria sin desmayar, aun cuando la respuesta tome su tiempo en manifestarse."
+  },
+  {
+    "verseId": 29356,
+    "theme": "Fe y oración",
+    "reflection": "Ora en todo tiempo bajo la guía del Espíritu Santo, intercediendo con constancia por tus hermanos."
+  },
+  {
+    "verseId": 30179,
+    "theme": "Fe y oración",
+    "reflection": "Acércate a Dios creyendo firmemente que Él es real y que recompensa con amor a quienes le buscan."
+  },
+  {
+    "verseId": 14693,
+    "theme": "Perdón y renovación",
+    "reflection": "Acude a la infinita compasión de Dios para que limpie tus faltas y renueve tu alma."
+  },
+  {
+    "verseId": 14709,
+    "theme": "Perdón y renovación",
+    "reflection": "Dios nunca desprecia un corazón arrepentido y quebrantado que busca su perdón con humildad."
+  },
+  {
+    "verseId": 18531,
+    "theme": "Perdón y renovación",
+    "reflection": "Dios borra tus rebeliones por amor de su nombre y decide no acordarse más de tus faltas."
+  },
+  {
+    "verseId": 22684,
+    "theme": "Perdón y renovación",
+    "reflection": "Dios volverá a tener compasión de nosotros y arrojará al fondo del mar nuestras iniquidades."
+  },
+  {
+    "verseId": 25184,
+    "theme": "Perdón y renovación",
+    "reflection": "Siembra misericordia y perdón en lugar de juicio y condena; lo que des te será devuelto con creces."
+  },
+  {
+    "verseId": 16691,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "La arrogancia conduce a la deshonra, pero con las personas humildes camina la verdadera sabiduría."
+  },
+  {
+    "verseId": 16841,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "El respeto reverente al Señor es escuela de sabiduría; la humildad es el camino hacia la honra."
+  },
+  {
+    "verseId": 17020,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "La recompensa de la humildad y del temor reverente a Dios es una vida bendecida y con propósito."
+  },
+  {
+    "verseId": 17778,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Responde con prontitud y valentía al llamado de Dios en tu vida diciendo: Heme aquí, envíame a mí."
+  },
+  {
+    "verseId": 23930,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "El mayor en el reino de los cielos es aquel que se dispone a servir a sus hermanos con sencillez."
+  },
+  {
+    "verseId": 25495,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Mantén encendida la lámpara de tu fe y permanece listo para servir a Dios en cualquier oportunidad."
+  },
+  {
+    "verseId": 26607,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Donde esté el siervo de Cristo, allí estará también su Señor; el Padre honra a quien le sirve con amor."
+  },
+  {
+    "verseId": 28247,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Ofrece tu vida como un acto vivo y santo de adoración cotidiana que agrade al Creador."
+  },
+  {
+    "verseId": 30471,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Revístete de humildad en tu trato con todos, porque Dios se opone al orgulloso pero da gracia al humilde."
+  },
+  {
+    "verseId": 15512,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Reconoce que el Señor es Dios; Él nos hizo y no nosotros a nosotros mismos; pueblo suyo somos."
+  },
+  {
+    "verseId": 29542,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Sirve con entusiasmo en tu trabajo y deberes diarios, sabiendo que del Señor recibirás tu recompensa."
+  },
+  {
+    "verseId": 15397,
+    "theme": "Paz y descanso",
+    "reflection": "Habita bajo la sombra protectora del Altísimo y experimenta el descanso que el mundo no puede dar."
+  },
+  {
+    "verseId": 3531,
+    "theme": "Paz y descanso",
+    "reflection": "Dios promete guardar tu morada en paz; acuéstate confiando en que Él vela sobre los tuyos."
+  },
+  {
+    "verseId": 14520,
+    "theme": "Esperanza y consuelo",
+    "reflection": "En medio de lo incierto de la vida terrenal, coloca toda tu esperanza firme en el Señor."
+  },
+  {
+    "verseId": 15878,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Es infinitamente mejor refugiarse en la fidelidad de Dios que poner la confianza en brazos humanos."
+  },
+  {
+    "verseId": 19709,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Hay esperanza viva para tu porvenir; Dios tiene el control de tu historia y de tu familia."
+  },
+  {
+    "verseId": 30378,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Alaba a Dios porque por la resurrección de Cristo renaciste para una esperanza viva e incorruptible."
+  },
+  {
+    "verseId": 14261,
+    "theme": "Confianza y dirección",
+    "reflection": "Dios encamina con ternura a los humildes y enseña su voluntad a quienes tienen corazón manso."
+  },
+  {
+    "verseId": 14264,
+    "theme": "Confianza y dirección",
+    "reflection": "A quien honra a Dios con reverencia, el Señor le instruirá sobre qué senda escoger."
+  },
+  {
+    "verseId": 14455,
+    "theme": "Confianza y dirección",
+    "reflection": "Haz de Dios tu mayor deleite y alegría, y Él alineará tus anhelos con su perfecta voluntad."
+  },
+  {
+    "verseId": 15271,
+    "theme": "Confianza y dirección",
+    "reflection": "Dios es sol que alumbra y escudo que defiende; no negará ningún bien a quienes caminan en integridad."
+  },
+  {
+    "verseId": 15811,
+    "theme": "Confianza y dirección",
+    "reflection": "No temas ante las malas noticias; mantén tu corazón firme y confiado en la soberanía del Señor."
+  },
+  {
+    "verseId": 16842,
+    "theme": "Confianza y dirección",
+    "reflection": "Presenta tus planes a Dios, sabiendo que la respuesta sabia y oportuna proviene siempre de Él."
+  },
+  {
+    "verseId": 16979,
+    "theme": "Confianza y dirección",
+    "reflection": "Puesto que Dios dirige los pasos del ser humano, confía en su guía aun cuando no comprendas todo."
+  },
+  {
+    "verseId": 18138,
+    "theme": "Confianza y dirección",
+    "reflection": "La senda del justo es rectitud; Dios allana con justicia y verdad el camino por donde andas."
+  },
+  {
+    "verseId": 30248,
+    "theme": "Confianza y dirección",
+    "reflection": "Declara con convicción que el Señor es tu ayudador; ningún temor humano puede frenar su propósito."
+  },
+  {
+    "verseId": 2503,
+    "theme": "Amor y compasión",
+    "reflection": "Acércate al Señor reconociendo que es compasivo, clemente, paciente y lleno de amor fiel."
+  },
+  {
+    "verseId": 15298,
+    "theme": "Amor y compasión",
+    "reflection": "La misericordia de Dios para contigo es inmensa; Él ha rescatado tu alma de la desesperación."
+  },
+  {
+    "verseId": 15328,
+    "theme": "Amor y compasión",
+    "reflection": "Celebra perpetuamente el amor inmutable de Dios y proclama su fidelidad a las nuevas generaciones."
+  },
+  {
+    "verseId": 15554,
+    "theme": "Amor y compasión",
+    "reflection": "Dios rescata tu vida de la fosa del desánimo y te corona de favores tiernos y compasión."
+  },
+  {
+    "verseId": 16329,
+    "theme": "Amor y compasión",
+    "reflection": "El Señor es bondadoso y misericordioso; su ternura infinita abraza a quienes acuden a Él."
+  },
+  {
+    "verseId": 14332,
+    "theme": "Gratitud y alegría",
+    "reflection": "No guardes silencio ante las bondades divinas; entona alabanzas al Señor Dios tuyo para siempre."
+  },
+  {
+    "verseId": 14368,
+    "theme": "Gratitud y alegría",
+    "reflection": "Alegra tu espíritu en el Señor; en los corazones rectos y agradecidos la alabanza resplandece."
+  },
+  {
+    "verseId": 14529,
+    "theme": "Gratitud y alegría",
+    "reflection": "Dios pone en tus labios un cántico nuevo de alabanza para que muchos vean su obra y confíen en Él."
+  },
+  {
+    "verseId": 14845,
+    "theme": "Gratitud y alegría",
+    "reflection": "Encuentra en Dios la plenitud que sacia tu alma, celebrando su presencia con labios jubilosos."
+  },
+  {
+    "verseId": 14875,
+    "theme": "Gratitud y alegría",
+    "reflection": "Eleva hoy un clamor de júbilo y gratitud al Creador por cada detalle de su providencia."
+  },
+  {
+    "verseId": 15456,
+    "theme": "Gratitud y alegría",
+    "reflection": "Ven con alegría a la presencia del Señor y alaba con cánticos a la roca inamovible de tu salvación."
+  },
+  {
+    "verseId": 15492,
+    "theme": "Gratitud y alegría",
+    "reflection": "Canta al Señor por las maravillas cotidianas que su diestra amorosa realiza en tu vida."
+  },
+  {
+    "verseId": 15555,
+    "theme": "Gratitud y alegría",
+    "reflection": "Agradece a Dios, quien colma de bienes tus días y renueva tus fuerzas como las del águila."
+  },
+  {
+    "verseId": 15795,
+    "theme": "Gratitud y alegría",
+    "reflection": "Alaba a Dios con todo tu corazón en comunidad, compartiendo testimonios de su fidelidad."
+  },
+  {
+    "verseId": 16233,
+    "theme": "Gratitud y alegría",
+    "reflection": "Da gracias al Señor de todo corazón, proclamando con valentía su gloria ante el mundo."
+  },
+  {
+    "verseId": 16322,
+    "theme": "Gratitud y alegría",
+    "reflection": "Exalta a tu Dios y Rey cada día, bendiciendo su santo nombre con reverencia y alegría."
+  },
+  {
+    "verseId": 16323,
+    "theme": "Gratitud y alegría",
+    "reflection": "Haz de la gratitud un hábito diario: bendice al Señor hoy y renueva tu alabanza mañana."
+  },
+  {
+    "verseId": 14481,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Cultiva conversaciones sabias y justas que transmitan verdad, paz y sensatez a los demás."
+  },
+  {
+    "verseId": 16676,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Aprende a moderar tus palabras; quien sabe guardar silencio oportuno demuestra prudencia."
+  },
+  {
+    "verseId": 16677,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Que las expresiones de tus labios sean tan valiosas y edificantes como plata pura escogida."
+  },
+  {
+    "verseId": 16702,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Sé una persona de confianza que sabe guardar confidencias y proteger el corazón de su hermano."
+  },
+  {
+    "verseId": 16751,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Cuidar lo que dices protege tu propia alma; evita la ligereza al hablar para no tropezar."
+  },
+  {
+    "verseId": 16810,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Usa el conocimiento para enriquecer a otros con gracia, evitando el hablar necio y destructivo."
+  },
+  {
+    "verseId": 16857,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Busca la sabiduría de Dios antes que las riquezas materiales; el discernimiento espiritual no tiene precio."
+  },
+  {
+    "verseId": 5836,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Recibe la promesa de que la fuerza que Dios te otorgará será exactamente igual a la exigencia de tus días."
+  },
+  {
+    "verseId": 14308,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "El Señor es la fuerza protectora de su pueblo y el refugio salvador para quienes acuden a Él."
+  },
+  {
+    "verseId": 14823,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "En los momentos de debilidad corre hacia Dios: Él es tu torre inexpugnable ante el peligro."
+  },
+  {
+    "verseId": 15267,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Quienes caminan con Dios avanzan de poder en poder, renovando su aliento hasta llegar a su presencia."
+  },
+  {
+    "verseId": 15398,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Proclama que el Señor es tu amparo, tu fortaleza inquebrantable y el Dios en quien confías plenamente."
+  },
+  {
+    "verseId": 15927,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Cuando sientas que la ansiedad te agota, acude a la palabra de Dios para que te fortalezca."
+  },
+  {
+    "verseId": 16307,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Bendice al Señor, roca tuya, quien capacita tus manos y fortalece tu mente para superar los desafíos."
+  },
+  {
+    "verseId": 17903,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Dios es tu salvación; confía y no temas, porque el Señor es tu cántico y tu fuerza invencible."
+  },
+  {
+    "verseId": 18123,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Dios es refugio para el necesitado en su angustia, sombra fresca contra el calor y abrigo ante la tormenta."
+  },
+  {
+    "verseId": 29477,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Pide ser fortalecido con el poder glorioso de Dios para sobrellevar toda dificultad con paciencia y gozo."
+  },
+  {
+    "verseId": 13969,
+    "theme": "Fe y oración",
+    "reflection": "Ten la absoluta certeza de que el Señor aparta al fiel para sí y escucha cada una de sus oraciones."
+  },
+  {
+    "verseId": 14393,
+    "theme": "Fe y oración",
+    "reflection": "Busca a Dios en oración cuando los temores te asalten; Él escucha y te libra de la angustia."
+  },
+  {
+    "verseId": 14404,
+    "theme": "Fe y oración",
+    "reflection": "Los ojos del Señor están atentos sobre ti y sus oídos permanecen abiertos al clamor de tu voz."
+  },
+  {
+    "verseId": 14406,
+    "theme": "Fe y oración",
+    "reflection": "Cuando el creyente clama con sinceridad, Dios escucha desde los cielos y envía su auxilio oportuno."
+  },
+  {
+    "verseId": 15411,
+    "theme": "Fe y oración",
+    "reflection": "Invoca al Señor en el día de la prueba; Él promete responderte, acompañarte y sostenerte."
+  },
+  {
+    "verseId": 14263,
+    "theme": "Perdón y renovación",
+    "reflection": "Pide a Dios que perdone tus faltas por amor de su nombre, confiando en su infinita misericordia."
+  },
+  {
+    "verseId": 14864,
+    "theme": "Perdón y renovación",
+    "reflection": "Aun cuando nuestras transgresiones nos pesen, la gracia perdonadora de Dios limpia nuestra culpa."
+  },
+  {
+    "verseId": 15195,
+    "theme": "Perdón y renovación",
+    "reflection": "Ruega a Dios que te socorra por la gloria de su nombre y cubra tus caídas con su amor restaurador."
+  },
+  {
+    "verseId": 15274,
+    "theme": "Perdón y renovación",
+    "reflection": "Dios perdona la iniquidad de su pueblo y cubre con su gracia las faltas de quienes le buscan."
+  },
+  {
+    "verseId": 15553,
+    "theme": "Perdón y renovación",
+    "reflection": "Alaba a Dios, quien perdona todas tus iniquidades y extiende su mano sanadora sobre tu corazón."
+  },
+  {
+    "verseId": 15560,
+    "theme": "Perdón y renovación",
+    "reflection": "Agradece que Dios no nos trata conforme a nuestros errores, sino según la grandeza de su compasión."
+  },
+  {
+    "verseId": 16148,
+    "theme": "Perdón y renovación",
+    "reflection": "Espera en el Señor con esperanza renovada, pues en Él abundan la redención y el perdón generoso."
+  },
+  {
+    "verseId": 17210,
+    "theme": "Perdón y renovación",
+    "reflection": "Quien reconoce sus errores y se aparta de ellos encuentra la compasión y el favor de Dios."
+  },
+  {
+    "verseId": 18556,
+    "theme": "Perdón y renovación",
+    "reflection": "Dios disipa tus rebeliones como niebla matutina; vuelve hoy a sus brazos porque Él te ha redimido."
+  },
+  {
+    "verseId": 19726,
+    "theme": "Perdón y renovación",
+    "reflection": "Descansa en la promesa del nuevo pacto: Dios perdona tu pasado y no vuelve a recordar tus faltas."
+  },
+  {
+    "verseId": 29214,
+    "theme": "Perdón y renovación",
+    "reflection": "En Cristo tenemos redención por su sangre y el perdón pleno de nuestras faltas según sus riquezas."
+  },
+  {
+    "verseId": 22929,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Comprende que los grandes logros espirituales no son con fuerza humana, sino con el Espíritu de Dios."
+  },
+  {
+    "verseId": 23249,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Sé luz en tu entorno; una vida guiada por los valores del reino no puede permanecer oculta."
+  },
+  {
+    "verseId": 24049,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Cada gesto de amor, ayuda y compasión hacia el más necesitado es un servicio directo al Señor Jesús."
+  },
+  {
+    "verseId": 25325,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Toma tu cruz cada día y sigue las pisadas de Jesús con un corazón dispuesto a servir con humildad."
+  },
+  {
+    "verseId": 28599,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Cualquiera que sea tu labor hoy, realízala con excelencia y devoción para la gloria de Dios."
+  },
+  {
+    "verseId": 30457,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Pon los talentos y dones que Dios te confió al servicio de los demás como fiel mayordomo de su gracia."
+  },
+  {
+    "verseId": 16363,
+    "theme": "Esperanza y consuelo",
+    "reflection": "Dios halla complacencia en quienes le honran con reverencia y ponen su esperanza en su misericordia."
+  },
+  {
+    "verseId": 16264,
+    "theme": "Confianza y dirección",
+    "reflection": "Pide a Dios que examine tus motivaciones y te conduzca con amor por el camino eterno."
+  },
+  {
+    "verseId": 15567,
+    "theme": "Amor y compasión",
+    "reflection": "El amor de Dios se extiende desde la eternidad hasta la eternidad sobre quienes le honran con reverencia."
+  },
+  {
+    "verseId": 30455,
+    "theme": "Amor y compasión",
+    "reflection": "Cultiva un amor sincero hacia tu prójimo, pues el amor restaura heridas y cubre multitud de errores."
+  },
+  {
+    "verseId": 14402,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Guarda tu lengua de emitir juicio o engaño y procura que tus palabras edifiquen la paz."
+  },
+  {
+    "verseId": 16934,
+    "theme": "Sabiduría y palabras",
+    "reflection": "Quien busca la sabiduría y atesora el entendimiento espiritual cuida su propia vida y halla el bien."
+  },
+  {
+    "verseId": 14151,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Dios es quien te ciñe de poder renovado y hace recto y seguro el sendero por donde transitas."
+  },
+  {
+    "verseId": 11164,
+    "theme": "Fortaleza y perseverancia",
+    "reflection": "Esfuérzate, cobra ánimo y pon manos a la obra sin temor, porque tu Dios camina a tu lado."
+  },
+  {
+    "verseId": 13995,
+    "theme": "Fe y oración",
+    "reflection": "Ten la certeza de que el Señor escucha tus súplicas y recibe tu oración con agrado paternal."
+  },
+  {
+    "verseId": 16279,
+    "theme": "Fe y oración",
+    "reflection": "Que tu oración suba como incienso agradable ante la presencia de Dios en gratitud y entrega."
+  },
+  {
+    "verseId": 15539,
+    "theme": "Fe y oración",
+    "reflection": "Dios mira con ternura la oración del desamparado y jamás desprecia el clamor sincero de su pueblo."
+  },
+  {
+    "verseId": 14694,
+    "theme": "Perdón y renovación",
+    "reflection": "Acércate al manantial de la gracia divina rogando que lave tus faltas y limpie tu corazón."
+  },
+  {
+    "verseId": 19784,
+    "theme": "Perdón y renovación",
+    "reflection": "Dios promete limpiar toda culpa y perdonar con generosidad las transgresiones del pasado."
+  },
+  {
+    "verseId": 30348,
+    "theme": "Servicio, humildad y propósito",
+    "reflection": "Humíllate delante de la presencia del Señor, y a su debido tiempo Él te exaltará con gracia."
   }
 ];

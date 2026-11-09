@@ -16,21 +16,21 @@ function load(relative) {
 const { selectDevotional, parseDevotionalSelection, localDateKey } = load('src/features/daily/data/devotionalSelection.ts');
 const { DEVOTIONAL_CATALOG: catalog } = load('src/features/daily/data/devotionalCatalog.ts');
 const ids = Array.from(catalog, (entry) => entry.verseId);
-assert.equal(ids.length, 180);
-assert.equal(new Set(ids).size, 180);
-assert.equal(new Set(Array.from(catalog, (entry) => entry.reflection)).size, 180);
+assert.equal(ids.length, 365);
+assert.equal(new Set(ids).size, 365);
+assert.equal(new Set(Array.from(catalog, (entry) => entry.reflection)).size, 365);
 assert.ok(catalog.every((entry) => entry.theme && entry.reflection));
 const date = new Date(2026, 10, 7, 12);
 let state = selectDevotional(null, ids, date);
 const main = state.history[0];
 const drawn = new Set([main]);
-for (let i = 1; i < 180; i++) {
+for (let i = 1; i < 365; i++) {
   state = selectDevotional(state, ids, date, 'random', () => 0.42);
   const current = state.history.at(-1);
-  assert.ok(!drawn.has(current), 'No repeats before exhausting 180');
+  assert.ok(!drawn.has(current), 'No repeats before exhausting 365');
   drawn.add(current);
 }
-assert.equal(drawn.size, 180);
+assert.equal(drawn.size, 365);
 const last = state.history.at(-1);
 state = selectDevotional(state, ids, date, 'random', () => 0.42);
 assert.notEqual(state.history.at(-1), last, 'No immediate repeat at cycle boundary');
@@ -55,8 +55,8 @@ const cleaned = selectDevotional({ dateKey: localDateKey(date), seen: [-1], hist
 assert.equal(cleaned.history[0], main);
 const yearEnd = selectDevotional(null, ids, new Date(2026, 11, 31));
 const yearStart = selectDevotional(yearEnd, ids, new Date(2027, 0, 1));
-assert.equal(ids.indexOf(yearStart.history[0]), (ids.indexOf(yearEnd.history[0]) + 1) % 180);
-console.log('PASS: 180 entries, unique reflections, complete shuffle cycles, persistence, back history, date/year rollover, corrupt state recovery.');
+assert.equal(ids.indexOf(yearStart.history[0]), (ids.indexOf(yearEnd.history[0]) + 1) % 365);
+console.log('PASS: 365 entries, unique reflections, complete shuffle cycles, persistence, back history, date/year rollover, corrupt state recovery.');
 
 // Exercise the persistence/serialization code with storage and Bible I/O mocked.
 (async () => {
