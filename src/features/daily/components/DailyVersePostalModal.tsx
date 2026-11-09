@@ -17,6 +17,7 @@ import { captureRef, releaseCapture } from 'react-native-view-shot';
 import { shareVerseImage, assertImageCaptionSharingAvailable } from '@/src/features/share/utils/shareVerseImage';
 import { getVerseShareUrl } from '@/src/features/share/utils/verseShare';
 import { PostalImageExport } from './PostalImageExport';
+import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -61,6 +62,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
   onRotateVerse,
 }) => {
   const insets = useSafeAreaInsets();
+  const selectedTheme = useSettingsStore((state) => state.theme);
   const [isFocused, setIsFocused] = useState(false);
   useFocusEffect(
     useCallback(() => {
@@ -374,7 +376,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
       <View style={styles.container}>
         <StatusBar
           hidden={!controlsVisible && !isFlipped}
-          barStyle="light-content"
+          barStyle={isFlipped && selectedTheme !== 'oled' ? 'dark-content' : 'light-content'}
           translucent
           backgroundColor="transparent"
         />
@@ -598,6 +600,7 @@ export const DailyVersePostalModal: React.FC<DailyVersePostalModalProps> = ({
           style={[styles.cardSide, backAnimatedStyle, { zIndex: isFlipped ? 10 : 0 }]}
         >
           <DailyVersePostalBackside
+            active={isFlipped && visible && isFocused}
             verseSlug={cleanSlug}
             verseCitation={citation}
             verseText={verse.text}
