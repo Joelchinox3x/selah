@@ -4,8 +4,11 @@ const assert = require('assert');
 // Cargar y evaluar profanityFilter.ts sin dependencias externas
 const code = fs.readFileSync('src/features/daily/services/profanityFilter.ts', 'utf8')
   .replace(/export\s+/g, '')
+  .replace(/:\s*Array<string>/g, '')
+  .replace(/:\s*Promise<void>/g, '')
   .replace(/:\s*string/g, '')
-  .replace(/:\s*\{[^}]+\}/g, '');
+  .replace(/:\s*\{[^}]+\}/g, '')
+  .replace(/\?\s*:/g, ':');
 eval(code);
 
 const blockedCases = [

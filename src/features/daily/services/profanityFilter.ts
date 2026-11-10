@@ -102,7 +102,26 @@ export function normalizeText(raw: string): string {
   return str;
 }
 
-export function hasProfanity(rawText: string): { blocked: boolean; word?: string } {
+let dynamicBlockedWords: Array<string> = [];
+
+/**
+ * Sincroniza en segundo plano las palabras agregadas por el Pastor desde el Admin Dashboard
+ */
+export async function syncBlockedWordsFromServer(): Promise<void> {
+  try {
+    const res = await fetch('https://selah.boxtiove.com/api/blocked-words');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.words)) {
+        dynamicBlockedWords = data.words.map((w: string) => normalizeText(String(w).trim()));
+      }
+    }
+  } catch (e) {
+    // Modo offline silencioso: mantiene los filtros locales predeterminados
+  }
+}
+
+export function hasProfanity(rawText: string, extraWords: Array<string> = []): { blocked: boolean; word?: string } {
   if (!rawText || !rawText.trim()) return { blocked: false };
 
   const normalized = normalizeText(rawText);
@@ -110,7 +129,12 @@ export function hasProfanity(rawText: string): { blocked: boolean; word?: string
   const deDuplicated = normalized.replace(/(.)\1{2,}/g, '$1');
   const collapsedDeDuplicated = collapsed.replace(/(.)\1{2,}/g, '$1');
 
-  for (const root of PROFANITY_ROOTS) {
+  const allRoots = extraWords && extraWords.length > 0
+    ? [...PROFANITY_ROOTS, ...dynamicBlockedWords, ...extraWords]
+    : [...PROFANITY_ROOTS, ...dynamicBlockedWords];
+
+  for (const root of allRoots) {
+    if (!root) continue;
     if (root.includes(' ')) {
       if (normalized.includes(root) || deDuplicated.includes(root)) {
         return { blocked: true, word: root };
