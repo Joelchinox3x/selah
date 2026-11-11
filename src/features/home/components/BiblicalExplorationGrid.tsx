@@ -109,7 +109,7 @@ export const BiblicalExplorationGrid: React.FC<BiblicalExplorationGridProps> = (
             <MapPin size={20} color="#10b981" />
           </View>
           <Text style={[styles.gridTag, { color: '#10b981' }]}>
-            24 LUGARES GPS
+            36 LUGARES GPS
           </Text>
           <Text style={[styles.gridTitle, { color: theme.text }]}>
             Mapa Sagrado
@@ -151,7 +151,7 @@ export const BiblicalExplorationGrid: React.FC<BiblicalExplorationGridProps> = (
             <Clock size={20} color="#6366f1" />
           </View>
           <Text style={[styles.gridTag, { color: '#6366f1' }]}>
-            9 ÉPOCAS
+            9 ÉPOCAS · 62 EVENTOS
           </Text>
           <Text style={[styles.gridTitle, { color: theme.text }]}>
             Línea del Tiempo
@@ -193,7 +193,7 @@ export const BiblicalExplorationGrid: React.FC<BiblicalExplorationGridProps> = (
             <Sparkles size={20} color="#ec4899" />
           </View>
           <Text style={[styles.gridTag, { color: '#ec4899' }]}>
-            SABIDURÍA SELAH
+            30 RAÍCES Y TESOROS
           </Text>
           <Text style={[styles.gridTitle, { color: theme.text }]}>
             Raíces del Día

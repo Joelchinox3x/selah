@@ -275,6 +275,14 @@ export default function TimelineScreen() {
                   milenios. Comprende qué ocurrió primero y cómo cada promesa divina
                   apuntaba hacia el cumplimiento de la paz.
                 </Text>
+                <View style={styles.bannerStatsRow}>
+                  <View style={styles.bannerStatItem}>
+                    <Calendar size={13} color={theme.accent} />
+                    <Text style={[styles.bannerStatText, { color: theme.text }]}>
+                      {filteredEvents.length} de {events.length} Hitos Históricos
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
           }
@@ -526,6 +534,23 @@ const styles = StyleSheet.create({
   bannerText: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  bannerStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(150,150,150,0.15)',
+  },
+  bannerStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  bannerStatText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   timelineItemWrapper: {
     flexDirection: 'row',

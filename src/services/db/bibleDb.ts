@@ -108,7 +108,7 @@ export async function getBibleDb(): Promise<SQLite.SQLiteDatabase> {
             !checkMoodCatalog ||
             checkMoodCatalog.count < 12 ||
             peopleCount < 50 ||
-            placesCount < 20 ||
+            placesCount < 30 ||
             timelineCount < 8
           ) {
             needsImport = true;

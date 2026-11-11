@@ -389,4 +389,189 @@ export const PLACE_GEO_METADATA: Record<number, PlaceGeoMeta> = {
     ],
     keyVerse: { bookId: 9, chapter: 24, verse: 1, citation: '1 Samuel 24:1' },
   },
+  // 25. Estanque de Siloé
+  25: {
+    radiusMeters: 600,
+    color: '#06b6d4',
+    borderColor: '#22d3ee',
+    fillColor: '#22d3ee',
+    icon: '💧',
+    historicalSizeText: 'Estanque sagrado de cantería y escalones de piedra · 600 m de perímetro',
+    ancientDescription: 'Alimentado por el túnel de Ezequías desde el manantial de Gihón. Jesús envió al ciego aquí y recobró la vista.',
+    associatedPeople: [
+      { name: 'Jesús de Nazaret' },
+      { name: 'Ezequías' },
+    ],
+    keyVerse: { bookId: 43, chapter: 9, verse: 7, citation: 'Juan 9:7' },
+  },
+  // 26. Monte Nebo (Pisga)
+  26: {
+    radiusMeters: 3000,
+    color: '#8b5cf6',
+    borderColor: '#a78bfa',
+    fillColor: '#a78bfa',
+    icon: '⛰️',
+    historicalSizeText: 'Cumbre de Abarim frente a Jericó (817 m) · 3.0 km de radio',
+    ancientDescription: 'Mirador sagrado desde donde Moisés contempló la Tierra Prometida antes de ser sepultado por la mano de Dios.',
+    associatedPeople: [
+      { name: 'Moisés' },
+      { name: 'Josué' },
+    ],
+    keyVerse: { bookId: 5, chapter: 34, verse: 1, citation: 'Deuteronomio 34:1' },
+  },
+  // 27. Mar Rojo (Paso de Salvación)
+  27: {
+    radiusMeters: 8000,
+    color: '#0284c7',
+    borderColor: '#38bdf8',
+    fillColor: '#38bdf8',
+    icon: '🌊',
+    historicalSizeText: 'Costa de Nuweiba y Golfo de Aqaba · Vado milagroso de 8.0 km',
+    ancientDescription: 'Donde el viento de Dios abrió camino en medio del mar para la salvación de Israel y sepultó la opresión.',
+    associatedPeople: [
+      { name: 'Moisés' },
+      { name: 'Aarón' },
+      { name: 'María' },
+    ],
+    keyVerse: { bookId: 2, chapter: 14, verse: 21, citation: 'Éxodo 14:21' },
+  },
+  // 28. Ur de los Caldeos
+  28: {
+    radiusMeters: 3500,
+    color: '#d97706',
+    borderColor: '#f59e0b',
+    fillColor: '#f59e0b',
+    icon: '🏺',
+    historicalSizeText: 'Gran metrópoli sumeria y zigurat · 3.5 km de radio',
+    ancientDescription: 'Cuna de civilizaciones donde Abraham escuchó el llamado de Dios y salió por fe hacia una patria celestial.',
+    associatedPeople: [
+      { name: 'Abraham' },
+      { name: 'Sara' },
+    ],
+    keyVerse: { bookId: 1, chapter: 11, verse: 31, citation: 'Génesis 11:31' },
+  },
+  // 29. Cesarea Marítima
+  29: {
+    radiusMeters: 2500,
+    color: '#0d9488',
+    borderColor: '#2dd4bf',
+    fillColor: '#2dd4bf',
+    icon: '⛵',
+    historicalSizeText: 'Puerto artificial herodiano y acueducto · 2.5 km de radio',
+    ancientDescription: 'Sede romana donde el Espíritu Santo descendió sobre el centurión Cornelio y Pablo estuvo preso apelando al César.',
+    associatedPeople: [
+      { name: 'Pedro' },
+      { name: 'Pablo' },
+      { name: 'Cornelio' },
+    ],
+    keyVerse: { bookId: 44, chapter: 10, verse: 24, citation: 'Hechos 10:24' },
+  },
+  // 30. Antioquía de Siria
+  30: {
+    radiusMeters: 3200,
+    color: '#6366f1',
+    borderColor: '#818cf8',
+    fillColor: '#818cf8',
+    icon: '🕊️',
+    historicalSizeText: 'Tercera gran metrópolis romana · 3.2 km de radio',
+    ancientDescription: 'Comunidad viva donde por primera vez se llamó cristianos a los discípulos y base del envío misionero de Pablo.',
+    associatedPeople: [
+      { name: 'Bernabé' },
+      { name: 'Pablo' },
+    ],
+    keyVerse: { bookId: 44, chapter: 11, verse: 26, citation: 'Hechos 11:26' },
+  },
+  // 31. Filipos de Macedonia
+  31: {
+    radiusMeters: 2000,
+    color: '#ec4899',
+    borderColor: '#f472b6',
+    fillColor: '#f472b6',
+    icon: '⛓️',
+    historicalSizeText: 'Colonia romana en la Vía Ignacia · 2.0 km de radio',
+    ancientDescription: 'Lugar donde se bautizó Lidia y donde Pablo y Silas alabaron a Dios a medianoche, abriendo las puertas de Europa.',
+    associatedPeople: [
+      { name: 'Pablo' },
+      { name: 'Silas' },
+      { name: 'Lidia' },
+    ],
+    keyVerse: { bookId: 44, chapter: 16, verse: 25, citation: 'Hechos 16:25' },
+  },
+  // 32. Corinto
+  32: {
+    radiusMeters: 2800,
+    color: '#f59e0b',
+    borderColor: '#fbbf24',
+    fillColor: '#fbbf24',
+    icon: '🏛️',
+    historicalSizeText: 'Istmo mercantil de Corinto y Acrocorinto · 2.8 km de radio',
+    ancientDescription: 'Centro cosmopolita donde Pablo tejió tiendas y predicó la cruz; Dios le prometió: Tengo mucho pueblo en esta ciudad.',
+    associatedPeople: [
+      { name: 'Pablo' },
+      { name: 'Priscila' },
+      { name: 'Aquila' },
+    ],
+    keyVerse: { bookId: 44, chapter: 18, verse: 10, citation: 'Hechos 18:10' },
+  },
+  // 33. Atenas (El Areópago)
+  33: {
+    radiusMeters: 1800,
+    color: '#6366f1',
+    borderColor: '#818cf8',
+    fillColor: '#818cf8',
+    icon: '📜',
+    historicalSizeText: 'Colina de Marte junto a la Acrópolis · 1.8 km de radio',
+    ancientDescription: 'Tribunal filosófico donde Pablo reveló al Dios No Conocido ante los epicúreos y estoicos de Grecia.',
+    associatedPeople: [
+      { name: 'Pablo' },
+    ],
+    keyVerse: { bookId: 44, chapter: 17, verse: 28, citation: 'Hechos 17:28' },
+  },
+  // 34. Monte Moriah
+  34: {
+    radiusMeters: 1200,
+    color: '#f59e0b',
+    borderColor: '#fbbf24',
+    fillColor: '#fbbf24',
+    icon: '🔥',
+    historicalSizeText: 'Cumbre sagrada de Moriah en Jerusalén · 1.2 km de radio',
+    ancientDescription: 'El altar donde Dios proveyó el cordero a Abraham y donde Salomón edificó el Templo santo.',
+    associatedPeople: [
+      { name: 'Abraham' },
+      { name: 'Isaac' },
+      { name: 'Salomón' },
+    ],
+    keyVerse: { bookId: 1, chapter: 22, verse: 14, citation: 'Génesis 22:14' },
+  },
+  // 35. Valle de Ela
+  35: {
+    radiusMeters: 2200,
+    color: '#10b981',
+    borderColor: '#34d399',
+    fillColor: '#34d399',
+    icon: '🪨',
+    historicalSizeText: 'Valle de terebintos y arroyo pedregoso · 2.2 km de radio',
+    ancientDescription: 'Escenario del combate de David contra Goliat: cinco piedras lisas y una fe que derriba gigantes.',
+    associatedPeople: [
+      { name: 'David' },
+      { name: 'Goliat' },
+    ],
+    keyVerse: { bookId: 9, chapter: 17, verse: 45, citation: '1 Samuel 17:45' },
+  },
+  // 36. Roma (El Corazón del Imperio)
+  36: {
+    radiusMeters: 4000,
+    color: '#ef4444',
+    borderColor: '#f87171',
+    fillColor: '#f87171',
+    icon: '👑',
+    historicalSizeText: 'Metrópolis imperial romana, Foro y Vía Apia · 4.0 km de radio',
+    ancientDescription: 'Donde el apóstol Pablo proclamó el reino de Dios con toda libertad y selló su carrera en la fe.',
+    associatedPeople: [
+      { name: 'Pablo' },
+      { name: 'Pedro' },
+      { name: 'Lucas' },
+    ],
+    keyVerse: { bookId: 44, chapter: 28, verse: 31, citation: 'Hechos 28:31' },
+  },
 };
