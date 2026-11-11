@@ -55,6 +55,7 @@ export default function SettingsScreen() {
   const logout = useAuthStore((s) => s.logout);
   const updateProfileName = useAuthStore((s) => s.updateProfileName);
   const unlockPastoralSession = useAuthStore((s) => s.unlockPastoralSession);
+  const syncWithServer = useAuthStore((s) => s.syncWithServer);
 
   const [communityName, setCommunityName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -64,6 +65,10 @@ export default function SettingsScreen() {
   const [googleName, setGoogleName] = useState('');
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleLoggingIn, setGoogleLoggingIn] = useState(false);
+
+  useEffect(() => {
+    syncWithServer?.();
+  }, []);
 
   useEffect(() => {
     let active = true;

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthUser, UserRole } from './types';
-import { saveCommunityName, getCommunityName } from '../daily/services/communityIdentity';
+import { saveCommunityName, getCommunityName, getCommunityDeviceId } from '../daily/services/communityIdentity';
 import {
   registerOrUpdatePastoralMember,
   verifyPastoralPin,
@@ -11,6 +11,32 @@ import {
 } from './pastoralService';
 
 const AUTH_STORAGE_KEY = '@selah_auth_state_v2';
+const API_SYNC_URL = 'https://selah.boxtiove.com/api/auth/sync';
+
+async function syncUserWithServer(params: {
+  email: string;
+  name: string;
+  avatarUrl?: string;
+  provider: string;
+  deviceId?: string;
+}): Promise<any | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(API_SYNC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.ok ? data.user : null;
+  } catch {
+    return null;
+  }
+}
 
 interface AuthState {
   user: AuthUser | null;
@@ -27,6 +53,7 @@ interface AuthState {
   unlockPastoralSession: (pin: string) => Promise<boolean>;
   lockPastoralSession: () => void;
   checkSuspendedStatus: () => Promise<boolean>;
+  syncWithServer: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -38,6 +65,34 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       authError: null,
 
+      syncWithServer: async () => {
+        const current = get().user;
+        if (!current || !current.email) return;
+        const deviceId = await getCommunityDeviceId().catch(() => undefined);
+        const serverUser = await syncUserWithServer({
+          email: current.email,
+          name: current.name,
+          avatarUrl: current.avatarUrl,
+          provider: current.provider,
+          deviceId,
+        });
+        if (serverUser) {
+          const updated: AuthUser = {
+            ...current,
+            role: serverUser.role,
+            status: serverUser.status,
+            isPastor: serverUser.isPastor,
+            isModerator: serverUser.isModerator,
+            isVerified: true,
+          };
+          set({ user: updated });
+          await registerOrUpdatePastoralMember({
+            ...updated,
+            joinedAt: (current as any).joinedAt || new Date().toISOString().split('T')[0],
+          });
+        }
+      },
+
       loginWithGoogle: async (customData) => {
         set({ isLoading: true, authError: null });
         try {
@@ -45,8 +100,24 @@ export const useAuthStore = create<AuthState>()(
           const cleanName = (customData?.name || currentStoredName || 'Creyente en Cristo').trim();
           const cleanEmail = (customData?.email || 'creyente.selah@gmail.com').trim().toLowerCase();
           const defaultAvatar = customData?.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
+          const deviceId = await getCommunityDeviceId().catch(() => undefined);
 
-          // Check if previously registered as pastor/moderator in pastoral list
+          // Sincronizar con el backend centralizado para resolver el rol y estado asignado en la Web
+          const serverUser = await syncUserWithServer({
+            email: cleanEmail,
+            name: cleanName,
+            avatarUrl: defaultAvatar,
+            provider: 'google',
+            deviceId,
+          });
+
+          // Si el servidor confirma suspensión desde la web, bloquear de inmediato
+          if (serverUser?.isSuspended || serverUser?.status === 'suspended') {
+            set({ authError: 'Esta cuenta ha sido suspendida por administración.', isLoading: false });
+            throw new Error('Esta cuenta ha sido suspendida por administración.');
+          }
+
+          // Fallback a resolución local si el servidor estuvo offline
           const suspended = await isMemberSuspended(cleanEmail);
           if (suspended) {
             set({ authError: 'Esta cuenta ha sido suspendida por moderación comunitaria.', isLoading: false });
@@ -54,12 +125,12 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const existingUser = get().user;
-          const userRole: UserRole = await resolveRoleForUser(cleanEmail, existingUser?.role);
-          const isPastor = userRole === 'pastor';
-          const isModerator = userRole === 'moderador' || isPastor;
+          const userRole: UserRole = serverUser?.role || (await resolveRoleForUser(cleanEmail, existingUser?.role));
+          const isPastor = serverUser ? Boolean(serverUser.isPastor) : (userRole === 'pastor' || userRole === 'admin');
+          const isModerator = serverUser ? Boolean(serverUser.isModerator) : (userRole === 'moderador' || isPastor);
 
           const authUser: AuthUser = {
-            id: existingUser?.id || `google_${Date.now().toString(36)}`,
+            id: serverUser?.id || existingUser?.id || `google_${Date.now().toString(36)}`,
             name: cleanName,
             email: cleanEmail,
             avatarUrl: defaultAvatar,
@@ -67,7 +138,7 @@ export const useAuthStore = create<AuthState>()(
             isVerified: true,
             isPastor,
             isModerator,
-            status: 'active',
+            status: serverUser?.status || 'active',
             provider: 'google',
             lastActiveAt: 'Ahora mismo',
             reflectionsCount: existingUser?.reflectionsCount || 1,

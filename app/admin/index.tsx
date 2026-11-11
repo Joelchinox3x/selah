@@ -75,11 +75,25 @@ export default function PastoralAdminScreen() {
 
   const loadData = async () => {
     try {
+      let remoteMembers: PastoralMember[] | null = null;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch('https://selah.boxtiove.com/api/admin/users', { signal: controller.signal });
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data?.users) && data.users.length > 0) {
+            remoteMembers = data.users;
+          }
+        }
+      } catch {}
+
       const [membersList, overviewStats] = await Promise.all([
         getPastoralMembers(),
         getPastoralStats(),
       ]);
-      setMembers(membersList);
+      setMembers(remoteMembers || membersList);
       setStats(overviewStats);
     } catch (e) {
       console.warn('Error loading pastoral data', e);
