@@ -252,7 +252,8 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   const sendDisabled = loading || !draftReady || submitting || !draft.text.trim();
   const content = <View style={[styles.overlay, embedded && { backgroundColor: theme.background }]}>
     {!embedded && <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar comentarios" />}
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0} style={[styles.keyboard, { paddingTop: embedded ? 0 : insets.top + 12 }]}>
+    {/* Resize the wall itself so its composer stays above the keyboard inside either modal. */}
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} enabled={visible} keyboardVerticalOffset={0} style={[styles.keyboard, { paddingTop: embedded ? 0 : insets.top + 12 }]}>
       <View style={[styles.sheet, !embedded && { maxHeight: height * 0.9, borderTopLeftRadius: 24, borderTopRightRadius: 24 }]}>
         <View style={[styles.header, { paddingTop: embedded ? Math.max(insets.top + 8, 16) : 16 }]}>
           {onBack && <TouchableOpacity style={styles.iconButton} onPress={onBack} accessibilityRole="button" accessibilityLabel="Volver a la postal"><ArrowLeft size={21} color={theme.text} /></TouchableOpacity>}
@@ -312,11 +313,11 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
 
 const makeStyles = (theme: ThemePalette) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }, keyboard: { flex: 1, justifyContent: 'flex-end' },
-  sheet: { flex: 1, backgroundColor: theme.background, overflow: 'hidden' },
+  sheet: { flex: 1, minHeight: 0, backgroundColor: theme.background, overflow: 'hidden' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, headerTitles: { flex: 1, gap: 3 },
   headerLabel: { fontSize: 18, fontWeight: '700', color: theme.text }, reference: { fontSize: 12, fontWeight: '600', color: theme.accent },
-  list: { flex: 1 }, listContent: { paddingHorizontal: 14, paddingBottom: 10 },
+  list: { flex: 1, minHeight: 0 }, listContent: { paddingHorizontal: 14, paddingBottom: 10 },
   postContext: { paddingVertical: 8 }, countLabel: { fontSize: 12, color: theme.textMuted },
   pastoralCard: { backgroundColor: theme.surfaceRaised, borderColor: 'rgba(217, 119, 6, 0.35)', borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 12 },
   pastoralBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
@@ -340,7 +341,7 @@ const makeStyles = (theme: ThemePalette) => StyleSheet.create({
   replies: { marginLeft: 30, paddingLeft: 8, borderLeftWidth: 1, borderLeftColor: theme.borderSubtle }, replyLinks: { minHeight: 32, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 14 },
   hiddenComment: { minHeight: 38, marginLeft: 38, flexDirection: 'row', alignItems: 'center', gap: 7 }, hiddenText: { flex: 1, color: theme.textMuted, fontSize: 12 },
   linkText: { color: theme.accent, fontSize: 12, fontWeight: '600' }, state: { paddingVertical: 32, alignItems: 'center', gap: 14 }, muted: { color: theme.textMuted, fontSize: 13, lineHeight: 20, textAlign: 'center' }, moreButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-  composer: { borderTopWidth: 1, borderTopColor: theme.borderSubtle, paddingHorizontal: 12, paddingTop: 8, backgroundColor: theme.background, gap: 6 },
+  composer: { flexShrink: 0, borderTopWidth: 1, borderTopColor: theme.borderSubtle, paddingHorizontal: 12, paddingTop: 8, backgroundColor: theme.background, gap: 6 },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 }, input: { flex: 1, minHeight: 44, maxHeight: 112, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, lineHeight: 21, borderRadius: 22, backgroundColor: theme.surfaceRaised, color: theme.text },
   sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.text, alignItems: 'center', justifyContent: 'center' }, disabled: { opacity: 0.35 },
   replyBanner: { flexDirection: 'row', alignItems: 'center', gap: 8 }, replyBannerText: { flex: 1, fontSize: 11, color: theme.textMuted }, smallClose: { minWidth: 44, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
