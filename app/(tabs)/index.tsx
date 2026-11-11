@@ -37,6 +37,7 @@ import {
   getTodayDiscovery,
 } from '@/src/services/db/bibleDb';
 import { getLastRead, markChapterCompleted } from '@/src/services/db/userDb';
+import { syncDevotionalCalendarWithServer } from '@/src/services/devotionalSyncService';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
 import { MoodCatalogItem, DailyDiscovery } from '@/src/types/bible';
@@ -187,6 +188,9 @@ export default function HomeScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    try {
+      await syncDevotionalCalendarWithServer();
+    } catch {}
     await loadData();
     setRefreshing(false);
   };

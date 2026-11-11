@@ -1,11 +1,34 @@
 import * as SQLite from 'expo-sqlite';
 import { Bookmark, Highlight, Note, MoodLog, MoodKey } from '@/src/types/bible';
 import { HighlightColor } from '@/src/theme/colors';
+import INITIAL_CALENDAR_DATA from '@/src/features/daily/data/initialCalendarData.json';
 
 let userDbInstance: SQLite.SQLiteDatabase | null = null;
+let isCalendarSeeded = false;
+
+export interface DevotionalCalendarRow {
+  day_number: number;
+  month: number;
+  day: number;
+  title: string;
+  verse_slug: string;
+  verse_citation: string;
+  verse_text: string;
+  theme: string;
+  reflection: string;
+  author: string;
+  is_special_day: number;
+  special_tag: string | null;
+  updated_at?: string;
+}
 
 export async function getUserDb(): Promise<SQLite.SQLiteDatabase> {
-  if (userDbInstance) return userDbInstance;
+  if (userDbInstance) {
+    if (!isCalendarSeeded) {
+      await ensureDevotionalCalendarSeeded(userDbInstance);
+    }
+    return userDbInstance;
+  }
 
   userDbInstance = await SQLite.openDatabaseAsync('user_data.db');
 
@@ -62,6 +85,24 @@ export async function getUserDb(): Promise<SQLite.SQLiteDatabase> {
       last_read_at TEXT NOT NULL,
       UNIQUE(book_id, chapter)
     );
+
+    CREATE TABLE IF NOT EXISTS daily_devotional_calendar (
+      day_number INTEGER PRIMARY KEY,
+      month INTEGER NOT NULL,
+      day INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      verse_slug TEXT NOT NULL,
+      verse_citation TEXT NOT NULL,
+      verse_text TEXT NOT NULL,
+      theme TEXT NOT NULL,
+      reflection TEXT NOT NULL,
+      author TEXT NOT NULL DEFAULT 'Ps. Guillermo Quispe C.',
+      is_special_day INTEGER NOT NULL DEFAULT 0,
+      special_tag TEXT,
+      updated_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_calendar_month_day ON daily_devotional_calendar(month, day);
   `);
 
   // Non-destructive column migrations for existing user databases
@@ -72,7 +113,108 @@ export async function getUserDb(): Promise<SQLite.SQLiteDatabase> {
     await userDbInstance.execAsync('ALTER TABLE reading_history ADD COLUMN completed INTEGER DEFAULT 0;');
   } catch {}
 
+  await ensureDevotionalCalendarSeeded(userDbInstance);
+
   return userDbInstance;
+}
+
+async function ensureDevotionalCalendarSeeded(db: SQLite.SQLiteDatabase): Promise<void> {
+  if (isCalendarSeeded) return;
+  try {
+    const row = await db.getFirstAsync<{ count: number }>(
+      'SELECT count(*) as count FROM daily_devotional_calendar'
+    );
+    if (!row || row.count < 365) {
+      console.log('[UserDB] Sembrando calendario devocional (365 días) en SQLite local...');
+      await db.withTransactionAsync(async () => {
+        for (const item of INITIAL_CALENDAR_DATA as any[]) {
+          await db.runAsync(
+            `INSERT OR REPLACE INTO daily_devotional_calendar 
+             (day_number, month, day, title, verse_slug, verse_citation, verse_text, theme, reflection, author, is_special_day, special_tag, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              item.dayNumber,
+              item.month,
+              item.day,
+              item.title,
+              item.verseSlug,
+              item.verseCitation,
+              item.verseText,
+              item.theme,
+              item.reflection,
+              item.author,
+              item.isSpecialDay ? 1 : 0,
+              item.specialTag || null,
+              '2026-11-09 17:41:15',
+            ]
+          );
+        }
+      });
+      console.log('[UserDB] Calendario devocional sembrado exitosamente en SQLite.');
+    }
+    isCalendarSeeded = true;
+  } catch (err) {
+    console.warn('[UserDB] Error al sembrar calendario devocional en SQLite:', err);
+  }
+}
+
+export async function getDevotionalCalendarDay(dayNumber: number): Promise<DevotionalCalendarRow | null> {
+  const db = await getUserDb();
+  return await db.getFirstAsync<DevotionalCalendarRow>(
+    'SELECT * FROM daily_devotional_calendar WHERE day_number = ?',
+    [dayNumber]
+  );
+}
+
+export async function getDevotionalCalendarByDate(month: number, day: number): Promise<DevotionalCalendarRow | null> {
+  const db = await getUserDb();
+  return await db.getFirstAsync<DevotionalCalendarRow>(
+    'SELECT * FROM daily_devotional_calendar WHERE month = ? AND day = ?',
+    [month, day]
+  );
+}
+
+export async function upsertDevotionalCalendarRows(rows: any[]): Promise<void> {
+  if (!rows || rows.length === 0) return;
+  const db = await getUserDb();
+  await db.withTransactionAsync(async () => {
+    for (const r of rows) {
+      const dayNum = r.day_number ?? r.dayNumber;
+      if (!dayNum) continue;
+      const month = r.month;
+      const day = r.day;
+      const title = r.title || '';
+      const verseSlug = r.verse_slug ?? r.verseSlug ?? '';
+      const verseCitation = r.verse_citation ?? r.verseCitation ?? '';
+      const verseText = r.verse_text ?? r.verseText ?? '';
+      const theme = r.theme || 'Paz y descanso';
+      const reflection = r.reflection || '';
+      const author = r.author || 'Ps. Guillermo Quispe C.';
+      const isSpecial = (r.is_special_day === 1 || r.is_special_day === true || r.isSpecialDay === true) ? 1 : 0;
+      const specialTag = r.special_tag ?? r.specialTag ?? null;
+      const updatedAt = r.updated_at ?? r.updatedAt ?? new Date().toISOString();
+
+      await db.runAsync(
+        `INSERT INTO daily_devotional_calendar
+         (day_number, month, day, title, verse_slug, verse_citation, verse_text, theme, reflection, author, is_special_day, special_tag, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(day_number) DO UPDATE SET
+           month = excluded.month,
+           day = excluded.day,
+           title = excluded.title,
+           verse_slug = excluded.verse_slug,
+           verse_citation = excluded.verse_citation,
+           verse_text = excluded.verse_text,
+           theme = excluded.theme,
+           reflection = excluded.reflection,
+           author = excluded.author,
+           is_special_day = excluded.is_special_day,
+           special_tag = excluded.special_tag,
+           updated_at = excluded.updated_at`,
+        [dayNum, month, day, title, verseSlug, verseCitation, verseText, theme, reflection, author, isSpecial, specialTag, updatedAt]
+      );
+    }
+  });
 }
 
 export interface ChapterUserData {

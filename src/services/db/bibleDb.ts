@@ -1,6 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEVOTIONAL_CATALOG } from '@/src/features/daily/data/devotionalCatalog';
 import { selectDevotional, parseDevotionalSelection } from '@/src/features/daily/data/devotionalSelection';
+import {
+  getDevotionalCalendarByDate,
+  getDevotionalCalendarDay,
+  DevotionalCalendarRow,
+} from './userDb';
+import { syncDevotionalCalendarWithServer } from '@/src/services/devotionalSyncService';
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 import {
@@ -385,6 +391,79 @@ const DEVOTIONAL_STORAGE_KEY = 'selah.daily-devotional.v1';
 const DEVOTIONAL_IDS = DEVOTIONAL_CATALOG.map((entry) => entry.verseId);
 let devotionalQueue: Promise<unknown> = Promise.resolve();
 
+let cachedBooksList: Book[] | null = null;
+
+function normalizeString(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+export async function resolveVerseFromCalendar(
+  row: DevotionalCalendarRow,
+  fallbackVerse?: Verse | null
+): Promise<Verse> {
+  try {
+    if (!cachedBooksList) {
+      cachedBooksList = await getBooks();
+    }
+
+    const citation = (row.verse_citation || '').trim();
+    const match = citation.match(/^([1-3]?\s*[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+?)\s+(\d+)[:.](\d+)/);
+
+    let bookId = fallbackVerse?.book_id || 19;
+    let chapter = fallbackVerse?.chapter || 1;
+    let verseNumber = fallbackVerse?.verse || 1;
+    let bookName = fallbackVerse?.book_name || 'Biblia';
+    let verseId = fallbackVerse?.id || (900000 + row.day_number);
+
+    if (match) {
+      const parsedBookName = match[1].trim();
+      const normParsed = normalizeString(parsedBookName);
+      chapter = parseInt(match[2], 10);
+      verseNumber = parseInt(match[3], 10);
+
+      const matchedBook = cachedBooksList?.find(
+        (b) => normalizeString(b.name) === normParsed || normalizeString(b.abbreviation) === normParsed
+      );
+
+      if (matchedBook) {
+        bookId = matchedBook.id;
+        bookName = matchedBook.name;
+        const dbVerse = await getVerseByReference(bookId, chapter, verseNumber);
+        if (dbVerse) {
+          verseId = dbVerse.id;
+          bookName = dbVerse.book_name || bookName;
+        }
+      } else {
+        bookName = parsedBookName;
+      }
+    }
+
+    return {
+      id: verseId,
+      book_id: bookId,
+      chapter: chapter,
+      verse: verseNumber,
+      text: row.verse_text || fallbackVerse?.text || '',
+      book_name: bookName,
+    };
+  } catch (err) {
+    console.warn('[BibleDB] Error resolviendo versículo desde calendario:', err);
+    if (fallbackVerse) return fallbackVerse;
+    return {
+      id: 900000 + row.day_number,
+      book_id: 19,
+      chapter: 23,
+      verse: 1,
+      text: row.verse_text || '',
+      book_name: row.verse_citation || 'Salmos 23:1',
+    };
+  }
+}
+
 export function getDailyDevotional(options?: {
   date?: Date;
   randomize?: boolean;
@@ -393,15 +472,25 @@ export function getDailyDevotional(options?: {
   const task = devotionalQueue.then(async () => {
     // Date previews (notification scheduling) must never replace today's saved choice.
     const preview = options?.date !== undefined;
+    const targetDate = options?.date || new Date();
+    const month = targetDate.getMonth() + 1;
+    const day = targetDate.getDate();
+
     const saved = preview ? null : parseDevotionalSelection(await AsyncStorage.getItem(DEVOTIONAL_STORAGE_KEY));
-    const selection = selectDevotional(saved, DEVOTIONAL_IDS, options?.date || new Date(),
+    const selection = selectDevotional(saved, DEVOTIONAL_IDS, targetDate,
       options?.previous ? 'previous' : options?.randomize ? 'random' : 'current');
     const id = selection.history[selection.history.length - 1];
     const meta = DEVOTIONAL_CATALOG.find((entry) => entry.verseId === id)!;
-    const verse = await getVerseById(id);
-    if (!verse) throw new Error(`Versículo del catálogo no encontrado: ${id}`);
+    const fallbackVerse = await getVerseById(id);
     if (!preview) await AsyncStorage.setItem(DEVOTIONAL_STORAGE_KEY, JSON.stringify(selection));
 
+    // 1. Cargar directamente desde SQLite local (100% offline, 0ms latencia)
+    let calendarRow = await getDevotionalCalendarByDate(month, day);
+    if (!calendarRow) {
+      calendarRow = await getDevotionalCalendarDay(selection.history.length > 0 ? (selection.history.length % 365) + 1 : 1);
+    }
+
+    let finalVerse: Verse;
     let theme = meta.theme;
     let reflection = meta.reflection;
     let title: string | undefined = undefined;
@@ -409,45 +498,25 @@ export function getDailyDevotional(options?: {
     let isSpecialDay: boolean | undefined = undefined;
     let specialTag: string | null | undefined = undefined;
 
-    // Check cached online calendar data if available
-    const cacheKey = `selah.calendar-cache.${selection.dateKey}`;
-    try {
-      const cached = await AsyncStorage.getItem(cacheKey);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && parsed.reflection) {
-          theme = parsed.theme || theme;
-          reflection = parsed.reflection;
-          title = parsed.title;
-          author = parsed.author || author;
-          isSpecialDay = parsed.isSpecialDay;
-          specialTag = parsed.specialTag;
-        }
-      }
-    } catch {}
+    if (calendarRow) {
+      finalVerse = await resolveVerseFromCalendar(calendarRow, fallbackVerse);
+      theme = calendarRow.theme || theme;
+      reflection = calendarRow.reflection || reflection;
+      title = calendarRow.title || title;
+      author = calendarRow.author || author;
+      isSpecialDay = Boolean(calendarRow.is_special_day);
+      specialTag = calendarRow.special_tag;
+    } else {
+      finalVerse = fallbackVerse || (await getRandomCalmingVerse());
+    }
 
-    // Silent background sync if online (never blocks offline response)
+    // 2. Disparar sincronización Delta en segundo plano (silenciosa, no bloquea UX)
     if (!preview && typeof fetch !== 'undefined') {
-      (async () => {
-        try {
-          const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-          const timeoutId = controller ? setTimeout(() => controller.abort(), 3500) : null;
-          const res = await fetch(`https://selah.boxtiove.com/api/devotional-calendar?date=${selection.dateKey}`, {
-            signal: controller?.signal,
-          });
-          if (timeoutId) clearTimeout(timeoutId);
-          if (res && res.ok) {
-            const data = await res.json();
-            if (data && data.success) {
-              await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
-            }
-          }
-        } catch {}
-      })().catch(() => {});
+      syncDevotionalCalendarWithServer().catch(() => {});
     }
 
     return {
-      verse,
+      verse: finalVerse,
       dateKey: selection.dateKey,
       theme,
       reflection,

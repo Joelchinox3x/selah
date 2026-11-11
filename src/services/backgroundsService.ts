@@ -6,6 +6,7 @@ const REMOTE_API_URL = 'https://selah.boxtiove.com/api/backgrounds';
 
 export interface RemoteBackgroundItem {
   id: string;
+  pair_id?: string;
   title: string;
   category: string;
   aspect_ratio: '9:16' | '1:1';
@@ -19,18 +20,27 @@ let memoryRemoteBackgrounds: CardBackground[] = [];
 /**
  * Convierte un fondo remoto de Cloudflare a la estructura CardBackground de la app
  */
-function toCardBackground(item: RemoteBackgroundItem): CardBackground {
-  return {
-    id: item.id,
-    name: item.title,
-    subtitle: `Colección en la nube (${item.category})`,
-    category: 'spiritual',
-    type: 'image',
-    source: { uri: item.url },
-    source916: item.aspect_ratio === '9:16' ? { uri: item.url } : { uri: item.url },
-    source1x1: item.aspect_ratio === '1:1' ? { uri: item.url } : { uri: item.url },
-    overlayOpacity: 0.35,
-  };
+export function pairRemoteBackgrounds(items: RemoteBackgroundItem[]): CardBackground[] {
+  const pairs = new Map<string, CardBackground>();
+
+  items.forEach((item) => {
+    const pairId = item.pair_id?.trim() || item.id;
+    const current = pairs.get(pairId) || {
+      id: `remote:${pairId}`,
+      name: item.title,
+      subtitle: `Colección en la nube (${item.category})`,
+      category: 'spiritual' as const,
+      type: 'image' as const,
+      overlayOpacity: 0.35,
+    };
+    const source = { uri: item.url };
+    if (item.aspect_ratio === '9:16') current.source916 = source;
+    if (item.aspect_ratio === '1:1') current.source1x1 = source;
+    pairs.set(pairId, current);
+  });
+
+  // Un fondo remoto solo se publica en el selector cuando su pareja está completa.
+  return [...pairs.values()].filter((item) => Boolean(item.source916 && item.source1x1));
 }
 
 /**
@@ -41,7 +51,7 @@ export async function loadCachedRemoteBackgrounds(): Promise<CardBackground[]> {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (raw) {
       const items: RemoteBackgroundItem[] = JSON.parse(raw);
-      memoryRemoteBackgrounds = items.map(toCardBackground);
+      memoryRemoteBackgrounds = pairRemoteBackgrounds(items);
       return memoryRemoteBackgrounds;
     }
   } catch (err) {
@@ -66,7 +76,7 @@ export async function syncRemoteBackgrounds(): Promise<CardBackground[]> {
       if (data && Array.isArray(data.backgrounds)) {
         const rawItems: RemoteBackgroundItem[] = data.backgrounds;
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(rawItems));
-        memoryRemoteBackgrounds = rawItems.map(toCardBackground);
+        memoryRemoteBackgrounds = pairRemoteBackgrounds(rawItems);
         return memoryRemoteBackgrounds;
       }
     }
@@ -86,12 +96,12 @@ export function getCombinedBackgrounds(ratio?: '9:16' | '1:1'): CardBackground[]
 
   if (ratio === '9:16') {
     return combined.filter(
-      (bg) => bg.type === 'solid' || Boolean(bg.source916 || bg.source)
+      (bg) => bg.type === 'solid' || Boolean(bg.source916)
     );
   }
 
   return combined.filter(
-    (bg) => bg.type === 'solid' || Boolean(bg.source1x1 || bg.source)
+    (bg) => bg.type === 'solid' || Boolean(bg.source1x1)
   );
 }
 
