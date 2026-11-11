@@ -108,7 +108,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
     saveReflectionDraft(verseSlug, updated).catch(() => { if (version === generation.current) setFeedback('No pudimos guardar el borrador.'); });
   };
   const replyTo = (comment: CommunityComment) => {
-    if (submitting || !draftReady) return;
+    if (submitting || !draftReady || (comment.parentId && !comment.canReply)) return;
     hapticLight();
     updateDraft({ ...draft, parentId: comment.parentId || comment.id, replyToId: comment.id, replyToName: comment.userName });
     inputRef.current?.focus();
@@ -142,6 +142,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
       const page = await loadCommunityReflections(verseSlug, undefined, { parentId: rootId, cursor: more ? previous?.cursor || undefined : undefined });
       if (version !== generation.current) return;
       setThreads((current) => ({ ...current, [rootId]: { comments: mergeComments(current[rootId]?.comments || [], page.comments).sort((a, b) => Number(a.id) - Number(b.id)), cursor: page.nextCursor, loading: false, error: '', expanded: true } }));
+      if (page.replyTotal !== undefined) setComments(current => current.map(item => item.id === rootId ? { ...item, replyCount: page.replyTotal! } : item));
       setTotal(page.total); countCallback.current?.(page.total);
     } catch (error) {
       if (version === generation.current) setThreads((current) => ({ ...current, [rootId]: { ...(current[rootId] || emptyThread()), loading: false, error: error instanceof Error ? error.message : 'No pudimos cargar las respuestas.' } }));
@@ -181,7 +182,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
       setDraft(cleared); setLoadError(''); hapticSuccess();
       if (published.parentId) {
         const rootId = published.parentId;
-        setThreads((current) => ({ ...current, [rootId]: { ...(current[rootId] || emptyThread()), comments: mergeComments(current[rootId]?.comments || [], [published]), expanded: true } }));
+        setThreads((current) => ({ ...current, [rootId]: { ...(current[rootId] || emptyThread()), comments: mergeComments((current[rootId]?.comments || []).map(reply => reply.id === published.replyToId ? { ...reply, canReply: false } : reply), [published]), expanded: true } }));
         setComments((current) => current.map((item) => item.id === rootId ? { ...item, replyCount: published.parentReplyCount ?? item.replyCount + 1 } : item));
       } else setComments((current) => mergeComments([published], current).sort((a, b) => Number(b.isPastor) - Number(a.isPastor) || Number(b.id) - Number(a.id)));
       loadCommunityReflections(slug).then((page) => { if (version === generation.current) { setTotal(page.total); countCallback.current?.(page.total); } }).catch(() => undefined);
@@ -226,7 +227,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
             <Heart size={13} color={item.liked ? theme.accent : theme.textMuted} fill={item.liked ? theme.accent : 'none'} />
             <Text style={[styles.actionText, item.liked && { color: theme.accent }]}>{item.likes > 0 ? `Me gusta · ${item.likes}` : 'Me gusta'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.compactAction} hitSlop={8} onPress={() => replyTo(item)} accessibilityRole="button" accessibilityLabel={`Responder a ${item.userName}`}><Text style={styles.actionText}>Responder</Text></TouchableOpacity>
+          {(!item.parentId || item.canReply) && <TouchableOpacity style={styles.compactAction} hitSlop={8} onPress={() => replyTo(item)} accessibilityRole="button" accessibilityLabel={`Responder a ${item.userName}`}><Text style={styles.actionText}>Responder</Text></TouchableOpacity>}
         </View>
       </View>
     </View>
@@ -241,7 +242,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
           {thread.comments.map((reply) => <React.Fragment key={reply.id}>{renderComment(reply, true)}</React.Fragment>)}
           {thread.error && <Text style={styles.errorText}>{thread.error}</Text>}
           {thread.loading ? <ActivityIndicator size="small" color={theme.accent} /> : <View style={styles.replyLinks}>
-            {(thread.cursor || thread.error || item.replyCount > thread.comments.length) && <TouchableOpacity style={styles.compactAction} hitSlop={8} onPress={() => loadReplies(item.id, !!thread.cursor)} accessibilityRole="button"><ChevronDown size={14} color={theme.accent} /><Text style={styles.linkText}>Ver más respuestas</Text></TouchableOpacity>}
+            {(thread.cursor || thread.error || item.replyCount > thread.comments.length) && <TouchableOpacity style={styles.compactAction} hitSlop={8} onPress={() => loadReplies(item.id, !!thread.cursor)} accessibilityRole="button"><ChevronDown size={14} color={theme.accent} /><Text style={styles.linkText}>{thread.error ? 'Reintentar' : `Ver ${Math.max(0, item.replyCount - thread.comments.length)} respuestas más`}</Text></TouchableOpacity>}
             {!thread.comments.length && item.replyCount > 0 && !thread.error && <TouchableOpacity style={styles.compactAction} hitSlop={8} onPress={() => loadReplies(item.id)}><ChevronDown size={14} color={theme.accent} /><Text style={styles.linkText}>Ver respuestas</Text></TouchableOpacity>}
             <TouchableOpacity style={styles.compactAction} hitSlop={8} onPress={() => setThreads((current) => ({ ...current, [item.id]: { ...current[item.id], expanded: false } }))}><Text style={styles.actionText}>Ocultar respuestas</Text></TouchableOpacity>
           </View>}

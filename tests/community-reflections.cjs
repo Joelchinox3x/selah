@@ -6,13 +6,13 @@ const asyncStorage={getItem:async k=>storage.get(k)??null,setItem:async(k,v)=>{i
 const identity=load('communityIdentity',{require:()=>asyncStorage});
 let nextBody={},nextStatus=200,captured,calls=0;
 const service=load('communityReflections',{require:n=>{assert.equal(n,'./communityIdentity');return identity;},fetch:async(url,options)=>{calls++;captured={url,options};return new Response(JSON.stringify(nextBody),{status:nextStatus});}});
-const comment={id:'10',userName:'Ana',role:'Comunidad Selah',text:'Un comentario',createdAt:'2026-11-09 10:00:00',parentId:null,replyToId:null,replyToName:null,likes:3,liked:true,replyCount:2,isPastor:false};
+const comment={id:'10',userName:'Ana',role:'Comunidad Selah',text:'Un comentario',canReply:true,createdAt:'2026-11-09 10:00:00',parentId:null,replyToId:null,replyToName:null,likes:3,liked:true,replyCount:2,isPastor:false};
 (async()=>{
  const devices=await Promise.all([identity.getCommunityDeviceId(),identity.getCommunityDeviceId()]);assert.equal(devices[0],devices[1]);assert.equal(deviceWrites,1);
  const coldIdentity=load('communityIdentity',{require:()=>asyncStorage});assert.equal(await coldIdentity.getCommunityDeviceId(),devices[0]);
  await identity.saveCommunityName(' Ana ');assert.equal(await identity.getCommunityName(),'Ana');await identity.saveCommunityName('');assert.equal(await identity.getCommunityName(),'');
  nextBody={ok:true,comments:[comment],total:7,nextCursor:'0:10'};
- let page=await service.loadCommunityReflections('juan-3-16');assert.equal(page.total,7);assert.equal(page.comments[0].likes,3);assert.equal(page.comments[0].liked,true);assert.equal(page.nextCursor,'0:10');
+ let page=await service.loadCommunityReflections('juan-3-16');assert.equal(page.total,7);assert.equal(page.comments[0].likes,3);assert.equal(page.comments[0].canReply,true);assert.equal(page.comments[0].liked,true);assert.equal(page.nextCursor,'0:10');
  assert.equal(new URL(captured.url).searchParams.get('verse'),'juan-3-16');assert.equal(captured.options.headers['X-Selah-Device'],devices[0]);
  await service.loadCommunityReflections('juan-3-16',undefined,{parentId:'10',cursor:'20'});assert.equal(new URL(captured.url).searchParams.get('parent'),'10');assert.equal(new URL(captured.url).searchParams.get('cursor'),'20');
  const answer={...comment,id:'11',parentId:'10',replyToId:'10',replyToName:'Ana',text:'Respuesta'};
@@ -21,7 +21,7 @@ const comment={id:'10',userName:'Ana',role:'Comunidad Selah',text:'Un comentario
  nextBody={ok:true,comment:{...comment,liked:false,likes:2}};await service.setCommunityCommentLike('juan-3-16','10',false);body=JSON.parse(captured.options.body);assert.equal(body.action,'like');assert.equal(body.liked,false);
  nextBody={ok:false,error:'server unavailable'};nextStatus=503;await assert.rejects(service.publishCommunityReflection('juan-3-16','Ana','Respuesta',options));assert.equal(options.clientRequestId,'request_0123456789');
  const before=calls;await assert.rejects(service.publishCommunityReflection('juan-3-16','Ana','x'.repeat(401),options));assert.equal(calls,before);
- nextStatus=200;nextBody={ok:true,comments:[],total:0};assert.equal((await service.loadCommunityReflections('salmos-23-1')).comments.length,0);
+ nextStatus=200;nextBody={ok:true,comments:[],total:0,replyTotal:10};assert.equal((await service.loadCommunityReflections('juan-3-16',undefined,{parentId:'10'})).replyTotal,10);assert.equal((await service.loadCommunityReflections('salmos-23-1')).comments.length,0);
  nextBody={ok:true,comments:[{...comment,id:'seed-1'}]};assert.equal((await service.loadCommunityReflections('salmos-23-1')).comments.length,0);
  const drafts=load('reflectionDrafts',{require:()=>asyncStorage});
  await drafts.saveReflectionDraft('juan-3-16',{name:'Ana',text:'Respuesta guardada',parentId:'10',replyToId:'11',replyToName:'Joel',clientRequestId:'request_draft_0123456789'});

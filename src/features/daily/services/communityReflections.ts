@@ -1,10 +1,11 @@
 import { getCommunityDeviceId } from './communityIdentity';
 export interface CommunityComment {
   id: string; userName: string; role: string; text: string; createdAt: string; isPastor?: boolean; isPinned?: boolean;
+  canReply?: boolean;
   parentId: string | null; replyToId: string | null; replyToName: string | null;
   likes: number; liked: boolean; replyCount: number; parentReplyCount?: number;
 }
-export interface CommunityPage { comments: CommunityComment[]; total: number; nextCursor: string | null }
+export interface CommunityPage { comments: CommunityComment[]; total: number; nextCursor: string | null; replyTotal?: number }
 const API = 'https://selah.boxtiove.com/api/comments';
 function parseComment(value: unknown): CommunityComment | null {
   if (!value || typeof value !== 'object') return null;
@@ -13,6 +14,7 @@ function parseComment(value: unknown): CommunityComment | null {
   return {
     id: String(v.id), userName: v.userName.trim() || 'Hermano/a en Cristo', text: v.text,
     role: typeof v.role === 'string' ? v.role : 'Comunidad Selah', createdAt: typeof v.createdAt === 'string' ? v.createdAt : '',
+    canReply: v.canReply === true,
     isPastor: v.isPastor === true, isPinned: v.isPinned === true,
     parentId: v.parentId == null ? null : String(v.parentId), replyToId: v.replyToId == null ? null : String(v.replyToId), replyToName: typeof v.replyToName === 'string' ? v.replyToName : null,
     likes: typeof v.likes === 'number' && v.likes >= 0 ? v.likes : 0, liked: v.liked === true,
@@ -47,7 +49,7 @@ export async function loadCommunityReflections(slug: string, signal?: AbortSigna
   const data = await request(query, {}, signal);
   if (!Array.isArray(data.comments)) throw new Error('No pudimos leer los comentarios. Intenta nuevamente.');
   const comments = data.comments.map(parseComment).filter((c: CommunityComment | null): c is CommunityComment => c !== null) as CommunityComment[];
-  return { comments, total: Number.isInteger(data.total) && data.total >= 0 ? data.total : comments.length, nextCursor: typeof data.nextCursor === 'string' ? data.nextCursor : null };
+  return { comments, total: Number.isInteger(data.total) && data.total >= 0 ? data.total : comments.length, replyTotal: typeof data.replyTotal === 'number' ? data.replyTotal : undefined, nextCursor: typeof data.nextCursor === 'string' ? data.nextCursor : null };
 }
 export async function publishCommunityReflection(slug: string, name: string, text: string, options: { clientRequestId: string; parentId?: string; replyToId?: string }): Promise<CommunityComment> {
   const userName = name.trim() || 'Hermano/a en Cristo';
