@@ -18,6 +18,7 @@ import {
   BookOpen,
   ChevronRight,
   Users,
+  Dices,
 } from 'lucide-react-native';
 import { Screen } from '@/src/components/ui/Screen';
 import { getAllPeople } from '@/src/services/db/bibleDb';
@@ -32,9 +33,17 @@ const CATEGORIES = [
   'Patriarcas',
   'Mujeres de Fe',
   'Profetas',
+  'Reyes y Líderes',
   'Apóstoles',
-  'Líderes',
   'Evangelio',
+  'Iglesia Primitiva',
+  'Sabiduría y Fe',
+];
+
+const TESTAMENTS = [
+  { id: 'ALL', label: 'Todos' },
+  { id: 'OT', label: 'Antiguo T.' },
+  { id: 'NT', label: 'Nuevo T.' },
 ];
 
 export default function CharactersIndexScreen() {
@@ -46,6 +55,7 @@ export default function CharactersIndexScreen() {
   const [people, setPeople] = useState<BiblicalPerson[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [selectedTestament, setSelectedTestament] = useState<'ALL' | 'OT' | 'NT'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   const loadData = useCallback(async () => {
@@ -67,10 +77,29 @@ export default function CharactersIndexScreen() {
   const filteredPeople = useMemo(() => {
     let list = people;
 
-    if (selectedCategory !== 'Todos') {
-      list = list.filter((p) => p.category === selectedCategory);
+    // Filter by Testament
+    if (selectedTestament !== 'ALL') {
+      list = list.filter(
+        (p) => p.testament === selectedTestament || p.testament === 'BOTH'
+      );
     }
 
+    // Filter by Category
+    if (selectedCategory !== 'Todos') {
+      const cat = selectedCategory.toLowerCase();
+      list = list.filter((p) => {
+        const pCat = p.category.toLowerCase();
+        if (cat === 'profetas') {
+          return pCat.includes('profeta');
+        }
+        if (cat === 'reyes y líderes') {
+          return pCat.includes('reyes') || pCat.includes('líder');
+        }
+        return pCat.includes(cat);
+      });
+    }
+
+    // Filter by Search Query
     if (searchQuery.trim().length > 0) {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(
@@ -78,16 +107,26 @@ export default function CharactersIndexScreen() {
           p.name_es.toLowerCase().includes(q) ||
           p.display_title_es.toLowerCase().includes(q) ||
           p.archetype.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
           p.bio_es.toLowerCase().includes(q)
       );
     }
 
     return list;
-  }, [people, selectedCategory, searchQuery]);
+  }, [people, selectedCategory, selectedTestament, searchQuery]);
 
   const handleSelectPerson = (person: BiblicalPerson) => {
     hapticLight();
     router.push(`/characters/${person.id}` as any);
+  };
+
+  const handleRandomPerson = () => {
+    const pool = filteredPeople.length > 0 ? filteredPeople : people;
+    if (pool.length === 0) return;
+    hapticLight();
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    const chosen = pool[randomIndex];
+    router.push(`/characters/${chosen.id}` as any);
   };
 
   const getInitials = (name: string) => {
@@ -117,7 +156,14 @@ export default function CharactersIndexScreen() {
             Perfiles Biográficos y Arquetipos del Alma
           </Text>
         </View>
-        <View style={styles.headerRightSpace} />
+        <TouchableOpacity
+          onPress={handleRandomPerson}
+          style={[styles.headerDiceBtn, { backgroundColor: theme.surfaceRaised }]}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Dices size={20} color={theme.accent} />
+        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
@@ -152,7 +198,47 @@ export default function CharactersIndexScreen() {
         </View>
       </View>
 
-      {/* Category Filter Pills */}
+      {/* Sub-Filters: Testament Selector */}
+      <View style={styles.testamentSelectorWrap}>
+        {TESTAMENTS.map((t) => {
+          const isSelected = selectedTestament === t.id;
+          return (
+            <TouchableOpacity
+              key={t.id}
+              onPress={() => {
+                hapticSelection();
+                setSelectedTestament(t.id as any);
+              }}
+              style={[
+                styles.testamentTab,
+                {
+                  backgroundColor: isSelected
+                    ? theme.accent
+                    : theme.surfaceRaised,
+                  borderColor: isSelected
+                    ? theme.accent
+                    : theme.borderSubtle,
+                },
+              ]}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.testamentTabText,
+                  {
+                    color: isSelected ? '#FFFFFF' : theme.textMuted,
+                    fontWeight: isSelected ? '700' : '500',
+                  },
+                ]}
+              >
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Category Filter Horizontal Pills */}
       <View style={styles.categoryWrap}>
         <FlatList
           horizontal
@@ -233,22 +319,30 @@ export default function CharactersIndexScreen() {
                   </Text>
                 </View>
                 <Text style={[styles.infoBannerText, { color: theme.textMuted }]}>
-                  Personajes de carne y hueso cuyas dudas, caídas, lágrimas y victorias
+                  Hombres y mujeres de carne y hueso cuyas dudas, caídas, lágrimas y victorias
                   en Dios revelan la gracia que hoy también te acompaña.
                 </Text>
                 <View style={styles.infoBannerStats}>
                   <View style={styles.infoStatItem}>
                     <Users size={14} color={theme.accent} />
                     <Text style={[styles.infoStatText, { color: theme.text }]}>
-                      {filteredPeople.length} Biografías
+                      {filteredPeople.length} de {people.length} Biografías
                     </Text>
                   </View>
-                  <View style={styles.infoStatItem}>
-                    <Compass size={14} color={theme.accent} />
-                    <Text style={[styles.infoStatText, { color: theme.text }]}>
-                      Arquetipos del Alma
+
+                  <TouchableOpacity
+                    style={[
+                      styles.randomActionBtn,
+                      { backgroundColor: theme.surfaceRaised, borderColor: theme.borderSubtle },
+                    ]}
+                    onPress={handleRandomPerson}
+                    activeOpacity={0.7}
+                  >
+                    <Dices size={13} color={theme.accent} />
+                    <Text style={[styles.randomActionText, { color: theme.accent }]}>
+                      Al azar
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -259,7 +353,7 @@ export default function CharactersIndexScreen() {
                 No se encontraron personajes
               </Text>
               <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
-                Intenta con otro término de búsqueda o selecciona otra categoría.
+                Intenta con otro término de búsqueda o cambia los filtros de categoría y testamento.
               </Text>
             </View>
           }
@@ -315,29 +409,51 @@ export default function CharactersIndexScreen() {
                     <Text style={[styles.cardName, { color: theme.text }]}>
                       {item.name_es}
                     </Text>
-                    <View
-                      style={[
-                        styles.testamentBadge,
-                        {
-                          backgroundColor:
-                            themeMode === 'oled'
-                              ? '#1e293b'
-                              : 'rgba(0,0,0,0.05)',
-                        },
-                      ]}
-                    >
-                      <Text
+                    <View style={styles.badgeCluster}>
+                      <View
                         style={[
-                          styles.testamentBadgeText,
-                          { color: theme.textMuted },
+                          styles.testamentBadge,
+                          {
+                            backgroundColor:
+                              themeMode === 'oled'
+                                ? '#1e293b'
+                                : 'rgba(0,0,0,0.05)',
+                          },
                         ]}
                       >
-                        {item.testament === 'OT'
-                          ? 'Antiguo T.'
-                          : item.testament === 'NT'
-                          ? 'Nuevo T.'
-                          : 'Bíblico'}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.testamentBadgeText,
+                            { color: theme.textMuted },
+                          ]}
+                        >
+                          {item.testament === 'OT'
+                            ? 'Antiguo T.'
+                            : item.testament === 'NT'
+                            ? 'Nuevo T.'
+                            : 'Bíblico'}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.categoryMiniBadge,
+                          {
+                            backgroundColor:
+                              themeMode === 'oled'
+                                ? '#1e293b'
+                                : 'rgba(217, 119, 6, 0.08)',
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.categoryMiniBadgeText,
+                            { color: theme.accent },
+                          ]}
+                        >
+                          {item.category}
+                        </Text>
+                      </View>
                     </View>
                   </View>
 
@@ -424,6 +540,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerDiceBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitleWrap: {
     alignItems: 'center',
     flex: 1,
@@ -437,9 +560,6 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 11,
     marginTop: 1,
-  },
-  headerRightSpace: {
-    width: 38,
   },
   searchSection: {
     paddingHorizontal: 16,
@@ -461,6 +581,21 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     paddingVertical: 0,
+  },
+  testamentSelectorWrap: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  testamentTab: {
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  testamentTabText: {
+    fontSize: 12,
   },
   categoryWrap: {
     paddingBottom: 8,
@@ -508,7 +643,7 @@ const styles = StyleSheet.create({
   infoBannerStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'space-between',
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -522,6 +657,19 @@ const styles = StyleSheet.create({
   infoStatText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  randomActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  randomActionText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   centerContainer: {
     flex: 1,
@@ -579,11 +727,17 @@ const styles = StyleSheet.create({
   cardNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
   cardName: {
     fontSize: 16,
     fontWeight: '700',
+    flexShrink: 1,
+  },
+  badgeCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   testamentBadge: {
     paddingHorizontal: 6,
@@ -591,6 +745,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   testamentBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  categoryMiniBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  categoryMiniBadgeText: {
     fontSize: 10,
     fontWeight: '600',
   },

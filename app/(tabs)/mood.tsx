@@ -208,7 +208,7 @@ export default function MoodScreen() {
             </View>
             <View style={styles.charactersTextWrapper}>
               <Text style={[styles.charactersTag, { color: theme.accent }]}>
-                ARQUETIPOS DEL ALMA • 37 PERSONAJES
+                ARQUETIPOS DEL ALMA • 55 PERSONAJES
               </Text>
               <Text style={[styles.charactersTitle, { color: theme.text }]}>
                 El Árbol Humano

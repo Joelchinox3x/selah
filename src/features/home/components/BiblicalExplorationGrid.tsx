@@ -67,7 +67,7 @@ export const BiblicalExplorationGrid: React.FC<BiblicalExplorationGridProps> = (
             <Compass size={20} color={theme.accent} />
           </View>
           <Text style={[styles.gridTag, { color: theme.accent }]}>
-            37 PERSONAJES
+            55 PERSONAJES
           </Text>
           <Text style={[styles.gridTitle, { color: theme.text }]}>
             El Árbol Humano
