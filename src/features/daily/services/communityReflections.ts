@@ -1,9 +1,26 @@
 import { getCommunityDeviceId } from './communityIdentity';
+import { isMemberSuspended } from '@/src/features/auth/pastoralService';
+
 export interface CommunityComment {
-  id: string; userName: string; role: string; text: string; createdAt: string; isPastor?: boolean; isPinned?: boolean;
+  id: string;
+  userName: string;
+  role: string;
+  text: string;
+  createdAt: string;
+  isPastor?: boolean;
+  isVerified?: boolean;
+  avatarUrl?: string;
+  userRole?: 'pastor' | 'moderador' | 'verificado' | 'miembro';
+  isPinned?: boolean;
   canReply?: boolean;
-  parentId: string | null; replyToId: string | null; replyToName: string | null;
-  likes: number; liked: boolean; replyCount: number; parentReplyCount?: number;
+  isOwn?: boolean;
+  parentId: string | null;
+  replyToId: string | null;
+  replyToName: string | null;
+  likes: number;
+  liked: boolean;
+  replyCount: number;
+  parentReplyCount?: number;
 }
 export interface CommunityPage { comments: CommunityComment[]; total: number; nextCursor: string | null; replyTotal?: number }
 const API = 'https://selah.boxtiove.com/api/comments';
@@ -11,13 +28,26 @@ function parseComment(value: unknown): CommunityComment | null {
   if (!value || typeof value !== 'object') return null;
   const v = value as Record<string, unknown>;
   if ((typeof v.id !== 'string' && typeof v.id !== 'number') || String(v.id).startsWith('seed-') || typeof v.text !== 'string' || typeof v.userName !== 'string') return null;
+  const isPastorRole = v.isPastor === true || v.role === 'pastor' || v.userRole === 'pastor';
+  const isVerifiedRole = v.isVerified === true || isPastorRole || v.role === 'moderador' || v.userRole === 'moderador' || v.userRole === 'verificado';
   return {
-    id: String(v.id), userName: v.userName.trim() || 'Hermano/a en Cristo', text: v.text,
-    role: typeof v.role === 'string' ? v.role : 'Comunidad Selah', createdAt: typeof v.createdAt === 'string' ? v.createdAt : '',
+    id: String(v.id),
+    userName: v.userName.trim() || 'Hermano/a en Cristo',
+    text: v.text,
+    role: typeof v.role === 'string' ? v.role : 'Comunidad Selah',
+    createdAt: typeof v.createdAt === 'string' ? v.createdAt : '',
     canReply: v.canReply === true,
-    isPastor: v.isPastor === true, isPinned: v.isPinned === true,
-    parentId: v.parentId == null ? null : String(v.parentId), replyToId: v.replyToId == null ? null : String(v.replyToId), replyToName: typeof v.replyToName === 'string' ? v.replyToName : null,
-    likes: typeof v.likes === 'number' && v.likes >= 0 ? v.likes : 0, liked: v.liked === true,
+    isOwn: v.isOwn === true,
+    isPastor: isPastorRole,
+    isVerified: isVerifiedRole,
+    avatarUrl: typeof v.avatarUrl === 'string' ? v.avatarUrl : undefined,
+    userRole: typeof v.userRole === 'string' ? (v.userRole as any) : undefined,
+    isPinned: v.isPinned === true,
+    parentId: v.parentId == null ? null : String(v.parentId),
+    replyToId: v.replyToId == null ? null : String(v.replyToId),
+    replyToName: typeof v.replyToName === 'string' ? v.replyToName : null,
+    likes: typeof v.likes === 'number' && v.likes >= 0 ? v.likes : 0,
+    liked: v.liked === true,
     replyCount: typeof v.replyCount === 'number' && v.replyCount >= 0 ? v.replyCount : 0,
     parentReplyCount: typeof v.parentReplyCount === 'number' && v.parentReplyCount >= 0 ? v.parentReplyCount : undefined,
   };
@@ -35,7 +65,7 @@ async function request(query: URLSearchParams, options: RequestInit = {}, extern
       ...options, headers: { 'Content-Type': 'application/json', 'X-Selah-Device': device }, signal: controller.signal,
     });
     const data = await response.json();
-    if (!response.ok || data?.ok !== true) throw new Error([400, 404, 409].includes(response.status) && typeof data?.error === 'string' ? data.error : 'No pudimos conectar con el muro. Intenta nuevamente.');
+    if (!response.ok || data?.ok !== true) throw new Error([400, 403, 404, 409].includes(response.status) && typeof data?.error === 'string' ? data.error : 'No pudimos conectar con el muro. Intenta nuevamente.');
     return data;
   } catch (error) {
     if (controller.signal.aborted) throw new Error('No recibimos respuesta a tiempo. Tu texto se conserva; puedes reintentar.');
@@ -51,13 +81,45 @@ export async function loadCommunityReflections(slug: string, signal?: AbortSigna
   const comments = data.comments.map(parseComment).filter((c: CommunityComment | null): c is CommunityComment => c !== null) as CommunityComment[];
   return { comments, total: Number.isInteger(data.total) && data.total >= 0 ? data.total : comments.length, replyTotal: typeof data.replyTotal === 'number' ? data.replyTotal : undefined, nextCursor: typeof data.nextCursor === 'string' ? data.nextCursor : null };
 }
-export async function publishCommunityReflection(slug: string, name: string, text: string, options: { clientRequestId: string; parentId?: string; replyToId?: string }): Promise<CommunityComment> {
+export async function publishCommunityReflection(
+  slug: string,
+  name: string,
+  text: string,
+  options: {
+    clientRequestId: string;
+    parentId?: string;
+    replyToId?: string;
+    isVerified?: boolean;
+    avatarUrl?: string;
+    userRole?: string;
+  }
+): Promise<CommunityComment> {
   const userName = name.trim() || 'Hermano/a en Cristo';
   const message = text.trim();
   if (!message || message.length > 400 || userName.length > 60) throw new Error('Revisa el comentario y el límite de 400 caracteres.');
-  const data = await request(new URLSearchParams(), { method: 'POST', body: JSON.stringify({ action: 'comment', verse: slug, userName, text: message, ...options }) });
+  
+  // Verify pastoral suspension before publishing
+  const suspended = await isMemberSuspended(userName);
+  if (suspended) {
+    throw new Error('Esta cuenta ha sido suspendida temporalmente por moderación comunitaria.');
+  }
+
+  const data = await request(new URLSearchParams(), {
+    method: 'POST',
+    body: JSON.stringify({ action: 'comment', verse: slug, userName, text: message, ...options }),
+  });
   const comment = parseComment(data.comment);
   if (!comment) throw new Error('No pudimos confirmar la publicación. Actualiza el muro antes de intentar otra vez.');
+  
+  if (options.isVerified) {
+    comment.isVerified = true;
+  }
+  if (options.avatarUrl) {
+    comment.avatarUrl = options.avatarUrl;
+  }
+  if (options.userRole === 'pastor') {
+    comment.isPastor = true;
+  }
   return comment;
 }
 export async function setCommunityCommentLike(slug: string, commentId: string, liked: boolean): Promise<CommunityComment> {
@@ -65,6 +127,19 @@ export async function setCommunityCommentLike(slug: string, commentId: string, l
   const comment = parseComment(data.comment);
   if (!comment) throw new Error('No pudimos guardar el Me gusta. Intenta nuevamente.');
   return comment;
+}
+export async function editCommunityReflection(slug: string, commentId: string, text: string): Promise<CommunityComment> {
+  const message = text.trim();
+  if (!message || message.length > 400) throw new Error('Escribe entre 1 y 400 caracteres.');
+  const data = await request(new URLSearchParams(), { method: 'POST', body: JSON.stringify({ action: 'edit', verse: slug, commentId, text: message }) });
+  const comment = parseComment(data.comment);
+  if (!comment) throw new Error('No pudimos confirmar la edición.');
+  return comment;
+}
+export async function deleteCommunityReflection(slug: string, commentId: string): Promise<{ deletedIds: string[]; total: number; parentId: string | null; parentReplyCount: number }> {
+  const data = await request(new URLSearchParams(), { method: 'POST', body: JSON.stringify({ action: 'delete', verse: slug, commentId }) });
+  if (!Array.isArray(data.deletedIds) || !Number.isInteger(data.total)) throw new Error('No pudimos confirmar el borrado.');
+  return { deletedIds: data.deletedIds.map(String), total: data.total, parentId: data.parentId == null ? null : String(data.parentId), parentReplyCount: Number(data.parentReplyCount || 0) };
 }
 export function formatReflectionDate(value: string): string {
   if (!value) return '';

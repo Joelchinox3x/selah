@@ -9,6 +9,7 @@ export interface ThemePalette {
   text: string;
   textMuted: string;
   accent: string;
+  destructive: string;
   accentMuted: string;
   cardBackground: string;
   selectionBackground: string;
@@ -24,6 +25,7 @@ export const themes: Record<ThemeMode, ThemePalette> = {
     borderSubtle: 'rgba(0, 0, 0, 0.06)',
     text: '#1e293b',
     textMuted: '#64748b',
+    destructive: '#b91c1c',
     accent: '#0d9488',          // Turquesa sereno
     accentMuted: 'rgba(13, 148, 136, 0.12)',
     cardBackground: '#ffffff',
@@ -38,6 +40,7 @@ export const themes: Record<ThemeMode, ThemePalette> = {
     borderSubtle: 'rgba(67, 52, 34, 0.08)',
     text: '#433422',
     textMuted: '#78654e',
+    destructive: '#a12622',
     accent: '#b45309',          // Ámbar terroso cálido
     accentMuted: 'rgba(180, 83, 9, 0.14)',
     cardBackground: '#f7f1e1',
@@ -52,6 +55,7 @@ export const themes: Record<ThemeMode, ThemePalette> = {
     borderSubtle: 'rgba(255, 255, 255, 0.08)',
     text: '#f1f5f9',
     textMuted: '#94a3b8',
+    destructive: '#f87171',
     accent: '#10b981',          // Esmeralda espiritual
     accentMuted: 'rgba(16, 185, 129, 0.14)',
     cardBackground: '#0b1321',

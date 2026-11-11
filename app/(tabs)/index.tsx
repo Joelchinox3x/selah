@@ -1,3 +1,4 @@
+import { cachePastoralVisibility } from '@/src/services/pastoralVisibilityService';
 import { getVerseShareUrl } from '@/src/features/share/utils/verseShare';
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
@@ -109,7 +110,8 @@ export default function HomeScreen() {
         const cfgRes = await fetch('https://selah.boxtiove.com/api/app-config');
         if (cfgRes.ok) {
           const cfgJson = await cfgRes.json();
-          if (cfgJson?.config) {
+          if (cfgJson?.ok && cfgJson?.config) {
+            await cachePastoralVisibility(cfgJson.config.show_pastoral_reflection);
             setShowPastCarousel(Boolean(cfgJson.config.show_past_devotionals_carousel));
           }
         }

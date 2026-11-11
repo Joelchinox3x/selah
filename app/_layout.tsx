@@ -198,6 +198,13 @@ export default function RootLayout() {
           animation: 'fade',
         }}
       />
+      <Stack.Screen
+        name="admin/index"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+        }}
+      />
     </Stack>
   );
 }

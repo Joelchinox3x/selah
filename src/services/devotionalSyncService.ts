@@ -2,39 +2,32 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { upsertDevotionalCalendarRows } from '@/src/services/db/userDb';
 
 const LAST_SYNC_KEY = 'selah.calendar-last-sync-timestamp';
+let pendingSync: Promise<{ updated: number }> | null = null;
 
-/**
- * Sincroniza silenciosamente los cambios del calendario devocional hechos por el pastor en el panel web.
- * Solo descarga los días modificados después del último timestamp registrado (Delta Sync).
- * Si no hay internet o el servidor no responde, falla silenciosamente sin afectar la UX offline.
- */
-export async function syncDevotionalCalendarWithServer(): Promise<{ updated: number }> {
+async function syncCalendar(): Promise<{ updated: number }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
   try {
-    const lastSync = (await AsyncStorage.getItem(LAST_SYNC_KEY)) || '2026-11-09 17:41:15';
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timeoutId = controller ? setTimeout(() => controller.abort(), 4000) : null;
-
-    const url = `https://selah.boxtiove.com/api/devotional-calendar/sync?since=${encodeURIComponent(lastSync)}`;
-    const res = await fetch(url, { signal: controller?.signal });
-    if (timeoutId) clearTimeout(timeoutId);
-
-    if (!res || !res.ok) return { updated: 0 };
-    const data = await res.json();
-
-    if (data.success && Array.isArray(data.changes) && data.changes.length > 0) {
-      await upsertDevotionalCalendarRows(data.changes);
-      if (data.serverTime) {
-        const formattedTime = new Date(data.serverTime).toISOString().replace('T', ' ').substring(0, 19);
-        await AsyncStorage.setItem(LAST_SYNC_KEY, formattedTime);
-      }
-      return { updated: data.changes.length };
-    } else if (data.serverTime) {
-      const formattedTime = new Date(data.serverTime).toISOString().replace('T', ' ').substring(0, 19);
-      await AsyncStorage.setItem(LAST_SYNC_KEY, formattedTime);
-    }
-    return { updated: 0 };
+    const since = await AsyncStorage.getItem(LAST_SYNC_KEY);
+    const query = since ? `?since=${encodeURIComponent(since)}` : '';
+    const response = await fetch(`https://selah.boxtiove.com/api/devotional-calendar/sync${query}`, { signal: controller.signal });
+    if (!response.ok) return { updated: 0 };
+    const data = await response.json();
+    if (data.success !== true || !Array.isArray(data.changes) || typeof data.serverTime !== 'string') return { updated: 0 };
+    const serverTime = new Date(data.serverTime);
+    if (Number.isNaN(serverTime.getTime())) return { updated: 0 };
+    if (!data.changes.every((row: Record<string, unknown>) => row && Number.isInteger(row.day_number) && Number(row.day_number) >= 1 && Number(row.day_number) <= 365)) return { updated: 0 };
+    await upsertDevotionalCalendarRows(data.changes);
+    // Never move the cursor forward until all received rows have been saved.
+    await AsyncStorage.setItem(LAST_SYNC_KEY, serverTime.toISOString().replace('T', ' ').substring(0, 19));
+    return { updated: data.changes.length };
   } catch {
-    // Offline / timeout: silencioso para garantizar 100% resiliencia local
+    // Preserve the offline calendar and cursor so a later refresh can retry.
     return { updated: 0 };
-  }
+  } finally { clearTimeout(timeout); }
+}
+
+export function syncDevotionalCalendarWithServer(): Promise<{ updated: number }> {
+  if (!pendingSync) pendingSync = syncCalendar().finally(() => { pendingSync = null; });
+  return pendingSync;
 }

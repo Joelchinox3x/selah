@@ -1,14 +1,16 @@
+import { getPastoralVisibility, loadPastoralVisibility, refreshPastoralVisibility } from '@/src/services/pastoralVisibilityService';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, useWindowDimensions, Keyboard } from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, useWindowDimensions, Keyboard, Alert, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Send, ShieldCheck, ArrowLeft, Heart, ChevronDown, MoreHorizontal, EyeOff, Pin } from 'lucide-react-native';
+import { X, Send, ShieldCheck, BadgeCheck, ArrowLeft, Heart, ChevronDown, MoreHorizontal, EyeOff, Pin, Pencil, Trash2 } from 'lucide-react-native';
 import { themes, ThemePalette } from '@/src/theme/colors';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
+import { useAuthStore } from '@/src/features/auth/authStore';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
-import { CommunityComment, loadCommunityReflections, publishCommunityReflection, setCommunityCommentLike, formatReflectionDate } from '../services/communityReflections';
+import { CommunityComment, loadCommunityReflections, publishCommunityReflection, editCommunityReflection, deleteCommunityReflection, setCommunityCommentLike, formatReflectionDate } from '../services/communityReflections';
 import { getCommunityName, newCommunityRequestId } from '../services/communityIdentity';
 import { loadReflectionDraft, saveReflectionDraft, ReflectionDraft } from '../services/reflectionDrafts';
-import { saveMyPublishedReflection } from '../services/myReflectionsStore';
+import { saveMyPublishedReflection, removeMyPublishedReflection } from '../services/myReflectionsStore';
 import { hasProfanity } from '../services/profanityFilter';
 export type { CommunityComment } from '../services/communityReflections';
 
@@ -35,15 +37,20 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   const mode = useSettingsStore((state) => state.theme);
   const theme = themes[mode] || themes.sepia;
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const [showPastoralReflection, setShowPastoralReflection] = useState(true);
+  const authUser = useAuthStore((s) => s.user);
+  const [showPastoralReflection, setShowPastoralReflection] = useState<boolean | null>(getPastoralVisibility);
   useEffect(() => {
     if (!visible) return;
     const controller = new AbortController();
-    fetch('https://selah.boxtiove.com/api/app-config', { signal: controller.signal })
-      .then(res => { if (!res.ok) throw new Error('Config unavailable'); return res.json(); })
-      .then(data => { if (data.ok && data.config) setShowPastoralReflection(data.config.show_pastoral_reflection !== false); })
-      .catch(() => {});
-    return () => controller.abort();
+    let active = true;
+    (async () => {
+      const cached = await loadPastoralVisibility();
+      if (active) setShowPastoralReflection(cached);
+      if (!active) return;
+      const latest = await refreshPastoralVisibility(controller.signal);
+      if (active) setShowPastoralReflection(latest);
+    })();
+    return () => { active = false; controller.abort(); };
   }, [visible]);
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [threads, setThreads] = useState<Record<string, Thread>>({});
@@ -60,6 +67,11 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   const [feedback, setFeedback] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [menuComment, setMenuComment] = useState<CommunityComment | null>(null);
+  const [editingComment, setEditingComment] = useState<CommunityComment | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editError, setEditError] = useState('');
+  const [mutating, setMutating] = useState(false);
+  const mutationLock = useRef(false);
   const [hiddenComments, setHiddenComments] = useState<Set<string>>(() => new Set());
   const inputRef = useRef<TextInput>(null);
   const generation = useRef(0);
@@ -87,7 +99,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
     if (!visible) return;
     const controller = new AbortController();
     setLoadingMore(false); setLoading(true); setLoadError(''); setComments([]); setThreads({}); setCursor(null); setTotal(0);
-    setDraftReady(false); setDraft({ name: '', text: '' }); setSendError(''); setFeedback(''); setMenuComment(null); setHiddenComments(new Set());
+    setDraftReady(false); setDraft({ name: '', text: '' }); setSendError(''); setFeedback(''); setMenuComment(null); setEditingComment(null); setEditError(''); setHiddenComments(new Set());
     Promise.all([loadReflectionDraft(verseSlug), getCommunityName()]).then(([saved, name]) => {
       if (version !== generation.current) return;
       setDraft({ ...saved, name, clientRequestId: saved.clientRequestId || newCommunityRequestId() });
@@ -160,6 +172,12 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   };
   const handleSend = async () => {
     if (submitLock.current || loading || !draftReady || !draft.text.trim()) return;
+    const currentAuthUser = useAuthStore.getState().user;
+    if (currentAuthUser?.status === 'suspended') {
+      hapticLight();
+      setSendError('Esta cuenta se encuentra temporalmente suspendida por moderación pastoral.');
+      return;
+    }
     const profanity = hasProfanity(draft.text);
     if (profanity.blocked) {
       hapticLight();
@@ -174,7 +192,14 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
       // Keep the same request ID on retries so a network timeout cannot duplicate a post.
       await saveReflectionDraft(slug, sent);
       const name = await getCommunityName();
-      const published = await publishCommunityReflection(slug, name, sent.text, { clientRequestId: sent.clientRequestId, parentId: sent.parentId, replyToId: sent.replyToId });
+      const published = await publishCommunityReflection(slug, name, sent.text, {
+        clientRequestId: sent.clientRequestId,
+        parentId: sent.parentId,
+        replyToId: sent.replyToId,
+        isVerified: currentAuthUser?.isVerified,
+        avatarUrl: currentAuthUser?.avatarUrl,
+        userRole: currentAuthUser?.role,
+      });
       saveMyPublishedReflection({ id: published.id, verseSlug: slug, verseCitation, userName: published.userName, text: published.text, createdAt: published.createdAt }).catch(() => undefined);
       const cleared = { name, text: '', clientRequestId: newCommunityRequestId() };
       await saveReflectionDraft(slug, cleared).catch(() => undefined);
@@ -189,6 +214,46 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
     } catch (error) {
       if (version === generation.current) setSendError(error instanceof Error ? error.message : 'No se pudo enviar. Tu texto se conserva.');
     } finally { submitLock.current = false; setSubmitting(false); }
+  };
+
+  const beginEdit = (comment: CommunityComment) => {
+    if (!comment.isOwn || mutationLock.current) return;
+    setEditText(comment.text); setEditError(''); setEditingComment(comment); setMenuComment(null);
+  };
+  const saveEdit = async () => {
+    if (!editingComment || mutationLock.current || !editText.trim()) return;
+    mutationLock.current = true; setMutating(true); setEditError('');
+    const version = generation.current;
+    try {
+      const updated = await editCommunityReflection(verseSlug, editingComment.id, editText);
+      await saveMyPublishedReflection({ id: updated.id, verseSlug, verseCitation, userName: updated.userName, text: updated.text, createdAt: updated.createdAt });
+      if (version !== generation.current) return;
+      updateComment(updated); setEditingComment(null); setFeedback('Cambios guardados.'); hapticSuccess();
+    } catch (error) { if (version === generation.current) setEditError(error instanceof Error ? error.message : 'No se pudo guardar. Tu texto se conserva.'); }
+    finally { mutationLock.current = false; setMutating(false); }
+  };
+  const confirmDelete = (comment: CommunityComment) => {
+    if (!comment.isOwn || mutationLock.current) return;
+    setMenuComment(null);
+    const version = generation.current;
+    Alert.alert('Borrar', 'Se eliminará este mensaje y sus respuestas. Esta acción no se puede deshacer.', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Borrar', style: 'destructive', onPress: async () => {
+        if (mutationLock.current || version !== generation.current) return;
+        mutationLock.current = true; setMutating(true);
+        try {
+          const result = await deleteCommunityReflection(verseSlug, comment.id);
+          for (const id of result.deletedIds) await removeMyPublishedReflection(id);
+          if (version !== generation.current) return;
+          const deleted = new Set(result.deletedIds);
+          setComments(current => current.filter(item => !deleted.has(item.id)).map(item => item.id === result.parentId ? { ...item, replyCount: result.parentReplyCount } : item));
+          setThreads(current => Object.fromEntries(Object.entries(current).filter(([id]) => !deleted.has(id)).map(([id, thread]) => [id, { ...thread, comments: thread.comments.filter(item => !deleted.has(item.id)) }])));
+          if (draft.replyToId && deleted.has(draft.replyToId)) updateDraft({ name: draft.name, text: draft.text });
+          setTotal(result.total); countCallback.current?.(result.total); setFeedback('Eliminado.'); hapticSuccess();
+        } catch (error) { if (version === generation.current) setFeedback(error instanceof Error ? error.message : 'No se pudo borrar el comentario.'); }
+        finally { mutationLock.current = false; setMutating(false); }
+      } },
+    ]);
   };
 
   const hideComment = (comment: CommunityComment) => {
@@ -208,7 +273,11 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
     </View>
   ) : (
     <View style={[styles.comment, item.isPinned && !child && styles.pinnedComment, child && styles.child]}>
-      <View style={styles.avatar}><Text style={styles.initials}>{item.userName.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'S'}</Text></View>
+      {item.avatarUrl ? (
+        <Image source={{ uri: item.avatarUrl }} style={styles.avatarImage} />
+      ) : (
+        <View style={styles.avatar}><Text style={styles.initials}>{item.userName.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'S'}</Text></View>
+      )}
       <View style={styles.commentContent}>
         {item.isPinned && !child && (
           <View style={styles.pinnedBadge}>
@@ -217,8 +286,26 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
           </View>
         )}
         <View style={styles.metaRow}>
-          <View style={styles.nameRow}><Text style={styles.author}>{item.userName}</Text>{item.isPastor && <View style={styles.tag}><ShieldCheck size={12} color={theme.accent} /><Text style={styles.tagText}>Pastoral</Text></View>}<Text style={styles.date}>· {formatReflectionDate(item.createdAt)}</Text></View>
-          <TouchableOpacity style={styles.menuButton} hitSlop={8} onPress={() => setMenuComment(item)} accessibilityRole="button" accessibilityLabel={`Opciones del comentario de ${item.userName}`}><MoreHorizontal size={18} color={theme.textMuted} /></TouchableOpacity>
+          <View style={styles.nameRow}>
+            <Text style={styles.author}>{item.userName}</Text>
+            {item.isVerified && !item.isPastor && (
+              <BadgeCheck size={14} color="#0284c7" />
+            )}
+            {item.isPastor && (
+              <View style={styles.tag}>
+                <ShieldCheck size={12} color="#d97706" />
+                <Text style={[styles.tagText, { color: '#d97706' }]}>Pastoral</Text>
+              </View>
+            )}
+            {item.userRole === 'moderador' && (
+              <View style={styles.tag}>
+                <ShieldCheck size={12} color="#0284c7" />
+                <Text style={[styles.tagText, { color: '#0284c7' }]}>Líder</Text>
+              </View>
+            )}
+            <Text style={styles.date}>· {formatReflectionDate(item.createdAt)}</Text>
+          </View>
+          <TouchableOpacity style={styles.menuButton} hitSlop={8} disabled={mutating} onPress={() => { Keyboard.dismiss(); setMenuComment(item); }} accessibilityRole="button" accessibilityLabel={`Opciones del comentario de ${item.userName}`}><MoreHorizontal size={18} color={theme.textMuted} /></TouchableOpacity>
         </View>
         {child && item.replyToName && item.replyToId !== item.parentId && <Text style={styles.replyName}>Para {item.replyToName}</Text>}
         <Text style={styles.body}>{item.text}</Text>
@@ -284,6 +371,18 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
           ListFooterComponent={cursor ? <TouchableOpacity style={styles.moreButton} onPress={loadMore} disabled={loadingMore || submitting} accessibilityRole="button">{loadingMore ? <ActivityIndicator size="small" color={theme.accent} /> : <Text style={styles.linkText}>Ver más comentarios</Text>}</TouchableOpacity> : null}
         />
         <View style={[styles.composer, { paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom + 6, 16) }]}>
+          <View style={styles.authorIndicatorRow}>
+            <Text style={styles.authorIndicatorPrefix}>Publicando como:</Text>
+            <Text style={styles.authorIndicatorName} numberOfLines={1}>
+              {draft.name || authUser?.name || 'Hermano/a en Cristo'}
+            </Text>
+            {authUser?.isVerified && !authUser?.isPastor && (
+              <BadgeCheck size={13} color="#0284c7" />
+            )}
+            {authUser?.isPastor && (
+              <ShieldCheck size={13} color="#d97706" />
+            )}
+          </View>
           {!!draft.parentId && <View style={styles.replyBanner}><Text style={styles.replyBannerText} numberOfLines={1}>Respondiendo a {draft.replyToName || 'un comentario'}</Text><TouchableOpacity style={styles.smallClose} disabled={submitting} onPress={() => updateDraft({ name: draft.name, text: draft.text })} accessibilityRole="button" accessibilityLabel="Cancelar respuesta"><X size={16} color={theme.textMuted} /></TouchableOpacity></View>}
           {!!sendError && <Text accessibilityRole="alert" style={styles.errorText}>{sendError}</Text>}
           {!!feedback && <Text accessibilityLiveRegion="polite" style={styles.errorText}>{feedback}</Text>}
@@ -295,18 +394,33 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
         </View>
       </View>
     </KeyboardAvoidingView>
-    <Modal visible={!!menuComment} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setMenuComment(null)}>
-      <View style={styles.menuOverlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setMenuComment(null)} accessibilityRole="button" accessibilityLabel="Cerrar opciones" />
-        <View style={[styles.actionSheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+    <Modal visible={!!menuComment || !!editingComment} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { if (!mutationLock.current) { setMenuComment(null); setEditingComment(null); } }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.menuOverlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} disabled={mutating} onPress={() => { setMenuComment(null); setEditingComment(null); }} accessibilityRole="button" accessibilityLabel="Cerrar opciones" />
+        <View style={[styles.actionSheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <View style={styles.actionSheetHandle} />
-          <Text style={styles.actionSheetTitle} numberOfLines={1}>Comentario de {menuComment?.userName}</Text>
-          <TouchableOpacity style={styles.actionSheetItem} onPress={() => menuComment && hideComment(menuComment)} accessibilityRole="button">
-            <EyeOff size={20} color={theme.text} /><View style={styles.actionSheetCopy}><Text style={styles.actionSheetLabel}>Ocultar comentario</Text><Text style={styles.actionSheetHint}>Solo dejarás de verlo en este muro.</Text></View>
+          {editingComment ? <>
+            <Text style={styles.actionSheetTitle}>Editar</Text>
+            <TextInput accessibilityLabel="Editar tu comentario" style={[styles.input, { minHeight: 96, maxHeight: 160, flex: 0, borderRadius: 14 }]} value={editText} onChangeText={setEditText} editable={!mutating} multiline maxLength={400} autoFocus />
+            <Text style={styles.counter}>{editText.length}/400</Text>
+            {!!editError && <Text accessibilityRole="alert" style={styles.errorText}>{editError}</Text>}
+            <View style={styles.editActions}>
+              <TouchableOpacity style={[styles.cancelButton, styles.editAction]} disabled={mutating} onPress={() => setEditingComment(null)} accessibilityRole="button"><Text style={styles.cancelText}>Cancelar</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.saveEditButton, (!editText.trim() || mutating) && styles.disabled]} disabled={!editText.trim() || mutating} onPress={saveEdit} accessibilityRole="button">{mutating ? <ActivityIndicator color={theme.background} /> : <Text style={styles.saveEditText}>Guardar</Text>}</TouchableOpacity>
+            </View>
+          </> : <>
+          <Text style={styles.actionSheetTitle} numberOfLines={1}>{menuComment?.userName}</Text>
+          {menuComment?.isOwn && <>
+            <TouchableOpacity style={styles.actionSheetItem} onPress={() => beginEdit(menuComment)} accessibilityRole="button"><Pencil size={20} color={theme.text} /><Text style={styles.actionSheetLabel}>Editar</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.actionSheetItem} onPress={() => confirmDelete(menuComment)} accessibilityRole="button"><Trash2 size={20} color={theme.destructive} /><Text style={[styles.actionSheetLabel, { color: theme.destructive }]}>Borrar</Text></TouchableOpacity>
+          </>}
+          <TouchableOpacity style={styles.actionSheetItem} onPress={() => menuComment && hideComment(menuComment)} accessibilityRole="button" accessibilityHint="Solo dejarás de verlo tú en este muro">
+            <EyeOff size={20} color={theme.text} /><Text style={styles.actionSheetLabel}>Ocultar</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cancelButton} onPress={() => setMenuComment(null)} accessibilityRole="button"><Text style={styles.cancelText}>Cancelar</Text></TouchableOpacity>
+          </>}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   </View>;
   return embedded ? content : <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>{content}</Modal>;
@@ -332,7 +446,11 @@ const makeStyles = (theme: ThemePalette) => StyleSheet.create({
   pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(217, 119, 6, 0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start', marginBottom: 4 },
   pinnedBadgeText: { fontSize: 11, fontWeight: '700', color: '#d97706' },
   avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: theme.surfaceRaised, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  avatarImage: { width: 30, height: 30, borderRadius: 15, marginTop: 1, backgroundColor: theme.surfaceRaised },
   initials: { fontSize: 10, fontWeight: '700', color: theme.accent }, commentContent: { flex: 1 },
+  authorIndicatorRow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 4, paddingBottom: 2 },
+  authorIndicatorPrefix: { fontSize: 11, color: theme.textMuted },
+  authorIndicatorName: { fontSize: 11, fontWeight: '700', color: theme.text, maxWidth: 160 },
   metaRow: { minHeight: 28, flexDirection: 'row', alignItems: 'center' }, nameRow: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
   author: { flexShrink: 1, fontSize: 13, lineHeight: 19, fontWeight: '700', color: theme.text }, tag: { flexDirection: 'row', alignItems: 'center', gap: 3 }, tagText: { color: theme.accent, fontSize: 10, fontWeight: '600' },
   body: { fontSize: 14, lineHeight: 20, color: theme.text, paddingRight: 4 }, replyName: { color: theme.accent, fontSize: 11, lineHeight: 16 },
@@ -347,7 +465,11 @@ const makeStyles = (theme: ThemePalette) => StyleSheet.create({
   sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.text, alignItems: 'center', justifyContent: 'center' }, disabled: { opacity: 0.35 },
   replyBanner: { flexDirection: 'row', alignItems: 'center', gap: 8 }, replyBannerText: { flex: 1, fontSize: 11, color: theme.textMuted }, smallClose: { minWidth: 44, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
   counter: { color: theme.textMuted, textAlign: 'right', fontSize: 10 }, errorText: { color: theme.text, fontSize: 12, lineHeight: 17 },
+  editActions: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  editAction: { flex: 1, marginTop: 0 },
+  saveEditButton: { flex: 1, minHeight: 44, borderRadius: 10, backgroundColor: theme.text, alignItems: 'center', justifyContent: 'center' },
+  saveEditText: { color: theme.background, fontSize: 14, fontWeight: '700' },
   menuOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.48)' },
-  actionSheet: { paddingHorizontal: 12, paddingTop: 8, backgroundColor: theme.surfaceRaised, borderTopLeftRadius: 22, borderTopRightRadius: 22 }, actionSheetHandle: { alignSelf: 'center', width: 38, height: 4, marginBottom: 12, borderRadius: 2, backgroundColor: theme.borderSubtle }, actionSheetTitle: { paddingHorizontal: 8, paddingBottom: 8, color: theme.textMuted, fontSize: 12 },
-  actionSheetItem: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 10, borderRadius: 14, backgroundColor: theme.surface }, actionSheetCopy: { flex: 1 }, actionSheetLabel: { color: theme.text, fontSize: 15, fontWeight: '700' }, actionSheetHint: { marginTop: 2, color: theme.textMuted, fontSize: 11 }, cancelButton: { minHeight: 48, marginTop: 8, alignItems: 'center', justifyContent: 'center' }, cancelText: { color: theme.text, fontSize: 14, fontWeight: '600' },
+  actionSheet: { paddingHorizontal: 14, paddingTop: 8, backgroundColor: theme.surfaceRaised, borderTopLeftRadius: 22, borderTopRightRadius: 22 }, actionSheetHandle: { alignSelf: 'center', width: 38, height: 4, marginBottom: 8, borderRadius: 2, backgroundColor: theme.borderSubtle }, actionSheetTitle: { paddingHorizontal: 8, paddingBottom: 6, color: theme.textMuted, fontSize: 12 },
+  actionSheetItem: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, borderRadius: 10, backgroundColor: theme.surface }, actionSheetLabel: { color: theme.text, fontSize: 14, fontWeight: '600' }, cancelButton: { minHeight: 44, marginTop: 8, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1, borderColor: theme.borderSubtle, backgroundColor: theme.surface, alignItems: 'center', justifyContent: 'center' }, cancelText: { color: theme.text, fontSize: 14, fontWeight: '600' },
 });
