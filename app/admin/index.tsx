@@ -28,7 +28,6 @@ import {
   Clock,
   Heart,
   MessageSquare,
-  Key,
   Check,
   X,
   Sparkles,
@@ -42,8 +41,6 @@ import {
   updateMemberRole,
   toggleMemberSuspension,
   getPastoralStats,
-  getPastoralPin,
-  setPastoralPin,
 } from '@/src/features/auth/pastoralService';
 import { PastoralMember, PastoralOverviewStats, UserRole } from '@/src/features/auth/types';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
@@ -56,7 +53,6 @@ export default function PastoralAdminScreen() {
   const theme = themes[themeMode] || themes.sepia;
 
   const authUser = useAuthStore((s) => s.user);
-  const isPastoralUnlocked = useAuthStore((s) => s.isPastoralUnlocked);
   const lockPastoralSession = useAuthStore((s) => s.lockPastoralSession);
   const setUserRole = useAuthStore((s) => s.setUserRole);
 
@@ -77,13 +73,6 @@ export default function PastoralAdminScreen() {
   const [roleModalMember, setRoleModalMember] = useState<PastoralMember | null>(null);
   const [updatingRole, setUpdatingRole] = useState(false);
 
-  // Change PIN Modal
-  const [pinModalVisible, setPinModalVisible] = useState(false);
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [pinChangeError, setPinChangeError] = useState('');
-  const [savingPin, setSavingPin] = useState(false);
-
   const loadData = async () => {
     try {
       const [membersList, overviewStats] = await Promise.all([
@@ -101,8 +90,12 @@ export default function PastoralAdminScreen() {
   };
 
   useEffect(() => {
+    if (!authUser || !authUser.isPastor) {
+      router.replace('/(tabs)/settings');
+      return;
+    }
     loadData();
-  }, []);
+  }, [authUser]);
 
   const handleRefresh = () => {
     hapticLight();
@@ -161,32 +154,6 @@ export default function PastoralAdminScreen() {
       Alert.alert('Error', 'No se pudo actualizar el rol.');
     } finally {
       setUpdatingRole(false);
-    }
-  };
-
-  const handleSavePin = async () => {
-    if (savingPin) return;
-    if (newPin.trim().length < 4) {
-      setPinChangeError('El PIN debe tener al menos 4 dígitos.');
-      return;
-    }
-    if (newPin.trim() !== confirmPin.trim()) {
-      setPinChangeError('Los PINs no coinciden.');
-      return;
-    }
-    setSavingPin(true);
-    setPinChangeError('');
-    try {
-      await setPastoralPin(newPin.trim());
-      hapticSuccess();
-      setPinModalVisible(false);
-      setNewPin('');
-      setConfirmPin('');
-      Alert.alert('PIN Actualizado', 'El código de acceso pastoral ha sido modificado exitosamente.');
-    } catch {
-      setPinChangeError('No se pudo guardar el PIN.');
-    } finally {
-      setSavingPin(false);
     }
   };
 
@@ -252,20 +219,6 @@ export default function PastoralAdminScreen() {
             accessibilityLabel="Refrescar datos"
           >
             <RefreshCw size={18} color={theme.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              hapticLight();
-              setPinChangeError('');
-              setNewPin('');
-              setConfirmPin('');
-              setPinModalVisible(true);
-            }}
-            style={styles.iconAction}
-            accessibilityRole="button"
-            accessibilityLabel="Cambiar PIN"
-          >
-            <Key size={18} color="#d97706" />
           </TouchableOpacity>
         </View>
       </View>
@@ -704,81 +657,6 @@ export default function PastoralAdminScreen() {
             </View>
           </View>
         </View>
-      </Modal>
-
-      {/* CHANGE PIN MODAL */}
-      <Modal
-        visible={pinModalVisible}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setPinModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalBackdrop}
-        >
-          <View style={[styles.roleModalContent, { backgroundColor: theme.surfaceRaised }]}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Key size={20} color="#d97706" />
-                <Text style={[styles.modalTitle, { color: theme.text }]}>Cambiar PIN Pastoral</Text>
-              </View>
-              <TouchableOpacity onPress={() => setPinModalVisible(false)} hitSlop={8}>
-                <X size={20} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
-              Establece un nuevo código numérico para acceder a este panel de administración.
-            </Text>
-
-            <View style={styles.pinInputGroup}>
-              <Text style={[styles.pinLabel, { color: theme.text }]}>Nuevo PIN (4 a 8 dígitos)</Text>
-              <TextInput
-                value={newPin}
-                onChangeText={setNewPin}
-                keyboardType="numeric"
-                secureTextEntry
-                maxLength={8}
-                placeholder="Ej. 7777"
-                placeholderTextColor={theme.textMuted}
-                style={[styles.pinInput, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
-              />
-            </View>
-
-            <View style={styles.pinInputGroup}>
-              <Text style={[styles.pinLabel, { color: theme.text }]}>Confirmar nuevo PIN</Text>
-              <TextInput
-                value={confirmPin}
-                onChangeText={setConfirmPin}
-                keyboardType="numeric"
-                secureTextEntry
-                maxLength={8}
-                placeholder="Repite el PIN"
-                placeholderTextColor={theme.textMuted}
-                style={[styles.pinInput, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
-              />
-            </View>
-
-            {!!pinChangeError && (
-              <Text style={styles.errorText}>{pinChangeError}</Text>
-            )}
-
-            <TouchableOpacity
-              onPress={handleSavePin}
-              disabled={savingPin}
-              style={[styles.savePinBtn, { backgroundColor: '#d97706' }]}
-              accessibilityRole="button"
-            >
-              {savingPin ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.savePinBtnText}>Guardar Nuevo PIN</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   );

@@ -35,6 +35,7 @@ import {
   User,
   Mail,
   Lock,
+  ChevronRight,
 } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
@@ -63,12 +64,6 @@ export default function SettingsScreen() {
   const [googleName, setGoogleName] = useState('');
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleLoggingIn, setGoogleLoggingIn] = useState(false);
-
-  // Pastoral PIN Modal State
-  const [pinModalVisible, setPinModalVisible] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
-  const [verifyingPin, setVerifyingPin] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -141,38 +136,6 @@ export default function SettingsScreen() {
         },
       ]
     );
-  };
-
-  const handleOpenPastoralPanel = () => {
-    hapticLight();
-    if (isPastoralUnlocked) {
-      router.push('/admin' as any);
-    } else {
-      setPinInput('');
-      setPinError('');
-      setPinModalVisible(true);
-    }
-  };
-
-  const handleVerifyPastoralPin = async () => {
-    if (verifyingPin) return;
-    setVerifyingPin(true);
-    setPinError('');
-    try {
-      const success = await unlockPastoralSession(pinInput);
-      if (success) {
-        hapticSuccess();
-        setPinModalVisible(false);
-        router.push('/admin' as any);
-      } else {
-        hapticLight();
-        setPinError('PIN incorrecto. Código predeterminado: 7777.');
-      }
-    } catch {
-      setPinError('Error al validar el PIN. Intenta nuevamente.');
-    } finally {
-      setVerifyingPin(false);
-    }
   };
   const themeMode = useSettingsStore((s) => s.theme);
   const fontSize = useSettingsStore((s) => s.fontSize);
@@ -360,17 +323,32 @@ export default function SettingsScreen() {
             </View>
           )}
 
-          {/* Enlace al Panel de Control Pastoral */}
-          <TouchableOpacity
-            onPress={handleOpenPastoralPanel}
-            style={[styles.pastoralLinkRow, { borderColor: 'rgba(217, 119, 6, 0.3)' }]}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-          >
-            <ShieldCheck size={18} color="#d97706" />
-            <Text style={[styles.pastoralLinkText, { color: theme.text }]}>Panel de Control Pastoral</Text>
-            <KeyRound size={15} color={theme.textMuted} />
-          </TouchableOpacity>
+          {/* SECCIÓN MINISTERIAL: SOLO VISIBLE SI EL USUARIO VERIFICADO ES PASTOR */}
+          {authUser && authUser.isPastor && (
+            <View style={[styles.pastoralBox, { backgroundColor: 'rgba(217, 119, 6, 0.08)', borderColor: 'rgba(217, 119, 6, 0.35)' }]}>
+              <View style={styles.pastoralBoxHeader}>
+                <ShieldCheck size={22} color="#d97706" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.pastoralBoxTitle, { color: theme.text }]}>Herramientas de Pastoreo</Text>
+                  <Text style={[styles.pastoralBoxSubtitle, { color: theme.textMuted }]}>
+                    Supervisión de la congregación, miembros activos y cuidado espiritual.
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  hapticLight();
+                  router.push('/admin' as any);
+                }}
+                style={[styles.openPastoralBtn, { backgroundColor: '#d97706' }]}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+              >
+                <Text style={styles.openPastoralBtnText}>Abrir Panel de Supervisión</Text>
+                <ChevronRight size={16} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         {/* THEME SELECTOR */}
         <View style={styles.section}>
@@ -785,74 +763,6 @@ export default function SettingsScreen() {
                 <ActivityIndicator color="#ffffff" />
               ) : (
                 <Text style={styles.modalPrimaryBtnText}>Verificar y Entrar</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* MODAL PIN PASTORAL */}
-      <Modal
-        visible={pinModalVisible}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setPinModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalBackdrop}
-        >
-          <View style={[styles.modalContent, { backgroundColor: theme.surfaceRaised }]}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <ShieldCheck size={22} color="#d97706" />
-                <Text style={[styles.modalTitle, { color: theme.text }]}>Acceso Pastoral</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setPinModalVisible(false)}
-                disabled={verifyingPin}
-                hitSlop={8}
-                accessibilityRole="button"
-              >
-                <X size={20} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
-              Ingresa el código PIN asignado a la administración y moderación pastoral.
-            </Text>
-
-            <View style={styles.modalInputGroup}>
-              <Text style={[styles.modalLabel, { color: theme.text }]}>PIN de seguridad</Text>
-              <TextInput
-                value={pinInput}
-                onChangeText={setPinInput}
-                placeholder="PIN (predeterminado: 7777)"
-                placeholderTextColor={theme.textMuted}
-                keyboardType="numeric"
-                secureTextEntry
-                maxLength={8}
-                editable={!verifyingPin}
-                style={[styles.modalInput, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface, textAlign: 'center', letterSpacing: 6, fontSize: 18, fontWeight: '700' }]}
-              />
-            </View>
-
-            {!!pinError && (
-              <Text style={styles.modalErrorText}>{pinError}</Text>
-            )}
-
-            <TouchableOpacity
-              onPress={handleVerifyPastoralPin}
-              disabled={verifyingPin || !pinInput.trim()}
-              style={[styles.modalPrimaryBtn, { backgroundColor: '#d97706', opacity: (!pinInput.trim() || verifyingPin) ? 0.5 : 1 }]}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-            >
-              {verifyingPin ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.modalPrimaryBtnText}>Acceder al Panel</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -1341,5 +1251,41 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     fontSize: 12,
     marginBottom: 10,
+  },
+  pastoralBox: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    marginTop: 14,
+    gap: 12,
+  },
+  pastoralBoxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  pastoralBoxTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  pastoralBoxSubtitle: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  openPastoralBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  openPastoralBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

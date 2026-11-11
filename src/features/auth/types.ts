@@ -9,6 +9,7 @@ export interface AuthUser {
   role: UserRole;
   isVerified: boolean;
   isPastor: boolean;
+  isModerator: boolean;
   status: AccountStatus;
   provider: 'google' | 'guest';
   lastActiveAt: string;

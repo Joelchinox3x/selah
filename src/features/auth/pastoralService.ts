@@ -13,6 +13,7 @@ const INITIAL_MEMBERS: PastoralMember[] = [
     role: 'pastor',
     isVerified: true,
     isPastor: true,
+    isModerator: true,
     status: 'active',
     provider: 'google',
     lastActiveAt: 'Ahora mismo',
@@ -29,6 +30,7 @@ const INITIAL_MEMBERS: PastoralMember[] = [
     role: 'moderador',
     isVerified: true,
     isPastor: false,
+    isModerator: true,
     status: 'active',
     provider: 'google',
     lastActiveAt: 'Hace 12 min',
@@ -45,6 +47,7 @@ const INITIAL_MEMBERS: PastoralMember[] = [
     role: 'verificado',
     isVerified: true,
     isPastor: false,
+    isModerator: false,
     status: 'active',
     provider: 'google',
     lastActiveAt: 'Hace 45 min',
@@ -61,6 +64,7 @@ const INITIAL_MEMBERS: PastoralMember[] = [
     role: 'verificado',
     isVerified: true,
     isPastor: false,
+    isModerator: false,
     status: 'active',
     provider: 'google',
     lastActiveAt: 'Hoy, 09:30',
@@ -76,6 +80,7 @@ const INITIAL_MEMBERS: PastoralMember[] = [
     role: 'verificado',
     isVerified: true,
     isPastor: false,
+    isModerator: false,
     status: 'active',
     provider: 'google',
     lastActiveAt: 'Ayer',
@@ -91,6 +96,7 @@ const INITIAL_MEMBERS: PastoralMember[] = [
     role: 'miembro',
     isVerified: false,
     isPastor: false,
+    isModerator: false,
     status: 'active',
     provider: 'guest',
     lastActiveAt: 'Hace 3 días',
@@ -159,6 +165,26 @@ export async function registerOrUpdatePastoralMember(member: PastoralMember): Pr
   return updated;
 }
 
+export const KNOWN_PASTORAL_EMAILS: Record<string, UserRole> = {
+  'pastor.guillermo@comunidadselah.org': 'pastor',
+  'pastor.guillermo@gmail.com': 'pastor',
+  'guillermo.quispe@gmail.com': 'pastor',
+  'david.morales.biblia@gmail.com': 'moderador',
+};
+
+export async function resolveRoleForUser(email: string, requestedRole?: UserRole): Promise<UserRole> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (KNOWN_PASTORAL_EMAILS[cleanEmail]) {
+    return KNOWN_PASTORAL_EMAILS[cleanEmail];
+  }
+  const members = await getPastoralMembers();
+  const found = members.find((m) => m.email && m.email.toLowerCase() === cleanEmail);
+  if (found && (found.role === 'pastor' || found.role === 'moderador')) {
+    return found.role;
+  }
+  return requestedRole || 'verificado';
+}
+
 export async function updateMemberRole(memberId: string, newRole: UserRole): Promise<PastoralMember[]> {
   const members = await getPastoralMembers();
   const updated = members.map((m) => {
@@ -167,6 +193,7 @@ export async function updateMemberRole(memberId: string, newRole: UserRole): Pro
         ...m,
         role: newRole,
         isPastor: newRole === 'pastor',
+        isModerator: newRole === 'moderador' || newRole === 'pastor',
         isVerified: newRole !== 'miembro',
       };
     }
@@ -222,3 +249,38 @@ export async function getPastoralStats(): Promise<PastoralOverviewStats> {
     suspendedCount: members.filter((m) => m.status === 'suspended').length,
   };
 }
+
+export async function suspendAuthorByName(name: string): Promise<boolean> {
+  const cleanName = (name || '').trim();
+  if (!cleanName) return false;
+  const members = await getPastoralMembers();
+  let found = false;
+  const updated = members.map((m) => {
+    if (m.name.trim().toLowerCase() === cleanName.toLowerCase()) {
+      found = true;
+      return { ...m, status: 'suspended' as const };
+    }
+    return m;
+  });
+  if (!found) {
+    updated.push({
+      id: `suspended-${Date.now()}`,
+      name: cleanName,
+      email: `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')}@comunidad.local`,
+      role: 'miembro',
+      isVerified: false,
+      isPastor: false,
+      isModerator: false,
+      status: 'suspended',
+      provider: 'guest',
+      lastActiveAt: 'Reciente',
+      joinedAt: new Date().toISOString().split('T')[0],
+      reflectionsCount: 1,
+      blessingsCount: 0,
+      notes: 'Suspendido desde moderación pastoral in-situ',
+    });
+  }
+  await savePastoralMembers(updated);
+  return true;
+}
+

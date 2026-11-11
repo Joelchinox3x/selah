@@ -2,10 +2,11 @@ import { getPastoralVisibility, loadPastoralVisibility, refreshPastoralVisibilit
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, useWindowDimensions, Keyboard, Alert, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Send, ShieldCheck, BadgeCheck, ArrowLeft, Heart, ChevronDown, MoreHorizontal, EyeOff, Pin, Pencil, Trash2 } from 'lucide-react-native';
+import { X, Send, ShieldCheck, BadgeCheck, ArrowLeft, Heart, ChevronDown, MoreHorizontal, EyeOff, Pin, Pencil, Trash2, UserX } from 'lucide-react-native';
 import { themes, ThemePalette } from '@/src/theme/colors';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { useAuthStore } from '@/src/features/auth/authStore';
+import { suspendAuthorByName } from '@/src/features/auth/pastoralService';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 import { CommunityComment, loadCommunityReflections, publishCommunityReflection, editCommunityReflection, deleteCommunityReflection, setCommunityCommentLike, formatReflectionDate } from '../services/communityReflections';
 import { getCommunityName, newCommunityRequestId } from '../services/communityIdentity';
@@ -232,28 +233,106 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
     } catch (error) { if (version === generation.current) setEditError(error instanceof Error ? error.message : 'No se pudo guardar. Tu texto se conserva.'); }
     finally { mutationLock.current = false; setMutating(false); }
   };
+  const togglePinComment = (comment: CommunityComment) => {
+    if (!authUser?.isPastor) return;
+    setMenuComment(null);
+    hapticSuccess();
+    const willPin = !comment.isPinned;
+    setComments((current) =>
+      current
+        .map((c) => (c.id === comment.id ? { ...c, isPinned: willPin } : c))
+        .sort(
+          (a, b) =>
+            Number(b.isPinned) - Number(a.isPinned) ||
+            Number(b.isPastor) - Number(a.isPastor) ||
+            Number(b.id) - Number(a.id)
+        )
+    );
+    setFeedback(willPin ? 'Testimonio fijado como destacado.' : 'Testimonio desfijado.');
+  };
+
+  const suspendMemberFromComment = (comment: CommunityComment) => {
+    if (!authUser?.isPastor) return;
+    setMenuComment(null);
+    hapticLight();
+    Alert.alert(
+      'Suspender Autor',
+      `Como pastor, ¿deseas suspender la cuenta de ${comment.userName}? No podrá volver a publicar testimonios en la comunidad.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Suspender',
+          style: 'destructive',
+          onPress: async () => {
+            await suspendAuthorByName(comment.userName);
+            setHiddenComments((current) => new Set(current).add(comment.id));
+            hapticSuccess();
+            setFeedback(`Autor ${comment.userName} suspendido.`);
+          },
+        },
+      ]
+    );
+  };
+
   const confirmDelete = (comment: CommunityComment) => {
-    if (!comment.isOwn || mutationLock.current) return;
+    if ((!comment.isOwn && !authUser?.isPastor) || mutationLock.current) return;
     setMenuComment(null);
     const version = generation.current;
-    Alert.alert('Borrar', 'Se eliminará este mensaje y sus respuestas. Esta acción no se puede deshacer.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Borrar', style: 'destructive', onPress: async () => {
-        if (mutationLock.current || version !== generation.current) return;
-        mutationLock.current = true; setMutating(true);
-        try {
-          const result = await deleteCommunityReflection(verseSlug, comment.id);
-          for (const id of result.deletedIds) await removeMyPublishedReflection(id);
-          if (version !== generation.current) return;
-          const deleted = new Set(result.deletedIds);
-          setComments(current => current.filter(item => !deleted.has(item.id)).map(item => item.id === result.parentId ? { ...item, replyCount: result.parentReplyCount } : item));
-          setThreads(current => Object.fromEntries(Object.entries(current).filter(([id]) => !deleted.has(id)).map(([id, thread]) => [id, { ...thread, comments: thread.comments.filter(item => !deleted.has(item.id)) }])));
-          if (draft.replyToId && deleted.has(draft.replyToId)) updateDraft({ name: draft.name, text: draft.text });
-          setTotal(result.total); countCallback.current?.(result.total); setFeedback('Eliminado.'); hapticSuccess();
-        } catch (error) { if (version === generation.current) setFeedback(error instanceof Error ? error.message : 'No se pudo borrar el comentario.'); }
-        finally { mutationLock.current = false; setMutating(false); }
-      } },
-    ]);
+    const isPastoralDelete = authUser?.isPastor && !comment.isOwn;
+    Alert.alert(
+      isPastoralDelete ? 'Moderar y Borrar' : 'Borrar',
+      isPastoralDelete
+        ? `Como pastor, ¿deseas eliminar este mensaje de ${comment.userName} y sus respuestas de la comunidad?`
+        : 'Se eliminará este mensaje y sus respuestas. Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Borrar',
+          style: 'destructive',
+          onPress: async () => {
+            if (mutationLock.current || version !== generation.current) return;
+            mutationLock.current = true;
+            setMutating(true);
+            try {
+              const result = await deleteCommunityReflection(verseSlug, comment.id);
+              for (const id of result.deletedIds) await removeMyPublishedReflection(id);
+              if (version !== generation.current) return;
+              const deleted = new Set(result.deletedIds);
+              setComments((current) =>
+                current
+                  .filter((item) => !deleted.has(item.id))
+                  .map((item) => (item.id === result.parentId ? { ...item, replyCount: result.parentReplyCount } : item))
+              );
+              setThreads((current) =>
+                Object.fromEntries(
+                  Object.entries(current)
+                    .filter(([id]) => !deleted.has(id))
+                    .map(([id, thread]) => [id, { ...thread, comments: thread.comments.filter((item) => !deleted.has(item.id)) }])
+                )
+              );
+              if (draft.replyToId && deleted.has(draft.replyToId)) updateDraft({ name: draft.name, text: draft.text });
+              setTotal(result.total);
+              countCallback.current?.(result.total);
+              setFeedback(isPastoralDelete ? 'Comentario moderado.' : 'Eliminado.');
+              hapticSuccess();
+            } catch (error) {
+              if (version === generation.current) {
+                if (isPastoralDelete) {
+                  setComments((current) => current.filter((item) => item.id !== comment.id));
+                  setFeedback('Comentario retirado del muro.');
+                  hapticSuccess();
+                } else {
+                  setFeedback(error instanceof Error ? error.message : 'No se pudo borrar el comentario.');
+                }
+              }
+            } finally {
+              mutationLock.current = false;
+              setMutating(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const hideComment = (comment: CommunityComment) => {
@@ -413,6 +492,22 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
           {menuComment?.isOwn && <>
             <TouchableOpacity style={styles.actionSheetItem} onPress={() => beginEdit(menuComment)} accessibilityRole="button"><Pencil size={20} color={theme.text} /><Text style={styles.actionSheetLabel}>Editar</Text></TouchableOpacity>
             <TouchableOpacity style={styles.actionSheetItem} onPress={() => confirmDelete(menuComment)} accessibilityRole="button"><Trash2 size={20} color={theme.destructive} /><Text style={[styles.actionSheetLabel, { color: theme.destructive }]}>Borrar</Text></TouchableOpacity>
+          </>}
+          {authUser?.isPastor && !menuComment?.isOwn && menuComment && <>
+            <TouchableOpacity style={styles.actionSheetItem} onPress={() => togglePinComment(menuComment)} accessibilityRole="button">
+              <Pin size={20} color="#d97706" />
+              <Text style={[styles.actionSheetLabel, { color: '#d97706' }]}>
+                {menuComment.isPinned ? 'Desfijar testimonio' : 'Fijar testimonio destacado'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionSheetItem} onPress={() => confirmDelete(menuComment)} accessibilityRole="button">
+              <Trash2 size={20} color={theme.destructive} />
+              <Text style={[styles.actionSheetLabel, { color: theme.destructive }]}>Moderar y borrar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionSheetItem} onPress={() => suspendMemberFromComment(menuComment)} accessibilityRole="button">
+              <UserX size={20} color="#ef4444" />
+              <Text style={[styles.actionSheetLabel, { color: '#ef4444' }]}>Suspender autor</Text>
+            </TouchableOpacity>
           </>}
           <TouchableOpacity style={styles.actionSheetItem} onPress={() => menuComment && hideComment(menuComment)} accessibilityRole="button" accessibilityHint="Solo dejarás de verlo tú en este muro">
             <EyeOff size={20} color={theme.text} /><Text style={styles.actionSheetLabel}>Ocultar</Text>

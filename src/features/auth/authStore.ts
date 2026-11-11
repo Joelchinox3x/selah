@@ -7,6 +7,7 @@ import {
   registerOrUpdatePastoralMember,
   verifyPastoralPin,
   isMemberSuspended,
+  resolveRoleForUser,
 } from './pastoralService';
 
 const AUTH_STORAGE_KEY = '@selah_auth_state_v2';
@@ -53,7 +54,9 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const existingUser = get().user;
-          const userRole: UserRole = existingUser?.role || 'verificado';
+          const userRole: UserRole = await resolveRoleForUser(cleanEmail, existingUser?.role);
+          const isPastor = userRole === 'pastor';
+          const isModerator = userRole === 'moderador' || isPastor;
 
           const authUser: AuthUser = {
             id: existingUser?.id || `google_${Date.now().toString(36)}`,
@@ -62,7 +65,8 @@ export const useAuthStore = create<AuthState>()(
             avatarUrl: defaultAvatar,
             role: userRole,
             isVerified: true,
-            isPastor: userRole === 'pastor',
+            isPastor,
+            isModerator,
             status: 'active',
             provider: 'google',
             lastActiveAt: 'Ahora mismo',
