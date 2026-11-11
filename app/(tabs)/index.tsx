@@ -68,6 +68,8 @@ export default function HomeScreen() {
   const theme = themes[themeMode] || themes.sepia;
 
   const [devotional, setDevotional] = useState<DailyDevotional | null>(null);
+  const [dayOffset, setDayOffset] = useState(0);
+  const [showPastCarousel, setShowPastCarousel] = useState(false);
   const [todayDiscovery, setTodayDiscovery] = useState<DailyDiscovery | null>(null);
   const [moods, setMoods] = useState<MoodCatalogItem[]>([]);
   const [lastReadInfo, setLastReadInfo] = useState<LastReadInfo | null>(null);
@@ -96,9 +98,21 @@ export default function HomeScreen() {
       ]);
 
       setDevotional(dev);
+      setDayOffset(0);
       setMoods(moodList);
       setTodayDiscovery(disc);
       setHasUnreadNotifications(notifs.some((n) => !n.isRead));
+
+      // Consultar configuración remota (si el carrusel de días anteriores está activo en el panel web)
+      try {
+        const cfgRes = await fetch('https://selah.boxtiove.com/api/app-config');
+        if (cfgRes.ok) {
+          const cfgJson = await cfgRes.json();
+          if (cfgJson?.config) {
+            setShowPastCarousel(Boolean(cfgJson.config.show_past_devotionals_carousel));
+          }
+        }
+      } catch {}
 
       // Rotating daily reading pool when user has no active reading history
       const ROTATING_READINGS = [
@@ -177,22 +191,33 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const changeVerse = async (previous = false) => {
+  const navigateDay = async (direction: 'prev' | 'next') => {
     if (verseChanging.current) return;
+    const newOffset = direction === 'prev' ? dayOffset + 1 : dayOffset - 1;
+    if (newOffset < 0 || newOffset > 7) return;
+
     verseChanging.current = true;
     setVerseBusy(true);
     try {
-      const nextDev = await getDailyDevotional(previous ? { previous: true } : { randomize: true });
+      let nextDev: DailyDevotional;
+      if (newOffset === 0) {
+        nextDev = await getDailyDevotional();
+      } else {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() - newOffset);
+        nextDev = await getDailyDevotional({ date: targetDate });
+      }
+      setDayOffset(newOffset);
       setDevotional(nextDev);
     } catch (e) {
-      console.warn('Error changing devotional:', e);
+      console.warn('Error navigating daily verse day:', e);
     } finally {
       verseChanging.current = false;
       setVerseBusy(false);
     }
   };
-  const handleRotateVerse = () => changeVerse();
-  const handlePreviousVerse = () => changeVerse(true);
+  const handlePreviousDay = () => navigateDay('prev');
+  const handleNextDay = () => navigateDay('next');
 
   useEffect(() => {
     const checkNewDay = () => {
@@ -294,18 +319,19 @@ export default function HomeScreen() {
         {/* 1. Daily Devotional Hero (Photo 1) */}
         <DailyVerseHero
           devotional={devotional}
+          dayOffset={dayOffset}
+          onPreviousDay={handlePreviousDay}
+          onNextDay={handleNextDay}
           onShare={() => {
             setShareCardOptions(null);
             setShareModalVisible(true);
           }}
           onMeditate={() => setMeditationVisible(true)}
-          onRotateVerse={handleRotateVerse}
           onOpenPostal={() => {
             setSelectedPostalDevotional(devotional);
             setPostalInitialFlipped(false);
             setPostalModalVisible(true);
           }}
-          onPreviousVerse={handlePreviousVerse}
           verseBusy={verseBusy}
           onReadVerse={() => {
             if (!devotional) return;
@@ -314,15 +340,17 @@ export default function HomeScreen() {
           }}
         />
 
-        {/* 1.5. Historial de Versículos de Días Anteriores (Últimos 7 días) */}
-        <PastDevotionalsCarousel
-          theme={theme}
-          onSelectDevotional={(pastDev) => {
-            setSelectedPostalDevotional(pastDev);
-            setPostalInitialFlipped(false);
-            setPostalModalVisible(true);
-          }}
-        />
+        {/* 1.5. Historial de Versículos de Días Anteriores (Controlable desde Panel Web, default desactivado) */}
+        {showPastCarousel && (
+          <PastDevotionalsCarousel
+            theme={theme}
+            onSelectDevotional={(pastDev) => {
+              setSelectedPostalDevotional(pastDev);
+              setPostalInitialFlipped(false);
+              setPostalModalVisible(true);
+            }}
+          />
+        )}
 
         {/* 2. Continue Reading Card */}
         {lastReadInfo && (
@@ -413,7 +441,6 @@ export default function HomeScreen() {
             setPostalModalVisible(false);
             setMeditationVisible(true);
           }}
-          onRotateVerse={handleRotateVerse}
         />
       )}
 

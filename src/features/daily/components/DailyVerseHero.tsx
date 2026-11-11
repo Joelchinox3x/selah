@@ -7,7 +7,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import { Volume2, Heart, RotateCw, ArrowLeft } from 'lucide-react-native';
+import { Volume2, Heart, ArrowLeft, ArrowRight } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { DailyDevotional } from '@/src/services/db/bibleDb';
 import { toggleBookmark, getChapterUserData } from '@/src/services/db/userDb';
@@ -20,8 +20,9 @@ interface DailyVerseHeroProps {
   devotional: DailyDevotional | null;
   onShare: () => void;
   onMeditate: () => void;
-  onRotateVerse?: () => void;
-  onPreviousVerse: () => void;
+  dayOffset?: number;
+  onPreviousDay?: () => void;
+  onNextDay?: () => void;
   verseBusy?: boolean;
   onOpenPostal: () => void;
   onReadVerse: () => void;
@@ -31,8 +32,9 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
   devotional,
   onShare,
   onMeditate,
-  onRotateVerse,
-  onPreviousVerse,
+  dayOffset = 0,
+  onPreviousDay,
+  onNextDay,
   verseBusy = false,
   onOpenPostal,
   onReadVerse,
@@ -140,45 +142,54 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
 
       {/* 3. Foreground Content */}
       <View style={styles.cardContent}>
-        {/* Top Row: Badge on left + 3 glass buttons on right */}
+        {/* Top Row: Dynamic Badge on left + temporal navigation & action buttons on right */}
         <View style={styles.topRow}>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>VERSÍCULO DEL DÍA</Text>
+            <Text style={styles.badgeText}>
+              {dayOffset === 0
+                ? 'VERSÍCULO DE HOY'
+                : dayOffset === 1
+                ? 'AYER'
+                : `HACE ${dayOffset} DÍAS`}
+            </Text>
           </View>
 
           <View style={styles.topButtonsRow}>
-            <TouchableOpacity
-              style={[styles.topBtn, (!devotional.canGoBack || verseBusy) && { opacity: 0.35 }]}
-              disabled={!devotional.canGoBack || verseBusy}
-              accessibilityRole="button"
-              accessibilityLabel="Volver al versículo anterior"
-              accessibilityState={{ disabled: !devotional.canGoBack || verseBusy }}
-              onPress={(e) => {
-                e.stopPropagation?.();
-                hapticLight();
-                onPreviousVerse();
-              }}
-              activeOpacity={0.7}
-              hitSlop={5}
-            >
-              <ArrowLeft size={14} color="#FFFFFF" />
-            </TouchableOpacity>
-            {/* 1. Actualizar (renueva un nuevo versículo) */}
-            {onRotateVerse && (
+            {/* 1. Flecha Anterior (← Ayer / Días pasados hasta 7) */}
+            {onPreviousDay && (
               <TouchableOpacity
-                style={[styles.topBtn, verseBusy && { opacity: 0.35 }]}
-                disabled={verseBusy}
+                style={[styles.topBtn, (dayOffset >= 7 || verseBusy) && { opacity: 0.3 }]}
+                disabled={dayOffset >= 7 || verseBusy}
                 accessibilityRole="button"
-                accessibilityLabel="Mostrar otro versículo al azar"
+                accessibilityLabel="Ver día anterior"
                 onPress={(e) => {
                   e.stopPropagation?.();
                   hapticLight();
-                  onRotateVerse();
+                  onPreviousDay();
                 }}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <RotateCw size={14} color="#fbbf24" />
+                <ArrowLeft size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+
+            {/* 2. Flecha Siguiente (→ hacia Hoy, solo si dayOffset > 0) */}
+            {onNextDay && dayOffset > 0 && (
+              <TouchableOpacity
+                style={[styles.topBtn, verseBusy && { opacity: 0.3 }]}
+                disabled={verseBusy}
+                accessibilityRole="button"
+                accessibilityLabel="Ver día siguiente hacia hoy"
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  hapticLight();
+                  onNextDay();
+                }}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <ArrowRight size={14} color="#fbbf24" />
               </TouchableOpacity>
             )}
 
