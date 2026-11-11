@@ -68,30 +68,6 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
 
   const bgSource = bgItem?.source1x1 || bgItem?.source916 || bgItem?.source || CARD_BACKGROUNDS[0].source;
 
-  if (!devotional) return null;
-
-  const { verse } = devotional;
-  const citation = `${verse.book_name} ${verse.chapter}:${verse.verse}`;
-
-  // Dynamic font sizing so verse text fits comfortably within the square
-  const verseLen = verse.text.length;
-  const fontSize =
-    verseLen > 150 ? 15 : verseLen > 100 ? 16.5 : verseLen > 60 ? 18 : 20;
-  const lineHeight =
-    verseLen > 150 ? 22 : verseLen > 100 ? 24 : verseLen > 60 ? 26 : 28;
-
-  const handleToggleVoice = () => {
-    hapticLight();
-    setIsSpeaking((prev) => !prev);
-  };
-
-  const handleToggleBookmarkAction = async () => {
-    hapticSuccess();
-    const nextSaved = !isSaved;
-    setIsSaved(nextSaved);
-    await toggleBookmark(verse.book_id, verse.chapter, verse.verse);
-  };
-
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -120,6 +96,30 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
       }),
     [onPreviousDay, onNextDay, dayOffset, verseBusy]
   );
+
+  if (!devotional) return null;
+
+  const { verse } = devotional;
+  const citation = `${verse.book_name} ${verse.chapter}:${verse.verse}`;
+
+  // Dynamic font sizing so verse text fits comfortably within the square
+  const verseLen = verse.text.length;
+  const fontSize =
+    verseLen > 150 ? 15 : verseLen > 100 ? 16.5 : verseLen > 60 ? 18 : 20;
+  const lineHeight =
+    verseLen > 150 ? 22 : verseLen > 100 ? 24 : verseLen > 60 ? 26 : 28;
+
+  const handleToggleVoice = () => {
+    hapticLight();
+    setIsSpeaking((prev) => !prev);
+  };
+
+  const handleToggleBookmarkAction = async () => {
+    hapticSuccess();
+    const nextSaved = !isSaved;
+    setIsSaved(nextSaved);
+    await toggleBookmark(verse.book_id, verse.chapter, verse.verse);
+  };
 
   return (
     <TouchableOpacity
