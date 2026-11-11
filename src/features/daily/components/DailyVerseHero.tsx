@@ -171,13 +171,13 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
         <Rect x="0" y="0" width="100" height="100" fill="url(#heroScrimGrad)" />
       </Svg>
 
-      {/* 3. Lateral Floating Navigation Arrows (Estilo Galería / Stories) */}
+      {/* 3. Lateral Floating Navigation Arrows (Sutiles, pegadas al borde, sin círculo) */}
       {onPreviousDay && dayOffset < 7 && (
         <TouchableOpacity
           style={[
             styles.sideNavBtn,
             styles.sideNavBtnLeft,
-            (dayOffset >= 7 || verseBusy) && { opacity: 0.3 },
+            (dayOffset >= 7 || verseBusy) && { opacity: 0.2 },
           ]}
           disabled={dayOffset >= 7 || verseBusy}
           accessibilityRole="button"
@@ -187,10 +187,12 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
             hapticLight();
             onPreviousDay();
           }}
-          activeOpacity={0.75}
-          hitSlop={{ top: 16, bottom: 16, left: 14, right: 14 }}
+          activeOpacity={0.5}
+          hitSlop={{ top: 32, bottom: 32, left: 18, right: 18 }}
         >
-          <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
+          <View style={styles.sideNavIconWrapper}>
+            <ChevronLeft size={24} color="rgba(255, 255, 255, 0.55)" strokeWidth={2.2} />
+          </View>
         </TouchableOpacity>
       )}
 
@@ -199,7 +201,7 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
           style={[
             styles.sideNavBtn,
             styles.sideNavBtnRight,
-            verseBusy && { opacity: 0.3 },
+            verseBusy && { opacity: 0.2 },
           ]}
           disabled={verseBusy}
           accessibilityRole="button"
@@ -209,10 +211,12 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
             hapticLight();
             onNextDay();
           }}
-          activeOpacity={0.75}
-          hitSlop={{ top: 16, bottom: 16, left: 14, right: 14 }}
+          activeOpacity={0.5}
+          hitSlop={{ top: 32, bottom: 32, left: 18, right: 18 }}
         >
-          <ChevronRight size={20} color="#fbbf24" strokeWidth={2.5} />
+          <View style={styles.sideNavIconWrapper}>
+            <ChevronRight size={24} color="rgba(255, 255, 255, 0.55)" strokeWidth={2.2} />
+          </View>
         </TouchableOpacity>
       )}
 
@@ -405,34 +409,31 @@ const styles = StyleSheet.create({
   sideNavBtn: {
     position: 'absolute',
     top: '50%',
-    marginTop: -18,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    marginTop: -22,
+    width: 26,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.50)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.22)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 5,
-    elevation: 6,
     zIndex: 10,
   },
   sideNavBtnLeft: {
-    left: 8,
+    left: 4,
   },
   sideNavBtnRight: {
-    right: 8,
-    borderColor: 'rgba(251, 191, 36, 0.45)',
+    right: 4,
+  },
+  sideNavIconWrapper: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.75,
+    shadowRadius: 3,
+    elevation: 3,
   },
   verseTouchable: {
     flex: 1,
     justifyContent: 'center',
     paddingVertical: 4,
-    paddingHorizontal: 26,
+    paddingHorizontal: 30,
   },
   verseText: {
     color: '#FFFFFF',

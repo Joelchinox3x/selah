@@ -35,6 +35,16 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   const mode = useSettingsStore((state) => state.theme);
   const theme = themes[mode] || themes.sepia;
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const [showPastoralReflection, setShowPastoralReflection] = useState(true);
+  useEffect(() => {
+    if (!visible) return;
+    const controller = new AbortController();
+    fetch('https://selah.boxtiove.com/api/app-config', { signal: controller.signal })
+      .then(res => { if (!res.ok) throw new Error('Config unavailable'); return res.json(); })
+      .then(data => { if (data.ok && data.config) setShowPastoralReflection(data.config.show_pastoral_reflection !== false); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [visible]);
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [threads, setThreads] = useState<Record<string, Thread>>({});
   const [total, setTotal] = useState(0);
@@ -252,7 +262,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
         <FlatList data={comments} keyExtractor={(item) => item.id} renderItem={renderThread} style={styles.list} contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" initialNumToRender={8} windowSize={5}
           ListHeaderComponent={
             <View style={styles.postContext}>
-              {pastoralReflection ? (
+              {showPastoralReflection && pastoralReflection ? (
                 <View style={styles.pastoralCard}>
                   <View style={styles.pastoralBadgeRow}>
                     <View style={styles.pastoralBadge}>
