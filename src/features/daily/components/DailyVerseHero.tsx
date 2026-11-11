@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  PanResponder,
 } from 'react-native';
-import { Volume2, Heart, ArrowLeft, ArrowRight } from 'lucide-react-native';
+import { Volume2, Heart, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { DailyDevotional } from '@/src/services/db/bibleDb';
 import { toggleBookmark, getChapterUserData } from '@/src/services/db/userDb';
@@ -91,8 +92,38 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
     await toggleBookmark(verse.book_id, verse.chapter, verse.verse);
   };
 
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return (
+            Math.abs(gestureState.dx) > 25 &&
+            Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5
+          );
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx > 40) {
+            // Swipe derecha -> Día anterior (Ayer)
+            if (onPreviousDay && dayOffset < 7 && !verseBusy) {
+              hapticLight();
+              onPreviousDay();
+            }
+          } else if (gestureState.dx < -40) {
+            // Swipe izquierda -> Hacia hoy
+            if (onNextDay && dayOffset > 0 && !verseBusy) {
+              hapticLight();
+              onNextDay();
+            }
+          }
+        },
+      }),
+    [onPreviousDay, onNextDay, dayOffset, verseBusy]
+  );
+
   return (
     <TouchableOpacity
+      {...panResponder.panHandlers}
       activeOpacity={0.96}
       onPress={() => {
         hapticLight();
@@ -140,9 +171,54 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
         <Rect x="0" y="0" width="100" height="100" fill="url(#heroScrimGrad)" />
       </Svg>
 
-      {/* 3. Foreground Content */}
+      {/* 3. Lateral Floating Navigation Arrows (Estilo Galería / Stories) */}
+      {onPreviousDay && dayOffset < 7 && (
+        <TouchableOpacity
+          style={[
+            styles.sideNavBtn,
+            styles.sideNavBtnLeft,
+            (dayOffset >= 7 || verseBusy) && { opacity: 0.3 },
+          ]}
+          disabled={dayOffset >= 7 || verseBusy}
+          accessibilityRole="button"
+          accessibilityLabel="Ver día anterior"
+          onPress={(e) => {
+            e.stopPropagation?.();
+            hapticLight();
+            onPreviousDay();
+          }}
+          activeOpacity={0.75}
+          hitSlop={{ top: 16, bottom: 16, left: 14, right: 14 }}
+        >
+          <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+      )}
+
+      {onNextDay && dayOffset > 0 && (
+        <TouchableOpacity
+          style={[
+            styles.sideNavBtn,
+            styles.sideNavBtnRight,
+            verseBusy && { opacity: 0.3 },
+          ]}
+          disabled={verseBusy}
+          accessibilityRole="button"
+          accessibilityLabel="Volver hacia hoy"
+          onPress={(e) => {
+            e.stopPropagation?.();
+            hapticLight();
+            onNextDay();
+          }}
+          activeOpacity={0.75}
+          hitSlop={{ top: 16, bottom: 16, left: 14, right: 14 }}
+        >
+          <ChevronRight size={20} color="#fbbf24" strokeWidth={2.5} />
+        </TouchableOpacity>
+      )}
+
+      {/* 4. Foreground Content */}
       <View style={styles.cardContent}>
-        {/* Top Row: Dynamic Badge on left + temporal navigation & action buttons on right */}
+        {/* Top Row: Clean Dynamic Badge on left + action buttons (Heart, Audio) on right */}
         <View style={styles.topRow}>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
@@ -155,45 +231,7 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
           </View>
 
           <View style={styles.topButtonsRow}>
-            {/* 1. Flecha Anterior (← Ayer / Días pasados hasta 7) */}
-            {onPreviousDay && (
-              <TouchableOpacity
-                style={[styles.topBtn, (dayOffset >= 7 || verseBusy) && { opacity: 0.3 }]}
-                disabled={dayOffset >= 7 || verseBusy}
-                accessibilityRole="button"
-                accessibilityLabel="Ver día anterior"
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  hapticLight();
-                  onPreviousDay();
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <ArrowLeft size={14} color="#FFFFFF" />
-              </TouchableOpacity>
-            )}
-
-            {/* 2. Flecha Siguiente (→ hacia Hoy, solo si dayOffset > 0) */}
-            {onNextDay && dayOffset > 0 && (
-              <TouchableOpacity
-                style={[styles.topBtn, verseBusy && { opacity: 0.3 }]}
-                disabled={verseBusy}
-                accessibilityRole="button"
-                accessibilityLabel="Ver día siguiente hacia hoy"
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  hapticLight();
-                  onNextDay();
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <ArrowRight size={14} color="#fbbf24" />
-              </TouchableOpacity>
-            )}
-
-            {/* 2. Corazón (guardar en favoritos / tesoros) */}
+            {/* Corazón (guardar en favoritos / tesoros) */}
             <TouchableOpacity
               style={[
                 styles.topBtn,
@@ -213,7 +251,7 @@ export const DailyVerseHero: React.FC<DailyVerseHeroProps> = ({
               />
             </TouchableOpacity>
 
-            {/* 3. Sonido / Escuchar */}
+            {/* Sonido / Escuchar */}
             <TouchableOpacity
               style={[
                 styles.topBtn,
@@ -364,11 +402,37 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245, 158, 11, 0.35)',
     borderColor: '#fbbf24',
   },
+  sideNavBtn: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -18,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.50)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    elevation: 6,
+    zIndex: 10,
+  },
+  sideNavBtnLeft: {
+    left: 8,
+  },
+  sideNavBtnRight: {
+    right: 8,
+    borderColor: 'rgba(251, 191, 36, 0.45)',
+  },
   verseTouchable: {
     flex: 1,
     justifyContent: 'center',
     paddingVertical: 4,
-    paddingHorizontal: 4,
+    paddingHorizontal: 26,
   },
   verseText: {
     color: '#FFFFFF',
