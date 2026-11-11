@@ -563,6 +563,950 @@ export const BIBLICAL_CURIOSITIES: BiblicalCuriosity[] = [
     keyTakeaway:
       'La agonía de Jesús en Getsemaní nos revela el inmenso costo emocional y físico que pagó por amor a ti antes de llegar a la cruz.',
   },
+
+  // === CIENCIA BÍBLICA ADICIONAL ===
+  {
+    id: 'science-stars-innumerable',
+    title: 'Las Estrellas Incontables como los Granos de Arena',
+    category: 'science',
+    categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
+    emoji: '🌌',
+    badgeValue: 'Jeremías 33:22 · Astronomía antigua',
+    bookId: 24,
+    bookName: 'Jeremías',
+    chapter: 33,
+    verse: 22,
+    biblicalCitation: 'Jeremías 33:22',
+    verseSnippet:
+      'Como no puede ser contado el ejército del cielo, ni la arena del mar se puede medir, así multiplicaré la simiente de David mi siervo...',
+    didYouKnow:
+      'En la antigüedad, Ptolomeo y los astrónomos creían que había entre 1,000 y 3,000 estrellas a simple vista. Pero Jeremías afirmó hace 2,600 años que eran infinitas e incontables como la arena del mar.',
+    deepDive:
+      'Hoy la astrofísica calcula que hay más de 10^22 estrellas en el universo visible, una cantidad astronómicamente equivalente a los granos de arena de todas las playas de la Tierra.',
+    keyTakeaway:
+      'El mismo Dios que llama a cada estrella por su nombre y sostiene las galaxias cuida con infinita ternura cada paso de tu vida.',
+  },
+  {
+    id: 'science-ocean-springs',
+    title: 'Los Manantiales Ocultos en el Fondo del Océano',
+    category: 'science',
+    categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
+    emoji: '🌊',
+    badgeValue: 'Job 38:16 · Fuentes hidrotermales',
+    bookId: 18,
+    bookName: 'Job',
+    chapter: 38,
+    verse: 16,
+    biblicalCitation: 'Job 38:16',
+    verseSnippet:
+      '¿Has entrado tú hasta los manantiales del mar, y has andado paseando en el fondo del abismo?',
+    didYouKnow:
+      'Hasta 1977 la oceanografía moderna pensaba que el lecho marino era un fondo rocoso plano. Ese año, sumergibles descubrieron fumarolas y manantiales de agua dulce caliente brotando del fondo oceánico.',
+    deepDive:
+      'El libro de Job, escrito hace más de tres milenios, ya registraba las preguntas del Creador sobre los «manantiales del mar» mucho antes de que existieran barcos o submarinos de alta profundidad.',
+    keyTakeaway:
+      'Hay profundidades invisibles para tus ojos que ya están sustentadas y provistas por Dios. Confía aun cuando no puedas ver el fondo.',
+  },
+  {
+    id: 'science-air-weight',
+    title: 'El Peso del Aire y la Presión Atmosférica',
+    category: 'science',
+    categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
+    emoji: '⚖️',
+    badgeValue: 'Job 28:25 · Barómetro físico',
+    bookId: 18,
+    bookName: 'Job',
+    chapter: 28,
+    verse: 25,
+    biblicalCitation: 'Job 28:25',
+    verseSnippet: 'Al dar peso al viento, y poner las aguas por medida;',
+    didYouKnow:
+      'No fue sino hasta 1643 que Torricelli demostró científicamente que el aire tiene peso físico. Job lo afirmó con precisión asombrosa miles de años antes.',
+    deepDive:
+      'La atmósfera terrestre ejerce aproximadamente 1 kg de presión por centímetro cuadrado al nivel del mar. La Biblia reveló el balance físico perfecto entre el peso del viento y el ciclo de las aguas.',
+    keyTakeaway:
+      'Incluso lo que te parece invisible y sutil como el viento tiene propósito, medida y peso exacto ante los ojos de Dios.',
+  },
+  {
+    id: 'science-stars-pleiades-orion',
+    title: 'Los Lazos de las Pléyades y las Cadenas de Orión',
+    category: 'science',
+    categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
+    emoji: '✨',
+    badgeValue: 'Job 38:31 · Gravitación orbital',
+    bookId: 18,
+    bookName: 'Job',
+    chapter: 38,
+    verse: 31,
+    biblicalCitation: 'Job 38:31',
+    verseSnippet:
+      '¿Podrás tú atar los lazos de las Pléyades, o desatarás las ligaduras de Orión?',
+    didYouKnow:
+      'La astrofísica moderna demostró que las estrellas de las Pléyades están unidas gravitacionalmente viajando juntas en racimo, mientras que las de la constelación de Orión se están separando lentamente.',
+    deepDive:
+      'Dios le preguntó a Job si podía «atar las Pléyades o desatar Orión», revelando con precisión la mecánica de atracción celeste que la humanidad recién comprendió con telescopios espaciales.',
+    keyTakeaway:
+      'El Dios que gobierna los cúmulos estelares y las leyes del universo sostiene con fidelidad cada día de tu vida.',
+  },
+  {
+    id: 'science-dna-unformed-substance',
+    title: 'El Código Genético y el Embrión en el Vientre',
+    category: 'science',
+    categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
+    emoji: '🧬',
+    badgeValue: 'Salmos 139:16 · El ADN divino',
+    bookId: 19,
+    bookName: 'Salmos',
+    chapter: 139,
+    verse: 16,
+    biblicalCitation: 'Salmos 139:16',
+    verseSnippet:
+      'Mi embrión vieron tus ojos, y en tu libro estaban escritas todas aquellas cosas que fueron luego formadas, sin faltar una de ellas.',
+    didYouKnow:
+      'David utilizó la palabra hebrea «Gólem» (sustancia no formada o embrión) para describir cómo todas las características de su cuerpo ya estaban «escritas en un libro» antes de nacer.',
+    deepDive:
+      'La genética descubrió que en la fecundación, la cadena de ADN ya contiene escritas todas las instrucciones biológicas de una persona. La Biblia anticipó esta verdad con lenguaje poético sagrado.',
+    keyTakeaway:
+      'No eres fruto de la casualidad. Antes de que existieras físicamente, el Creador ya te conocía, te amaba y diseñó tu vida con infinito propósito.',
+  },
+  {
+    id: 'science-ocean-currents-maury',
+    title: 'Las Sendas del Mar y el Nacimiento de la Oceanografía',
+    category: 'science',
+    categoryLabel: 'Ciencia Bíblica',
+    categoryTag: 'CIENCIA',
+    emoji: '🧭',
+    badgeValue: 'Salmos 8:8 · Matthew Maury (1855)',
+    bookId: 19,
+    bookName: 'Salmos',
+    chapter: 8,
+    verse: 8,
+    biblicalCitation: 'Salmos 8:8',
+    verseSnippet:
+      'Las aves de los cielos, y los peces del mar; todo cuanto pasa por los senderos del mar.',
+    didYouKnow:
+      'Matthew Maury, padre de la oceanografía moderna, leyó Salmos 8:8 en su lecho de enfermo y se propuso cartografiar las rutas y corrientes marinas, revolucionando la navegación de toda la humanidad.',
+    deepDive:
+      'Siguiendo la pista bíblica de «los senderos del mar», Maury mapeó las corrientes del Atlántico (como la del Golfo), acortando semanas de viaje a los navíos y salvando incontables vidas de naufragios.',
+    keyTakeaway:
+      'La fe y la ciencia auténtica caminan de la mano: cuando escudriñas la creación de Dios descubres las huellas de Su infinita sabiduría.',
+  },
+
+  // === RÉCORDS BÍBLICOS ADICIONALES ===
+  {
+    id: 'record-longest-prayer',
+    title: 'La Oración Comunitaria Más Larga de la Biblia',
+    category: 'records',
+    categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
+    emoji: '🙏',
+    badgeValue: '1,000+ palabras · Nehemías 9',
+    bookId: 16,
+    bookName: 'Nehemías',
+    chapter: 9,
+    verse: 5,
+    endVerse: 38,
+    biblicalCitation: 'Nehemías 9:5-38',
+    verseSnippet:
+      'Levantaos, bendecid a Jehová vuestro Dios desde la eternidad hasta la eternidad; y bendígase el nombre de tu gloria, alto sobre toda bendición y alabanza.',
+    didYouKnow:
+      'La oración de Nehemías 9 es la más extensa registrada en las Escrituras. Hace un recorrido histórico y teológico completo desde Abraham y el Éxodo hasta el regreso de Babilonia.',
+    deepDive:
+      'Durante horas, los levitas guiaron al pueblo reconociendo la inquebrantable paciencia de Dios frente a las fallas humanas. Su equilibrio de alabanza y confesión es una joya espiritual.',
+    keyTakeaway:
+      'Una oración profunda recuerda la fidelidad de Dios en el pasado para encontrar paz, perdón y fuerza renovada en el presente.',
+  },
+  {
+    id: 'record-shortest-prayer',
+    title: 'La Oración Más Breve y Urgente de los Evangelios',
+    category: 'records',
+    categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
+    emoji: '⚡',
+    badgeValue: 'Solo 3 palabras · Mateo 14:30',
+    bookId: 40,
+    bookName: 'Mateo',
+    chapter: 14,
+    verse: 30,
+    biblicalCitation: 'Mateo 14:30',
+    verseSnippet:
+      'Mas viendo el viento fuerte, tuvo miedo; y comenzando a hundirse, dio voces, diciendo: ¡Señor, sálvame!',
+    didYouKnow:
+      'Cuando el apóstol Pedro se hundía en el mar de Galilea, no tuvo tiempo para preámbulos: gritó tres palabras contundentes («¡Señor, sálvame!») y Jesús extendió Su mano de inmediato.',
+    deepDive:
+      'En el original griego son apenas dos palabras (Kýrie, sôson). Dios no mide la eficacia de nuestras oraciones por su duración o elocuencia, sino por la sinceridad del clamor del corazón.',
+    keyTakeaway:
+      'En medio de tus mayores tempestades, un clamor sincero a Dios basta. Jesús siempre está a un grito de distancia para rescatarte.',
+  },
+  {
+    id: 'record-richest-king',
+    title: 'La Riqueza Colosal del Rey Salomón',
+    category: 'records',
+    categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
+    emoji: '👑',
+    badgeValue: '666 talentos de oro / año (~$1B)',
+    bookId: 11,
+    bookName: '1 Reyes',
+    chapter: 10,
+    verse: 14,
+    biblicalCitation: '1 Reyes 10:14',
+    verseSnippet:
+      'El peso del oro que Salomón recibía cada año era de seiscientos sesenta y seis talentos de oro;',
+    didYouKnow:
+      'Salomón recibía unas 25 toneladas métricas de oro puro cada año solo por tributos de reinos vecinos. La Biblia dice que en Jerusalén la plata se volvió tan común como las piedras del camino.',
+    deepDive:
+      'A pesar de tanta opulencia, Salomón concluyó al final de sus días que todo el oro del mundo es vanidad sin una comunión viva con Dios. El mayor tesoro es la sabiduría celestial.',
+    keyTakeaway:
+      'Los bienes materiales nunca podrán saciar el vacío de tu alma. La verdadera plenitud se halla en la paz de Dios y en un corazón agradecido.',
+  },
+  {
+    id: 'record-oldest-mother',
+    title: 'Sara: Madre por Primera Vez a los 90 Años',
+    category: 'records',
+    categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
+    emoji: '🤱',
+    badgeValue: '90 años de edad · Génesis 17',
+    bookId: 1,
+    bookName: 'Génesis',
+    chapter: 17,
+    verse: 17,
+    biblicalCitation: 'Génesis 17:17',
+    verseSnippet:
+      '¿A hombre de cien años ha de nacer hijo? ¿Y Sara, ya de noventa años, ha de concebir?',
+    didYouKnow:
+      'Sara dio a luz a su hijo Isaac a los 90 años, cuando su esposo Abraham tenía 100. Por eso llamaron al niño Isaac, que significa: «Risa de gozo».',
+    deepDive:
+      'Biológica y médicamente era un caso totalmente imposible tras toda una vida de esterilidad. Dios permitió que toda fuerza humana se agotara para que el milagro fuera incuestionable.',
+    keyTakeaway:
+      'Las promesas de Dios no caducan ante el reloj del tiempo. Lo que parece humanamente imposible es la especialidad del poder divino.',
+  },
+  {
+    id: 'record-most-children',
+    title: 'Gedeón y su Récord Familiar de 70 Hijos',
+    category: 'records',
+    categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
+    emoji: '👨‍👧‍👦',
+    badgeValue: '70 hijos varones · Jueces 8:30',
+    bookId: 7,
+    bookName: 'Jueces',
+    chapter: 8,
+    verse: 30,
+    biblicalCitation: 'Jueces 8:30',
+    verseSnippet:
+      'Y tuvo Gedeón setenta hijos que salieron de sus lomos, porque tuvo muchas mujeres.',
+    didYouKnow:
+      'El libertador Gedeón tuvo 70 hijos reconocidos en su vejez. La Escritura no esconde las fallas familiares de sus héroes, demostrando su honestidad y transparencia histórica.',
+    deepDive:
+      'A pesar de sus grandes hazañas bélicas liberando a Israel con 300 valientes, las decisiones familiares de Gedeón recordaron a Israel la necesidad de prudencia e integridad en el hogar.',
+    keyTakeaway:
+      'Las grandes victorias espirituales deben cuidarse con sabiduría cotidiana en la familia. La humildad protege lo que la fe conquistó.',
+  },
+  {
+    id: 'record-longest-famine',
+    title: 'Los Siete Años de Gran Hambre en Egipto y Canaán',
+    category: 'records',
+    categoryLabel: 'Récords Bíblicos',
+    categoryTag: 'RÉCORD',
+    emoji: '🌾',
+    badgeValue: '7 años de sequía · Almacén mundial',
+    bookId: 1,
+    bookName: 'Génesis',
+    chapter: 41,
+    verse: 54,
+    biblicalCitation: 'Génesis 41:54',
+    verseSnippet:
+      'Y comenzaron a venir los siete años del hambre, como José había dicho; y hubo hambre en todos los países, mas en toda la tierra de Egipto había pan.',
+    didYouKnow:
+      'José orquestó el primer plan macroeconómico de almacenamiento de alimentos a nivel continental, salvando del hambre a millones de personas de todo el Oriente Medio.',
+    deepDive:
+      'Dios usó la traición de los hermanos de José y sus años en prisión para posicionarlo exactamente a tiempo en el trono egipcio: «Dios me envió delante de vosotros para preservar posteridad» (Génesis 45:7).',
+    keyTakeaway:
+      'Dios anticipa con años de ventaja la solución a tus crisis futuras. Lo que hoy no entiendes terminará siendo instrumento de salvación.',
+  },
+
+  // === PERSONAJES & HAZAÑAS ADICIONALES ===
+  {
+    id: 'character-methuselah-prophecy',
+    title: 'El Significado Profético del Nombre de Matusalén',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '⏳',
+    badgeValue: '«Al morir, será enviado» · Diluvio',
+    bookId: 1,
+    bookName: 'Génesis',
+    chapter: 5,
+    verse: 27,
+    biblicalCitation: 'Génesis 5:27',
+    verseSnippet:
+      'Fueron, pues, todos los días de Matusalén novecientos sesenta y nueve años; y murió.',
+    didYouKnow:
+      'El nombre Matusalén (Metushélaj) se traduce del hebreo como «Cuando muera, será enviado». Matusalén murió exactamente el mismo año en que se desató el Gran Diluvio.',
+    deepDive:
+      'Enoc, su padre profeta, le puso ese nombre tras una revelación de Dios. Que Matusalén haya sido el hombre más longevo de la historia (969 años) simboliza la paciencia infinita de Dios esperando al ser humano.',
+    keyTakeaway:
+      'Dios es paciente y extiende Su misericordia hasta el último segundo posible para darnos oportunidad de vida y salvación.',
+  },
+  {
+    id: 'character-shamgar-oxgoad',
+    title: 'Samgar: 600 Enemigos con una Vara de Bueyes',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🌾',
+    badgeValue: '600 filisteos · Jueces 3:31',
+    bookId: 7,
+    bookName: 'Jueces',
+    chapter: 3,
+    verse: 31,
+    biblicalCitation: 'Jueces 3:31',
+    verseSnippet:
+      'Después de él fue Samgar hijo de Anat, el cual hirió a seiscientos hombres de los filisteos con una aguijada de bueyes; y él también salvó a Israel.',
+    didYouKnow:
+      'A Samgar le bastó un solo versículo en la Biblia para quedar grabado en la historia: defendió a su pueblo venciendo a 600 soldados con una simple herramienta rústica de labranza.',
+    deepDive:
+      'Una aguijada de bueyes era una vara larga de madera terminada en punta metálica usada por labradores. Samgar no esperó armas sofisticadas; usó con valor lo que tenía a la mano bajo el favor divino.',
+    keyTakeaway:
+      'No necesitas títulos ni recursos exorbitantes para hacer la diferencia: pon en las manos de Dios lo que tienes hoy y Él hará cosas extraordinarias.',
+  },
+  {
+    id: 'character-gideon-fleece',
+    title: 'El Vellón de Lana Mojado y la Tierra Seca',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🐑',
+    badgeValue: 'Un tazón lleno de rocío · Jueces 6',
+    bookId: 7,
+    bookName: 'Jueces',
+    chapter: 6,
+    verse: 37,
+    endVerse: 38,
+    biblicalCitation: 'Jueces 6:37-38',
+    verseSnippet:
+      'He aquí que yo pondré un vellón de lana en la era; y si el rocío estuviere en el vellón solamente, quedando seca toda la otra tierra, entonces entenderé que has de salvar a Israel por mi mano...',
+    didYouKnow:
+      'Gedeón pidió una doble confirmación a Dios: primero el vellón empapado y el suelo seco; luego el suelo empapado y el vellón completamente seco. Ambos milagros desafiaron la condensación natural.',
+    deepDive:
+      'Dios comprendió los temores de Gedeón y no lo reprendió por su inseguridad, sino que fortaleció pacientemente su fe antes de enviarlo a la batalla.',
+    keyTakeaway:
+      'Dios conoce tus temores y no te rechaza por tus dudas. Con paciencia y amor confirma Su propósito en tu corazón.',
+  },
+  {
+    id: 'character-david-sling-speed',
+    title: 'La Honda de David: Más Rápida que un Proyectil Antiguo',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🎯',
+    badgeValue: '1 piedra lisa · ~160 km/h de impacto',
+    bookId: 9,
+    bookName: '1 Samuel',
+    chapter: 17,
+    verse: 49,
+    biblicalCitation: '1 Samuel 17:49',
+    verseSnippet:
+      'Y metiendo David su mano en el saco, tomó de allí una piedra, y tiróla con la honda, e hirió al filisteo en la frente;',
+    didYouKnow:
+      'Estudios balísticos confirman que un proyectil lanzado con honda por un pastor hebreo alcanzaba más de 160 km/h, con una energía de impacto comparable al disparo de un arma de fuego moderna.',
+    deepDive:
+      'Goliat esperaba un combate cuerpo a cuerpo de espada pesada, pero David usó precisión balística a distancia con la confianza absoluta puesta en el Dios de Israel.',
+    keyTakeaway:
+      'Cuando confías en Dios, tus gigantes no se derriban con la fuerza humana sino con la fe, la puntería divina y la autoridad de Su nombre.',
+  },
+  {
+    id: 'character-benaiah-lion',
+    title: 'Benaía: El Hombre que Cazó un León en un Foso Nevado',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🦁',
+    badgeValue: '1 león en la nieve · 2 Samuel 23',
+    bookId: 10,
+    bookName: '2 Samuel',
+    chapter: 23,
+    verse: 20,
+    biblicalCitation: '2 Samuel 23:20',
+    verseSnippet:
+      'Benaía hijo de Joiada... descendió y mató un león en medio de un foso en tiempo de nieve.',
+    didYouKnow:
+      'Enfrentar a un león a campo abierto ya es temible, pero bajar voluntariamente a un pozo estrecho y resbaladizo por la nieve sin espacio para huir requería un temple sobrehumano.',
+    deepDive:
+      'Benaía era de la guardia de élite de David y llegó a ser comandante supremo del ejército del rey Salomón. Su coraje en situaciones extremas lo convirtió en leyenda bíblica.',
+    keyTakeaway:
+      'No huyas de los momentos difíciles; las mayores pruebas que enfrentas con fe se convertirán en los testimonios más memorables de tu vida.',
+  },
+  {
+    id: 'character-jonah-fish',
+    title: 'Tres Días y Noches en el Vientre del Gran Pez',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🐋',
+    badgeValue: '72 horas en el abismo · Jonás 1:17',
+    bookId: 32,
+    bookName: 'Jonás',
+    chapter: 1,
+    verse: 17,
+    biblicalCitation: 'Jonás 1:17',
+    verseSnippet:
+      'Mas Jehová había preparado un gran pez que tragase a Jonás; y estuvo Jonás en el vientre del pez tres días y tres noches.',
+    didYouKnow:
+      'El texto hebreo dice «dag gadol» (gran criatura marina) preparada especialmente por Dios, no para ser la tumba de Jonás, sino un refugio y submarino de salvación.',
+    deepDive:
+      'Jesucristo mismo citó a Jonás en Mateo 12:40 como la figura profética directa de Su propia sepultura y resurrección al tercer día de entre los muertos.',
+    keyTakeaway:
+      'Ningún lugar es demasiado hondo ni oscuro para la gracia redentora de Dios. Desde el fondo del abismo, Dios escucha tu oración.',
+  },
+  {
+    id: 'character-shadrach-fourth-man',
+    title: 'El Cuarto Hombre en el Horno de Fuego',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🔥',
+    badgeValue: 'Ni olor a humo · Daniel 3:25',
+    bookId: 27,
+    bookName: 'Daniel',
+    chapter: 3,
+    verse: 25,
+    biblicalCitation: 'Daniel 3:25',
+    verseSnippet:
+      'He aquí yo veo cuatro varones sueltos, que se pasean en medio del fuego, y ningún daño hay en ellos; y el parecer del cuarto es semejante al Hijo de Dios.',
+    didYouKnow:
+      'El horno estaba tan caliente que las llamas mataron a los soldados que los arrojaron. Pero dentro del fuego, Sadrac, Mesac y Abed-nego caminaban ilesos y sin ataduras.',
+    deepDive:
+      'La Escritura señala que ni siquiera el olor a humo se les pegó a sus ropas. El fuego solo tuvo poder para consumir las cuerdas que los aprisionaban.',
+    keyTakeaway:
+      'En tus hornos de prueba no estás solo. Cristo entra al fuego contigo para desatarte de las cadenas y preservarte intacto.',
+  },
+
+  // === HECHOS INSÓLITOS ADICIONALES ===
+  {
+    id: 'miracle-elijah-ravens-feed',
+    title: 'Los Cuervos que Llevaron Pan y Carne a Elías',
+    category: 'miracles',
+    categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
+    emoji: '🦅',
+    badgeValue: '2 comidas al día · 1 Reyes 17',
+    bookId: 11,
+    bookName: '1 Reyes',
+    chapter: 17,
+    verse: 6,
+    biblicalCitation: '1 Reyes 17:6',
+    verseSnippet:
+      'Y los cuervos le traían pan y carne por la mañana, y pan y carne por la tarde; y bebía del arroyo.',
+    didYouKnow:
+      'Los cuervos son aves carroñeras instintivamente mezquinas que no comparten comida ni con sus polluelos. Sin embargo, Dios doblegó su instinto para alimentar a Su profeta.',
+    deepDive:
+      'Durante la severa sequía en Israel, Dios usó a los animales más insólitos para sustentar a Elías en el arroyo de Querit, demostrando Su soberanía sobre toda la naturaleza.',
+    keyTakeaway:
+      'Cuando caminas en obediencia, Dios puede usar los medios más inesperados para sustentarte. Su provisión nunca llega tarde.',
+  },
+  {
+    id: 'miracle-water-rock-horeb',
+    title: 'Ríos de Agua Viva Brotan de una Roca Sólida',
+    category: 'miracles',
+    categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
+    emoji: '🪨',
+    badgeValue: '2 millones de personas saciadas',
+    bookId: 2,
+    bookName: 'Éxodo',
+    chapter: 17,
+    verse: 6,
+    biblicalCitation: 'Éxodo 17:6',
+    verseSnippet:
+      'He aquí que yo estaré delante de ti allí sobre la peña en Horeb; y herirás la peña, y saldrán de ella aguas, y beberá el pueblo.',
+    didYouKnow:
+      'Para calmar la sed de más de dos millones de personas y sus rebaños en pleno desierto árido, debieron brotar millones de litros de agua dulce por hora de la peña de granito.',
+    deepDive:
+      'El apóstol Pablo enseña en 1 Corintios 10:4 que aquella roca era símbolo de Cristo: la Roca herida en el Calvario de donde fluye el agua de vida eterna.',
+    keyTakeaway:
+      'Incluso en las etapas más secas de tu vida, Dios puede hacer florecer ríos de consuelo y sustento donde parecía imposible.',
+  },
+  {
+    id: 'miracle-bitter-waters-marah',
+    title: 'El Árbol que Endulzó las Aguas Amargas de Mara',
+    category: 'miracles',
+    categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
+    emoji: '🪵',
+    badgeValue: 'Éxodo 15:25 · Jehová Rapha',
+    bookId: 2,
+    bookName: 'Éxodo',
+    chapter: 15,
+    verse: 25,
+    biblicalCitation: 'Éxodo 15:25',
+    verseSnippet:
+      'Y Moisés clamó a Jehová; y Jehová le mostró un árbol, el cual como lo metió dentro de las aguas, las aguas se endulzaron.',
+    didYouKnow:
+      'Las aguas de Mara eran venenosas y amargas. Dios no desvió al pueblo hacia otro oasis, sino que sanó el agua presente al arrojar un madero en ella.',
+    deepDive:
+      'Fue en Mara donde Dios se reveló por primera vez con el nombre de pacto «Jehová Rapha» (Yo soy el Señor tu Sanador), anticipando la cruz que sana toda amargura.',
+    keyTakeaway:
+      'Dios puede tomar las experiencias más amargas de tu historia y transformarlas en fuentes de sanidad, madurez y dulzura.',
+  },
+  {
+    id: 'miracle-darkness-egypt',
+    title: 'Tinieblas Palpables de 72 Horas en Egipto',
+    category: 'miracles',
+    categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
+    emoji: '🌑',
+    badgeValue: '3 días continuos · Éxodo 10:23',
+    bookId: 2,
+    bookName: 'Éxodo',
+    chapter: 10,
+    verse: 23,
+    biblicalCitation: 'Éxodo 10:23',
+    verseSnippet:
+      'Ninguno vio a su prójimo, ni nadie se levantó de su lugar en tres días; mas todos los hijos de Israel tenían luz en sus habitaciones.',
+    didYouKnow:
+      'No fue un eclipse solar (que solo dura minutos). Fueron tinieblas espesas y sobrenaturales que podían «tocarse» durante tres días, mientras en la tierra de Gosén brillaba la luz normal.',
+    deepDive:
+      'Esta plaga demostró la absoluta impotencia del dios sol Ra de Egipto ante el verdadero Creador, protegiendo con luz y paz a los hogares de Su pueblo.',
+    keyTakeaway:
+      'Aunque haya confusión y sombras alrededor, en el corazón y en el hogar de quien confía en Dios siempre resplandecerá Su luz divina.',
+  },
+  {
+    id: 'miracle-manna-forty-years',
+    title: 'El Maná: 40 Años de Pan Fresco del Cielo',
+    category: 'miracles',
+    categoryLabel: 'Hechos Insólitos',
+    categoryTag: 'INSÓLITO',
+    emoji: '🍞',
+    badgeValue: '6 mañanas por semana · Éxodo 16',
+    bookId: 2,
+    bookName: 'Éxodo',
+    chapter: 16,
+    verse: 31,
+    biblicalCitation: 'Éxodo 16:31',
+    verseSnippet:
+      'Y la casa de Israel llamó su nombre Maná; y era como semilla de culantro, blanco, y su sabor como de hojuelas con miel.',
+    didYouKnow:
+      'Cada mañana caía maná con sabor a hojuelas con miel para millones de personas. Si guardaban para el día siguiente se dañaba, enseñándoles a depender del pan diario de Dios.',
+    deepDive:
+      'El nombre viene de la pregunta hebrea «¿Man hu?» («¿Qué es esto?»). Jesucristo declaró en Juan 6 que Él es el Pan de Vida bajado del cielo que sacia el alma para siempre.',
+    keyTakeaway:
+      'La fidelidad de Dios no se acumula para años: se recibe día a día. Sus misericordias son nuevas cada mañana.',
+  },
+
+  // === ESTRUCTURA & CURIOSIDADES ADICIONALES ===
+  {
+    id: 'structure-acrostic-psalm119',
+    title: 'El Gran Salmo Acróstico del Alfabeto Hebreo',
+    category: 'structure',
+    categoryLabel: 'Estructura & Curiosidades',
+    categoryTag: 'ESTRUCTURA',
+    emoji: '🔤',
+    badgeValue: '22 letras hebreas · 8 versículos c/u',
+    bookId: 19,
+    bookName: 'Salmos',
+    chapter: 119,
+    verse: 1,
+    endVerse: 8,
+    biblicalCitation: 'Salmos 119:1-8',
+    verseSnippet:
+      'Bienaventurados los perfectos de camino; los que andan en la ley de Jehová.',
+    didYouKnow:
+      'El Salmo 119 es una obra maestra poética estructurada con las 22 letras del alfabeto hebreo. Cada uno de los 8 versículos de una sección comienza con la misma letra hebrea.',
+    deepDive:
+      'De Álef a Tav, sus 176 versículos exaltan la Palabra de Dios usando sinónimos como ley, preceptos, mandamientos y juicios. Era un método pedagógico para memorizar la verdad de la A a la Z.',
+    keyTakeaway:
+      'La Palabra de Dios abarca toda tu vida: desde la primera hasta la última letra de tu historia, Su luz guía tu camino.',
+  },
+  {
+    id: 'structure-prison-epistles',
+    title: 'Las Cuatro Epístolas Escritas desde una Celda',
+    category: 'structure',
+    categoryLabel: 'Estructura & Curiosidades',
+    categoryTag: 'ESTRUCTURA',
+    emoji: '⛓️',
+    badgeValue: 'Efesios, Filipenses, Colosenses y Filemón',
+    bookId: 50,
+    bookName: 'Filipenses',
+    chapter: 1,
+    verse: 13,
+    biblicalCitation: 'Filipenses 1:13',
+    verseSnippet:
+      'De manera que mis prisiones han sido notorias en Cristo en todo el pretorio, y a todos los demás;',
+    didYouKnow:
+      'La carta más gozosa del Nuevo Testamento (Filipenses, con 16 menciones de alegría) fue escrita por el apóstol Pablo encadenado en una prisión imperial de Roma.',
+    deepDive:
+      'Pablo convirtió sus cadenas en un testimonio para toda la guardia pretoriana de César. Desde aquella celda salieron cuatro cartas teológicas que cambiaron al mundo.',
+    keyTakeaway:
+      'El gozo en el Señor no depende de las circunstancias exteriores sino de la certeza interior de Su presencia.',
+  },
+  {
+    id: 'structure-psalm23-translation',
+    title: 'El Salmo Más Traducido y Leído en la Historia',
+    category: 'structure',
+    categoryLabel: 'Estructura & Curiosidades',
+    categoryTag: 'ESTRUCTURA',
+    emoji: '📖',
+    badgeValue: 'Traducido a más de 3,000 idiomas',
+    bookId: 19,
+    bookName: 'Salmos',
+    chapter: 23,
+    verse: 1,
+    biblicalCitation: 'Salmos 23:1',
+    verseSnippet: 'Jehová es mi pastor; nada me faltará.',
+    didYouKnow:
+      'El Salmo 23 es el poema espiritual más traducido, recitado y memorizado de la literatura universal, llevando consuelo a reyes, campesinos y enfermos durante milenios.',
+    deepDive:
+      'En el salmo, David habla de Dios en tercera persona («Él me hace descansar») hasta llegar al valle de sombra, donde pasa a hablarle cara a cara en segunda persona: «Porque tú estarás conmigo».',
+    keyTakeaway:
+      'En tus valles más oscuros, Dios deja de ser una creencia distante para convertirse en una compañía cercana e íntima a tu lado.',
+  },
+
+  // === MÁS PERSONAJES & HAZAÑAS BÍBLICAS ===
+  {
+    id: 'character-caleb-mountain',
+    title: 'Caleb a los 85 Años: «Dame Este Monte de Gigantes»',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🏔️',
+    badgeValue: '85 años de edad · Hebrón y los gigantes',
+    bookId: 6,
+    bookName: 'Josué',
+    chapter: 14,
+    verse: 10,
+    endVerse: 12,
+    biblicalCitation: 'Josué 14:10-12',
+    verseSnippet:
+      'Todavía estoy tan fuerte como el día que Moisés me envió... Dame, pues, ahora este monte del cual habló Jehová aquel día;',
+    didYouKnow:
+      'A los 85 años, cuando cualquier veterano pediría descanso, Caleb pidió la región montañosa más fortificada y peligrosa de Canaán, habitada por los gigantes anaceos.',
+    deepDive:
+      'Caleb mantuvo intacto su vigor físico y su fe durante los 40 años en el desierto. No buscó el valle cómodo, sino la cumbre prometida por Dios, desalojando a los gigantes con el favor del Señor.',
+    keyTakeaway:
+      'Tu fe no envejece con los años. Con Dios de tu lado, cada nueva etapa de la vida puede ser una temporada de grandes conquistas espirituales.',
+  },
+  {
+    id: 'character-abigail-wisdom',
+    title: 'Abigail: La Mujer Sabia que Detuvo una Masacre',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🕊️',
+    badgeValue: 'Diplomacia y 200 panes · 1 Samuel 25',
+    bookId: 9,
+    bookName: '1 Samuel',
+    chapter: 25,
+    verse: 32,
+    endVerse: 33,
+    biblicalCitation: '1 Samuel 25:32-33',
+    verseSnippet:
+      'Y dijo David a Abigail: Bendito sea Jehová Dios de Israel, que te envió para que hoy me encontrases; y bendito sea tu razonamiento...',
+    didYouKnow:
+      'Cuando su esposo insensato Nabal insultó a David provocando que 400 soldados armados marcharan a destruirlos, Abigail actuó con rapidez, diplomacia y humildad, frenando el baño de sangre.',
+    deepDive:
+      'David reconoció que Dios envió a Abigail para librarlo de manchar sus manos de venganza personal antes de ser rey. Tras la muerte de Nabal, David tomó a Abigail por esposa.',
+    keyTakeaway:
+      'Una palabra dicha con gracia, sabiduría y prudencia en el momento oportuno tiene el poder de apagar los fuegos más violentos de la ira.',
+  },
+  {
+    id: 'character-eleazar-sword-hand',
+    title: 'Eleazar: El Guerrero cuya Mano se Pegó a la Espada',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '⚔️',
+    badgeValue: '2 Samuel 23:10 · Mano soldada al acero',
+    bookId: 10,
+    bookName: '2 Samuel',
+    chapter: 23,
+    verse: 10,
+    biblicalCitation: '2 Samuel 23:10',
+    verseSnippet:
+      'Este se levantó, e hirió a los filisteos hasta que su mano se cansó, y quedó pegada a la espada. Aquel día Jehová dio una gran victoria...',
+    didYouKnow:
+      'Cuando el ejército de Israel retrocedió atemorizado, Eleazar peleó solo durante horas sin soltar su arma, al punto de que los músculos de sus dedos quedaron pegados a la empuñadura.',
+    deepDive:
+      'Eleazar era el segundo de los tres valientes supremos de David. Su tenacidad demostró que una sola persona decidida a no ceder puede cambiar el rumbo de toda una nación.',
+    keyTakeaway:
+      'Aférrate a la verdad de Dios aun cuando los demás se rindan. Quien permanece firme en la batalla verá la mano del Señor darle la victoria.',
+  },
+  {
+    id: 'character-shammah-lentils',
+    title: 'Sama: El Hombre que Defendió una Parcela de Lentejas',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🌱',
+    badgeValue: '1 parcela de legumbres · Gran rescate',
+    bookId: 10,
+    bookName: '2 Samuel',
+    chapter: 23,
+    verse: 12,
+    biblicalCitation: '2 Samuel 23:12',
+    verseSnippet:
+      'El entonces se paró en medio de aquel terreno y lo defendió, e hirió a los filisteos; y Jehová dio una gran victoria.',
+    didYouKnow:
+      'Mientras todo el pueblo huyó al ver la embestida filistea, Sama se plantó solo en medio de un sembrado de lentejas. Decidió que ni un solo palmo de tierra dada por Dios sería entregado al invasor.',
+    deepDive:
+      'A los ojos humanos era solo un pequeño campo de comida humilde, pero para Sama era la provisión sagrada de Dios para su pueblo. Dios honró su coraje solitario con una victoria rotunda.',
+    keyTakeaway:
+      'No menosprecies lo que Dios te ha confiado por pequeño que parezca. Defiende con fidelidad tu terreno espiritual y Dios respaldará tu entrega.',
+  },
+  {
+    id: 'character-deborah-judge',
+    title: 'Débora: La Jueza, Profetisa y Estratega de Israel',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🌴',
+    badgeValue: 'Jueces 4 · Victoria sobre 900 carros de hierro',
+    bookId: 7,
+    bookName: 'Jueces',
+    chapter: 4,
+    verse: 4,
+    endVerse: 5,
+    biblicalCitation: 'Jueces 4:4-5',
+    verseSnippet:
+      'Gobernaba en aquel tiempo a Israel una mujer, Débora, profetisa... y acostumbraba sentarse bajo la palmera de Débora... y los hijos de Israel subían a ella a juicio.',
+    didYouKnow:
+      'En una época dominada por caudillos guerreros, Débora gobernó como jueza suprema y profetisa. El comandante militar Barac se negó a entrar en combate si ella no iba al frente de la tropa.',
+    deepDive:
+      'Bajo su liderazgo espiritual, Israel derrotó al invencible ejército del general Sísara y sus 900 carros blindados de hierro, inaugurando 40 años de paz ininterrumpida.',
+    keyTakeaway:
+      'Dios derrama Su sabiduría, liderazgo y valentía sin acepción de personas. Cuando te levantas con fe, inspiras a toda una comunidad a vencer sus temores.',
+  },
+  {
+    id: 'character-jehoshaphat-choir',
+    title: 'Josafat y el Coro que Marchó en Vanguardia de Guerra',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🎵',
+    badgeValue: 'Adoradores al frente del ejército',
+    bookId: 14,
+    bookName: '2 Crónicas',
+    chapter: 20,
+    verse: 21,
+    endVerse: 22,
+    biblicalCitation: '2 Crónicas 20:21-22',
+    verseSnippet:
+      'Puso a algunos que cantasen y alabasen a Jehová... Y cuando comenzaron a entonar cantos de alabanza, Jehová puso emboscadas contra los enemigos...',
+    didYouKnow:
+      'Frente a tres ejércitos invasores combinados, el rey Josafat no colocó infantería de choque ni arqueros al frente, sino un coro con ornamentos sagrados cantando alabanzas.',
+    deepDive:
+      'Al escuchar la adoración que proclamaba: «Alabad a Jehová, porque su misericordia es para siempre», Dios confundió a los enemigos y se destruyeron mutuamente antes de que Israel desenvainara una sola espada.',
+    keyTakeaway:
+      'Tu alabanza es un arma espiritual poderosa en medio de las batallas. Cuando adoras en la dificultad, Dios toma el control y pelea por ti.',
+  },
+  {
+    id: 'character-ruth-loyalty',
+    title: 'Rut: De Extranjera Viuda a Bisabuela del Rey David',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🌾',
+    badgeValue: 'Rut 1:16 · Linaje real de Jesucristo',
+    bookId: 8,
+    bookName: 'Rut',
+    chapter: 1,
+    verse: 16,
+    biblicalCitation: 'Rut 1:16',
+    verseSnippet:
+      'Porque a dondequiera que tú fueres, iré yo, y dondequiera que vivieres, viviré. Tu pueblo será mi pueblo, y tu Dios mi Dios.',
+    didYouKnow:
+      'Rut era de Moab, un pueblo históricamente excluido de Israel. Sin embargo, su lealtad desinteresada hacia Noemí y su abrazo al Dios vivo la insertaron en la genealogía directa del Mesías.',
+    deepDive:
+      'Trabajando como humilde espigadora recogiendo granos sobrantes en los campos de Belén, conoció a Booz (su pariente redentor), convirtiéndose en bisabuela del rey David y antepasada de Jesús.',
+    keyTakeaway:
+      'Tu pasado o tu origen no determinan tu futuro cuando pones tu corazón en las manos de Dios. Su gracia redentora te da un nuevo propósito.',
+  },
+  {
+    id: 'character-josiah-boy-king',
+    title: 'Josías: El Rey que Comenzó a Gobernar a los 8 Años',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '👑',
+    badgeValue: '8 años de edad · 2 Reyes 22:1',
+    bookId: 12,
+    bookName: '2 Reyes',
+    chapter: 22,
+    verse: 1,
+    endVerse: 2,
+    biblicalCitation: '2 Reyes 22:1-2',
+    verseSnippet:
+      'De ocho años era Josías cuando comenzó a reinar, y reinó en Jerusalén treinta y un años... E hizo lo recto ante los ojos de Jehová...',
+    didYouKnow:
+      'Coronado siendo apenas un niño en medio de una nación hundida en corrupción, Josías redescubrió el libro de la Ley abandonado en el templo e impulsó la mayor reforma espiritual de Judá.',
+    deepDive:
+      'Con profunda humildad desgarró sus vestiduras, restauró la celebración de la Pascua y erradicó los altares de idolatría. La Biblia dice que antes de él no hubo rey que se convirtiera al Señor con todo su corazón.',
+    keyTakeaway:
+      'Nunca eres demasiado joven para marcar un rumbo de integridad. Dios usa a corazones humildes y decididos sin importar su edad.',
+  },
+  {
+    id: 'character-elijah-sprint',
+    title: 'Elías: El Profeta que Superó a los Caballos de Acab',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🏃',
+    badgeValue: '~30 km a pie bajo tormenta torrencial',
+    bookId: 11,
+    bookName: '1 Reyes',
+    chapter: 18,
+    verse: 46,
+    biblicalCitation: '1 Reyes 18:46',
+    verseSnippet:
+      'Y la mano de Jehová estuvo sobre Elías, el cual ciñó sus lomos, y corrió delante de Acab hasta llegar a Jezreel.',
+    didYouKnow:
+      'Tras el descenso de fuego en el Carmelo y el anuncio de lluvia, Elías corrió a pie casi 30 kilómetros campo a través por delante del veloz carruaje real del rey Acab impulsado por el Espíritu de Dios.',
+    deepDive:
+      'Un carruaje de guerra con caballos frescos alcanzaba velocidades considerables sobre terreno llano. La «mano de Jehová» sobre Elías le otorgó una aceleración física sobrenatural inolvidable.',
+    keyTakeaway:
+      'Cuando el poder de Dios te impulsa, adquieres fuerzas renovadas que van mucho más allá de tu propia capacidad humana natural.',
+  },
+  {
+    id: 'character-bezalel-spirit-artisan',
+    title: 'Bezalel: El Primer Hombre en la Biblia Lleno del Espíritu',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🎨',
+    badgeValue: 'Éxodo 31:2-3 · Orfebre, escultor y diseñador',
+    bookId: 2,
+    bookName: 'Éxodo',
+    chapter: 31,
+    verse: 2,
+    endVerse: 3,
+    biblicalCitation: 'Éxodo 31:2-3',
+    verseSnippet:
+      'Mira, yo he llamado por nombre a Bezaleel... y lo he llenado del Espíritu de Dios, en sabiduría y en inteligencia, en ciencia y en todo arte,',
+    didYouKnow:
+      'La primera persona en toda la Biblia de quien se registra que fue «llena del Espíritu de Dios» no fue un rey, sacerdote o profeta, sino un hábil artesano, escultor y diseñador de joyas.',
+    deepDive:
+      'Dios inspiró con excelencia artística sobrenatural a Bezalel para esculpir el Arca del Pacto, los querubines de oro, el candelabro y los detalles más hermosos del Tabernáculo en el desierto.',
+    keyTakeaway:
+      'Tus habilidades prácticas, artísticas y laborales también son un don sagrado del Espíritu Santo. Todo talento puesto al servicio de Dios es un ministerio sublime.',
+  },
+  {
+    id: 'character-ezekiel-living-sign',
+    title: 'Ezequiel: 390 Días Acostado como Sermón Viviente',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '⏳',
+    badgeValue: '430 días totales · Teatro profético viviente',
+    bookId: 26,
+    bookName: 'Ezequiel',
+    chapter: 4,
+    verse: 4,
+    endVerse: 5,
+    biblicalCitation: 'Ezequiel 4:4-5',
+    verseSnippet:
+      'Y tú te acostarás sobre tu lado izquierdo, y pondrás sobre él la maldad de la casa de Israel... trescientos noventa días;',
+    didYouKnow:
+      'Ezequiel pasó 390 días acostado sobre su costado izquierdo y luego 40 días sobre el derecho, comiendo pan medido por gramos frente a una maqueta de ladrillo que representaba el sitio de Jerusalén.',
+    deepDive:
+      'En lugar de solo predicar con palabras, Dios convirtió la vida cotidiana y el cuerpo de Ezequiel en una señal gráfica impactante para advertir a los exiliados babilónicos.',
+    keyTakeaway:
+      'A veces nuestro mejor testimonio no son discursos elaborados, sino nuestra propia vida de obediencia constante y paciencia ante los ojos de los demás.',
+  },
+  {
+    id: 'character-nehemiah-wall-builder',
+    title: 'Nehemías: La Muralla Reconstruida en Tiempo Récord de 52 Días',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🧱',
+    badgeValue: '52 días récord · Con la espada en una mano',
+    bookId: 16,
+    bookName: 'Nehemías',
+    chapter: 6,
+    verse: 15,
+    biblicalCitation: 'Nehemías 6:15',
+    verseSnippet:
+      'Fue terminada, pues, la muralla, el veinticinco del mes de Elul, en cincuenta y dos días.',
+    didYouKnow:
+      'Tras más de un siglo en cenizas y escombros, Nehemías organizó a zapateros, perfumistas, sacerdotes y familias para reconstruir los kilómetros de muralla de Jerusalén en menos de dos meses.',
+    deepDive:
+      'Trabajaron bajo constantes amenazas de guerra: con la llana de albañil en una mano y la lanza defensiva en la otra, orando sin descanso hasta culminar la obra para asombro de las naciones vecinas.',
+    keyTakeaway:
+      'Cuando unes trabajo enfocado, oración constante y unidad con tus hermanos, lo que parecía tardar años se logra en tiempo récord con la bendición de Dios.',
+  },
+  {
+    id: 'character-phinehas-covenant-peace',
+    title: 'Finees: El Celo Sacerdotal que Detuvo la Plaga Mortal',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🛡️',
+    badgeValue: 'Números 25 · Pacto de paz perpetuo',
+    bookId: 4,
+    bookName: 'Números',
+    chapter: 25,
+    verse: 11,
+    biblicalCitation: 'Números 25:11',
+    verseSnippet:
+      'Finees... ha hecho apartar mi furor de los hijos de Israel, llevado de celo entre ellos; por lo cual yo no he consumido en mi celo a los hijos de Israel.',
+    didYouKnow:
+      'Cuando una plaga desoladora ya había quitado la vida a 24,000 personas en el campamento por la inmoralidad de Baal-peor, la firme y valiente intervención de Finees frenó la mortandad de inmediato.',
+    deepDive:
+      'Por su fidelidad incondicional a la santidad divina, Dios selló con Finees y su descendencia un «pacto de paz perpetuo» de sacerdocio honrado a través de las generaciones de Israel.',
+    keyTakeaway:
+      'La santidad y la valentía espiritual de una sola persona pueden ser el escudo que traiga paz y protección a toda una comunidad.',
+  },
+  {
+    id: 'character-asahel-gazelle-feet',
+    title: 'Asael: El Hombre Rápido como una Gacela Salvaje',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🦌',
+    badgeValue: '2 Samuel 2:18 · «Ligero de pies como un corzo»',
+    bookId: 10,
+    bookName: '2 Samuel',
+    chapter: 2,
+    verse: 18,
+    biblicalCitation: '2 Samuel 2:18',
+    verseSnippet:
+      'Y Asael era ligero de pies como un corzo del campo.',
+    didYouKnow:
+      'Asael, sobrino del rey David y hermano del general Joab, poseía una velocidad atlética legendaria: la Escritura lo compara poéticamente con una gacela salvaje corriendo por las estepas.',
+    deepDive:
+      'En la batalla del estanque de Gabaón, persiguió sin descanso al comandante enemigo Abner en una carrera formidable sin desviarse ni a la derecha ni a la izquierda.',
+    keyTakeaway:
+      'La pasión y los dones extraordinarios deben ir acompañados de templanza y discernimiento para que alcancen su verdadero propósito en Dios.',
+  },
+  {
+    id: 'character-cornelius-centurion',
+    title: 'Cornelio: El Centurión cuyas Oraciones Subieron al Cielo',
+    category: 'characters',
+    categoryLabel: 'Personajes & Hazañas',
+    categoryTag: 'PERSONAJE',
+    emoji: '🏛️',
+    badgeValue: 'Hechos 10 · Puerta del Evangelio a los gentiles',
+    bookId: 44,
+    bookName: 'Hechos',
+    chapter: 10,
+    verse: 4,
+    biblicalCitation: 'Hechos 10:4',
+    verseSnippet:
+      'Y él, mirándole fijamente, y atemorizado, dijo: ¿Qué es, Señor? Y le dijo: Tus oraciones y tus limosnas han subido para memoria delante de Dios.',
+    didYouKnow:
+      'Cornelio era un militar romano del regimiento Itálico; un ángel se le apareció en visión anunciándole que sus oraciones y su generosidad con los necesitados habían llegado como olor grato al trono de Dios.',
+    deepDive:
+      'El llamado a Pedro para predicar en la casa de Cornelio derribó siglos de barreras religiosas y culturales, inaugurando el derramamiento del Espíritu Santo sobre creyentes de todas las naciones.',
+    keyTakeaway:
+      'Ninguna oración sincera ni acto de generosidad pasa desapercibido ante Dios. El Señor derriba cualquier muro para alcanzar a quien le busca con corazón puro.',
+  },
 ];
 
 /**

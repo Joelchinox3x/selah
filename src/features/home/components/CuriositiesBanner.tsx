@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Trophy, ChevronRight } from 'lucide-react-native';
 import { ThemePalette } from '@/src/theme/colors';
+import { BIBLICAL_CURIOSITIES } from '@/src/features/curiosities/data/biblicalCuriosities';
 
 interface CuriositiesBannerProps {
   theme: ThemePalette;
@@ -43,7 +44,7 @@ export const CuriositiesBanner: React.FC<CuriositiesBannerProps> = ({
         <View style={styles.curiositiesTextWrap}>
           <View style={styles.curiositiesTagRow}>
             <Text style={[styles.curiositiesTag, { color: theme.accent }]}>
-              22 TEMAS ASOMBROSOS
+              {BIBLICAL_CURIOSITIES.length} TEMAS ASOMBROSOS
             </Text>
           </View>
           <Text style={[styles.curiositiesBannerTitle, { color: theme.text }]}>
