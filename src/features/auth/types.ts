@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'pastor' | 'moderador' | 'verificado' | 'miembro';
+export type UserRole = 'admin' | 'pastor' | 'moderador' | 'creyente' | 'verificado' | 'miembro';
 export type AccountStatus = 'active' | 'suspended';
 
 export interface AuthUser {

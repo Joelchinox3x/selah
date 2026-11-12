@@ -50,6 +50,7 @@ interface AuthState {
   logout: () => Promise<void>;
   updateProfileName: (newName: string) => Promise<void>;
   setUserRole: (newRole: UserRole) => Promise<void>;
+  devSetRole: (role: UserRole | 'anon' | 'suspended') => Promise<void>;
   unlockPastoralSession: (pin: string) => Promise<boolean>;
   lockPastoralSession: () => void;
   checkSuspendedStatus: () => Promise<boolean>;
@@ -205,16 +206,104 @@ export const useAuthStore = create<AuthState>()(
       setUserRole: async (newRole: UserRole) => {
         const currentUser = get().user;
         if (currentUser) {
+          const isPastor = newRole === 'pastor' || newRole === 'admin';
+          const isModerator = newRole === 'moderador' || isPastor;
           const updated: AuthUser = {
             ...currentUser,
             role: newRole,
-            isPastor: newRole === 'pastor',
+            isPastor,
+            isModerator,
             isVerified: newRole !== 'miembro',
           };
-          set({ user: updated });
+          set({ user: updated, isPastoralUnlocked: isPastor });
           await registerOrUpdatePastoralMember({
             ...updated,
             joinedAt: (currentUser as any).joinedAt || new Date().toISOString().split('T')[0],
+          });
+        }
+      },
+
+      devSetRole: async (role: UserRole | 'anon' | 'suspended') => {
+        if (role === 'anon') {
+          await get().logout();
+          return;
+        }
+
+        const currentUser = get().user;
+        if (role === 'suspended') {
+          if (currentUser) {
+            set({ user: { ...currentUser, status: 'suspended' } });
+          } else {
+            const suspendedUser: AuthUser = {
+              id: 'dev_suspended_user',
+              name: 'Usuario Suspendido (Dev)',
+              email: 'suspendido.dev@selah.boxtiove.com',
+              avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+              role: 'creyente',
+              status: 'suspended',
+              provider: 'google',
+              isPastor: false,
+              isModerator: false,
+              isVerified: true,
+              lastActiveAt: 'Ahora mismo',
+              reflectionsCount: 0,
+              blessingsCount: 0,
+            };
+            set({ user: suspendedUser, isAuthenticated: true, isPastoralUnlocked: false });
+          }
+          return;
+        }
+
+        const isPastor = role === 'pastor' || role === 'admin';
+        const isModerator = role === 'moderador' || isPastor;
+        const isVerified = role !== 'miembro';
+
+        if (currentUser) {
+          const updated: AuthUser = {
+            ...currentUser,
+            role,
+            status: 'active',
+            isPastor,
+            isModerator,
+            isVerified,
+          };
+          set({ user: updated, isAuthenticated: true, isPastoralUnlocked: isPastor });
+          await registerOrUpdatePastoralMember({
+            ...updated,
+            joinedAt: (currentUser as any).joinedAt || new Date().toISOString().split('T')[0],
+          });
+        } else {
+          const roleNames: Record<string, string> = {
+            pastor: 'Ps. Guillermo Quispe (Dev)',
+            admin: 'Admin General (Dev)',
+            moderador: 'David Morales (Dev)',
+            creyente: 'Juan Creyente (Dev)',
+            verificado: 'Hermano Verificado (Dev)',
+            miembro: 'Lector Anónimo (Dev)',
+          };
+          const mockUser: AuthUser = {
+            id: `dev_${role}_${Date.now().toString(36)}`,
+            name: roleNames[role] || 'Usuario Dev',
+            email: `dev.${role}@selah.boxtiove.com`,
+            avatarUrl: role === 'pastor'
+              ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80'
+              : role === 'moderador'
+              ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+              : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+            role,
+            status: 'active',
+            provider: 'google',
+            isPastor,
+            isModerator,
+            isVerified,
+            lastActiveAt: 'Ahora mismo',
+            reflectionsCount: 7,
+            blessingsCount: 24,
+          };
+          set({ user: mockUser, isAuthenticated: true, isPastoralUnlocked: isPastor });
+          await registerOrUpdatePastoralMember({
+            ...mockUser,
+            joinedAt: new Date().toISOString().split('T')[0],
           });
         }
       },

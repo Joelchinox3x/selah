@@ -42,6 +42,7 @@ import { useRouter } from 'expo-router';
 import { Screen } from '@/src/components/ui/Screen';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { useAuthStore } from '@/src/features/auth/authStore';
+import { DevRoleSwitcher } from '@/src/features/auth/components/DevRoleSwitcher';
 import { themes, ThemeMode } from '@/src/theme/colors';
 import { scheduleSliding14DayNotifications } from '@/src/services/notifications/notificationService';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
@@ -65,6 +66,33 @@ export default function SettingsScreen() {
   const [googleName, setGoogleName] = useState('');
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleLoggingIn, setGoogleLoggingIn] = useState(false);
+
+  // Herramientas Dev / Simulador de Roles
+  const [devToolsUnlocked, setDevToolsUnlocked] = useState(false);
+  const [versionTapCount, setVersionTapCount] = useState(0);
+
+  const handleVersionTap = () => {
+    setVersionTapCount((prev) => {
+      const next = prev + 1;
+      if (next >= 5) {
+        hapticSuccess();
+        setDevToolsUnlocked((unlocked) => {
+          const nextVal = !unlocked;
+          Alert.alert(
+            nextVal ? '🛠️ Modo Dev Activado' : 'Modo Dev Desactivado',
+            nextVal
+              ? '¡Herramientas de desarrollo desbloqueadas! Ahora puedes simular cualquier rol desde la tarjeta en Ajustes.'
+              : 'Se han ocultado las herramientas de desarrollo.'
+          );
+          return nextVal;
+        });
+        return 0;
+      }
+      return next;
+    });
+  };
+
+  const showDevSwitcher = (typeof __DEV__ !== 'undefined' && __DEV__) || devToolsUnlocked;
 
   useEffect(() => {
     syncWithServer?.();
@@ -353,6 +381,11 @@ export default function SettingsScreen() {
                 <ChevronRight size={16} color="#ffffff" />
               </TouchableOpacity>
             </View>
+          )}
+
+          {/* HERRAMIENTA DEV: SIMULADOR DE ROLES */}
+          {showDevSwitcher && (
+            <DevRoleSwitcher />
           )}
         </View>
         {/* THEME SELECTOR */}
@@ -682,8 +715,12 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
-        {/* FOOTER / ABOUT */}
-        <View style={styles.footer}>
+        {/* FOOTER / ABOUT (5 toques para activar Modo Dev si no está en dev build) */}
+        <TouchableOpacity
+          style={styles.footer}
+          activeOpacity={0.85}
+          onPress={handleVersionTap}
+        >
           <Text style={[styles.footerText, { color: theme.textMuted }]}>
             Selah: Biblia & Calma Espiritual · Versión {Constants.expoConfig?.version ?? '1.2.3'}{Constants.expoConfig?.android?.versionCode ? ` (build ${Constants.expoConfig.android.versionCode})` : ''}
           </Text>
@@ -693,7 +730,7 @@ export default function SettingsScreen() {
           <Text style={[styles.footerSub, { color: theme.textMuted }]}>
             100% Sin conexión · Reina-Valera 1909
           </Text>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* MODAL CLERK GOOGLE AUTH */}
