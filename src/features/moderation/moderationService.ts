@@ -21,16 +21,27 @@ export interface SuspendedUser {
   lastActiveAt: string;
 }
 
+export interface SpamAttempt {
+  id: string;
+  userName: string;
+  verseSlug: string;
+  detectedWord: string;
+  attemptedText: string;
+  createdAt: string;
+}
+
 export interface ModerationOverview {
   blockedWords: string[];
   comments: ModerationComment[];
   suspendedUsers: SuspendedUser[];
   pinnedComments: ModerationComment[];
+  spamAttempts: SpamAttempt[];
   metrics: {
     totalComments: number;
     totalBlockedWords: number;
     totalSuspended: number;
     totalPinned: number;
+    totalSpamAttempts: number;
   };
 }
 
@@ -48,11 +59,13 @@ export async function fetchModerationOverview(): Promise<ModerationOverview> {
     comments: data.comments || [],
     suspendedUsers: data.suspendedUsers || [],
     pinnedComments: data.pinnedComments || [],
+    spamAttempts: data.spamAttempts || [],
     metrics: data.metrics || {
       totalComments: 0,
       totalBlockedWords: 0,
       totalSuspended: 0,
       totalPinned: 0,
+      totalSpamAttempts: 0,
     },
   };
 }
@@ -101,3 +114,28 @@ export async function unbanSuspendedUser(emailOrId: string): Promise<boolean> {
   const data = await res.json() as any;
   return Boolean(data?.ok);
 }
+
+export async function togglePinCommentRemote(commentId: string, isPinned: boolean): Promise<boolean> {
+  const clean = commentId.trim();
+  if (!clean) return false;
+
+  const res = await fetch(`${BASE_URL}/api/moderation/pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ commentId: clean, isPinned }),
+  });
+  if (!res.ok) throw new Error('Error al modificar estado destacado');
+  const data = await res.json() as any;
+  return Boolean(data?.ok);
+}
+
+export async function clearSpamAttempts(): Promise<boolean> {
+  const res = await fetch(`${BASE_URL}/api/moderation/clear-spam-attempts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Error al limpiar el registro de spam');
+  const data = await res.json() as any;
+  return Boolean(data?.ok);
+}
+

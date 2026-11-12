@@ -177,7 +177,7 @@ export default function MoodScreen() {
           ))}
         </View>
 
-        {/* Banner: El Árbol Humano y Arquetipos del Alma */}
+        {/* Banner: Personajes de la Biblia y Arquetipos del Alma */}
         <TouchableOpacity
           style={[
             styles.charactersBanner,
@@ -211,7 +211,7 @@ export default function MoodScreen() {
                 ARQUETIPOS DEL ALMA • 55 PERSONAJES
               </Text>
               <Text style={[styles.charactersTitle, { color: theme.text }]}>
-                El Árbol Humano
+                Personajes de la Biblia
               </Text>
               <Text
                 style={[styles.charactersSubtitle, { color: theme.textMuted }]}

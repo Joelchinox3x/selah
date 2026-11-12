@@ -1,550 +1,94 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Share,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import {
-  ChevronLeft,
-  Share2,
-  Compass,
-  Sparkles,
-  BookOpen,
-  ArrowRight,
-  Heart,
-  Quote,
-} from 'lucide-react-native';
+import { ChevronLeft, Share2, BookOpen, ArrowUpRight } from 'lucide-react-native';
 import { Screen } from '@/src/components/ui/Screen';
 import { getPersonById, getVersesForPerson } from '@/src/services/db/bibleDb';
 import { BiblicalPerson, Verse } from '@/src/types/bible';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { themes } from '@/src/theme/colors';
-import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
+import { hapticLight } from '@/src/services/haptics/hapticFeedback';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CharacterDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id: string }>();
-  const personId = parseInt(params.id || '1', 10);
-
-  const themeMode = useSettingsStore((s) => s.theme);
-  const theme = themes[themeMode] || themes.sepia;
-
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const personId = Number(id);
+  const mode = useSettingsStore(s => s.theme);
+  const theme = themes[mode] || themes.sepia;
   const [person, setPerson] = useState<BiblicalPerson | null>(null);
   const [verses, setVerses] = useState<Verse[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [personData, versesData] = await Promise.all([
-        getPersonById(personId),
-        getVersesForPerson(personId, 30),
-      ]);
-      setPerson(personData);
-      setVerses(versesData);
-    } catch (e) {
-      console.warn('Error loading character details:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, [personId]);
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [shareError, setShareError] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let active = true;
+    setLoading(true); setError(false); setShareError(false); setPerson(null); setVerses([]);
+    if (!Number.isSafeInteger(personId) || personId < 1) { setLoading(false); return; }
+    Promise.all([getPersonById(personId), getVersesForPerson(personId, 30)])
+      .then(([profile, passages]) => { if (active) { setPerson(profile); setVerses(passages); } })
+      .catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [personId, retry]);
 
   const handleShare = async () => {
     if (!person) return;
-    hapticLight();
+    hapticLight(); setShareError(false);
     try {
-      await Share.share({
-        title: `${person.name_es} - El Árbol Humano en Selah`,
-        message: `«${person.name_es}» (${person.display_title_es})\n\nArquetipo del Alma: ${person.archetype}\n\n${person.bio_es}\n\nDescubre más en la app bíblica Selah.`,
-      });
-    } catch (e) {
-      console.warn('Share error:', e);
-    }
+      await Share.share({ title: `${person.name_es} · Personajes de la Biblia`, message: `${person.name_es}\n${person.display_title_es}\n\n${person.archetype}\n\n${person.bio_es}\n\nDescubre más en Selah.` });
+    } catch { setShareError(true); }
   };
-
-  const handleOpenVerseInReader = (verse: Verse) => {
-    hapticSuccess();
-    router.push({
-      pathname: `/reader/${verse.book_id}/${verse.chapter}`,
-      params: { highlightVerse: String(verse.verse) },
-    } as any);
+  const openVerse = (verse: Verse) => {
+    hapticLight();
+    router.push({ pathname: `/reader/${verse.book_id}/${verse.chapter}`, params: { highlightVerse: String(verse.verse) } } as any);
   };
-
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
-  };
-
-  if (loading) {
-    return (
-      <Screen safeTop safeBottom={false}>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={theme.accent} />
-          <Text style={[styles.loadingText, { color: theme.textMuted }]}>
-            Cargando perfil sagrado...
-          </Text>
-        </View>
-      </Screen>
-    );
-  }
-
-  if (!person) {
-    return (
-      <Screen safeTop safeBottom={false}>
-        <View style={styles.centerContainer}>
-          <Text style={[styles.notFoundTitle, { color: theme.text }]}>
-            Personaje no encontrado
-          </Text>
-          <TouchableOpacity
-            style={[styles.backBtnPill, { backgroundColor: theme.accent }]}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backBtnPillText}>Regresar a Personajes</Text>
-          </TouchableOpacity>
-        </View>
-      </Screen>
-    );
-  }
 
   return (
     <Screen safeTop safeBottom={false}>
-      {/* Top Header */}
       <View style={[styles.header, { borderBottomColor: theme.borderSubtle }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[styles.headerBtn, { backgroundColor: theme.surfaceRaised }]}
-          activeOpacity={0.7}
-        >
-          <ChevronLeft size={22} color={theme.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerTitleWrap}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            {person.name_es}
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>
-            {person.category}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={handleShare}
-          style={[styles.headerBtn, { backgroundColor: theme.surfaceRaised }]}
-          activeOpacity={0.7}
-        >
-          <Share2 size={18} color={theme.text} />
-        </TouchableOpacity>
+        <Pressable accessibilityRole="button" accessibilityLabel="Volver al listado" onPress={() => router.back()} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? theme.accentMuted : theme.surface }]}><ChevronLeft size={22} color={theme.text} /></Pressable>
+        <Text accessibilityRole="header" style={[styles.headerTitle, { color: theme.text }]}>Personajes de la Biblia</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Compartir biografía" accessibilityState={{ disabled: !person || loading }} disabled={!person || loading} onPress={handleShare} style={({ pressed }) => [styles.iconButton, { backgroundColor: pressed ? theme.accentMuted : theme.surface, opacity: person && !loading ? 1 : 0.4 }]}><Share2 size={19} color={theme.text} /></Pressable>
       </View>
-
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 16) + 36 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero Card */}
-        <View
-          style={[
-            styles.heroCard,
-            {
-              backgroundColor: theme.cardBackground,
-              borderColor: theme.borderSubtle,
-            },
-          ]}
-        >
-          <View style={styles.heroTopRow}>
-            <View
-              style={[
-                styles.largeAvatar,
-                {
-                  backgroundColor:
-                    person.gender === 'F'
-                      ? themeMode === 'oled'
-                        ? '#2c1e28'
-                        : '#fce7f3'
-                      : theme.surfaceRaised,
-                  borderColor:
-                    person.gender === 'F' ? '#f472b6' : theme.accent,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.largeAvatarText,
-                  {
-                    color:
-                      person.gender === 'F' ? '#db2777' : theme.accent,
-                  },
-                ]}
-              >
-                {getInitials(person.name_es)}
-              </Text>
-            </View>
-
-            <View style={styles.heroTitles}>
-              <View style={styles.badgeRow}>
-                <View
-                  style={[
-                    styles.tagBadge,
-                    {
-                      backgroundColor:
-                        themeMode === 'oled'
-                          ? '#1e293b'
-                          : 'rgba(0,0,0,0.06)',
-                    },
-                  ]}
-                >
-                  <Text style={[styles.tagBadgeText, { color: theme.textMuted }]}>
-                    {person.testament === 'OT'
-                      ? 'Antiguo Testamento'
-                      : person.testament === 'NT'
-                      ? 'Nuevo Testamento'
-                      : 'Canon Bíblico'}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.tagBadge,
-                    { backgroundColor: theme.accentMuted },
-                  ]}
-                >
-                  <Text style={[styles.tagBadgeText, { color: theme.accent }]}>
-                    {person.category}
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={[styles.heroName, { color: theme.text }]}>
-                {person.name_es}
-              </Text>
-              <Text style={[styles.heroTitle, { color: theme.textMuted }]}>
-                {person.display_title_es}
-              </Text>
-            </View>
+      <FlatList
+        data={loading || error || !person ? [] : verses}
+        keyExtractor={item => String(item.id)}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) + 16 }]}
+        ListHeaderComponent={!loading && !error && person ? <>
+          <View style={styles.profile}>
+            <View style={[styles.avatar, { backgroundColor: theme.accentMuted }]}><Text style={[styles.initials, { color: theme.accent }]}>{person.name_es.slice(0, 2).toUpperCase()}</Text></View>
+            <Text style={[styles.category, { color: theme.accent }]}>{person.category}</Text>
+            <Text selectable style={[styles.name, { color: theme.text }]}>{person.name_es}</Text>
+            <Text selectable style={[styles.subtitle, { color: theme.textMuted }]}>{person.display_title_es}</Text>
           </View>
-
-          {/* Archetype Card Section */}
-          <View
-            style={[
-              styles.archetypeBox,
-              {
-                backgroundColor:
-                  themeMode === 'oled'
-                    ? '#141d18'
-                    : 'rgba(217, 119, 6, 0.08)',
-                borderColor:
-                  themeMode === 'oled'
-                    ? '#1e3324'
-                    : 'rgba(217, 119, 6, 0.25)',
-              },
-            ]}
-          >
-            <View style={styles.archetypeBoxHeader}>
-              <Compass size={16} color={theme.accent} />
-              <Text style={[styles.archetypeBoxTitle, { color: theme.accent }]}>
-                ARQUETIPO DEL ALMA
-              </Text>
-            </View>
-            <Text style={[styles.archetypeBoxMain, { color: theme.text }]}>
-              {person.archetype}
-            </Text>
-            <Text style={[styles.archetypeBoxDesc, { color: theme.textMuted }]}>
-              El viaje de {person.name_es} enseña cómo la gracia de Dios se
-              manifiesta a través de la fragilidad humana, la perseverancia y la fe
-              en tiempos de incertidumbre.
-            </Text>
+          {!!person.archetype && <View style={[styles.trait, { backgroundColor: theme.accentMuted }]}><Text style={[styles.eyebrow, { color: theme.accent }]}>Rasgo destacado</Text><Text selectable style={[styles.traitText, { color: theme.text }]}>{person.archetype}</Text></View>}
+          {!!shareError && <View style={styles.shareError}><Text accessibilityRole="alert" style={[styles.subtitle, { color: theme.destructive }]}>No se pudo compartir.</Text><Pressable accessibilityRole="button" onPress={handleShare} style={styles.retry}><Text style={[styles.link, { color: theme.accent }]}>Reintentar</Text></Pressable></View>}
+          <View style={[styles.biography, { borderBottomColor: theme.borderSubtle }]}>
+            <Text accessibilityRole="header" style={[styles.sectionTitle, { color: theme.text }]}>Su historia</Text>
+            <Text selectable style={[styles.body, { color: theme.text }]}>{person.bio_es || 'Esta biografía todavía no tiene contenido disponible.'}</Text>
           </View>
-        </View>
-
-        {/* Narrative Biography Section */}
-        <View
-          style={[
-            styles.sectionCard,
-            {
-              backgroundColor: theme.cardBackground,
-              borderColor: theme.borderSubtle,
-            },
-          ]}
-        >
-          <View style={styles.sectionHeaderRow}>
-            <Sparkles size={18} color={theme.accent} />
-            <Text style={[styles.sectionHeading, { color: theme.text }]}>
-              Perfil Biográfico e Historia Bíblica
-            </Text>
-          </View>
-          <Text style={[styles.bioBody, { color: theme.text }]}>
-            {person.bio_es}
-          </Text>
-        </View>
-
-        {/* Biblical Passages Section */}
-        <View style={styles.versesSection}>
-          <View style={styles.sectionHeaderRow}>
-            <BookOpen size={18} color={theme.accent} />
-            <Text style={[styles.sectionHeading, { color: theme.text }]}>
-              Pasajes y Versículos Bíblicos
-            </Text>
-          </View>
-          <Text style={[styles.versesIntro, { color: theme.textMuted }]}>
-            {verses.length > 0
-              ? `Explora los versículos donde interviene ${person.name_es}. Toca cualquier pasaje para abrirlo en el lector.`
-              : `Buscando menciones bíblicas de ${person.name_es}...`}
-          </Text>
-
-          {verses.map((v) => (
-            <TouchableOpacity
-              key={v.id}
-              style={[
-                styles.verseCard,
-                {
-                  backgroundColor: theme.cardBackground,
-                  borderColor: theme.borderSubtle,
-                },
-              ]}
-              onPress={() => handleOpenVerseInReader(v)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.verseCardHeader}>
-                <View style={styles.verseRefPill}>
-                  <Text style={[styles.verseRefText, { color: theme.accent }]}>
-                    {v.book_name} {v.chapter}:{v.verse}
-                  </Text>
-                </View>
-
-                <View style={styles.readerLinkRow}>
-                  <Text style={[styles.readerLinkText, { color: theme.accent }]}>
-                    Abrir en lector
-                  </Text>
-                  <ArrowRight size={14} color={theme.accent} />
-                </View>
-              </View>
-
-              <Text style={[styles.verseContentText, { color: theme.text }]}>
-                «{v.text}»
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+          <View style={styles.passageHeading}><BookOpen size={19} color={theme.accent} /><Text accessibilityRole="header" style={[styles.sectionTitle, { color: theme.text }]}>En la Biblia</Text></View>
+          {verses.length > 0 && <Text style={[styles.passageHint, { color: theme.textMuted }]}>{verses.length} {verses.length === 1 ? 'pasaje para explorar' : 'pasajes para explorar'}. Toca uno para leer el capítulo.</Text>}
+        </> : null}
+        ListEmptyComponent={<View style={styles.state}>{loading ? <><ActivityIndicator color={theme.accent} /><Text style={[styles.stateText, { color: theme.textMuted }]}>Cargando biografía…</Text></> : error || !person ? <><Text style={[styles.stateTitle, { color: theme.text }]}>{error ? 'No pudimos cargar la biografía' : 'Personaje no encontrado'}</Text><Text style={[styles.stateText, { color: theme.textMuted }]}>{error ? 'Intenta cargarla de nuevo.' : 'Vuelve al listado para elegir otro personaje.'}</Text><Pressable accessibilityRole="button" onPress={error ? () => setRetry(n => n + 1) : () => router.back()} style={({ pressed }) => [styles.retry, { backgroundColor: pressed ? theme.surface : theme.accentMuted }]}><Text style={[styles.link, { color: theme.accent }]}>{error ? 'Reintentar' : 'Volver al listado'}</Text></Pressable></> : <Text style={[styles.stateText, { color: theme.textMuted }]}>No hay pasajes vinculados disponibles para este personaje.</Text>}</View>}
+        renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Leer ${item.book_name} ${item.chapter}:${item.verse}`} accessibilityHint="Abre el capítulo y resalta este versículo" onPress={() => openVerse(item)} style={({ pressed }) => [styles.passage, { backgroundColor: pressed ? theme.accentMuted : theme.cardBackground, borderColor: theme.borderSubtle }]}>
+          <View style={styles.passageReference}><Text style={[styles.reference, { color: theme.accent }]}>{item.book_name} {item.chapter}:{item.verse}</Text><ArrowUpRight size={18} color={theme.accent} /></View>
+          <Text selectable style={[styles.verseText, { color: theme.text }]}>{item.text}</Text>
+        </Pressable>}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitleWrap: {
-    alignItems: 'center',
-    flex: 1,
-    paddingHorizontal: 8,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 48,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-  },
-  notFoundTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-  backBtnPill: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  backBtnPillText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  heroCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 18,
-    marginBottom: 16,
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  largeAvatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  largeAvatarText: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  heroTitles: {
-    flex: 1,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  tagBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  tagBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  heroName: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  heroTitle: {
-    fontSize: 13,
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  archetypeBox: {
-    marginTop: 16,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  archetypeBoxHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  archetypeBoxTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-  archetypeBoxMain: {
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 21,
-    marginBottom: 6,
-  },
-  archetypeBoxDesc: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  sectionCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 18,
-    marginBottom: 16,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  sectionHeading: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  bioBody: {
-    fontSize: 14,
-    lineHeight: 22,
-    letterSpacing: 0.2,
-  },
-  versesSection: {
-    marginTop: 8,
-  },
-  versesIntro: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  verseCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 12,
-  },
-  verseCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  verseRefPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: 'rgba(217, 119, 6, 0.1)',
-  },
-  verseRefText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  readerLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  readerLinkText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  verseContentText: {
-    fontSize: 14,
-    lineHeight: 21,
-    fontStyle: 'italic',
-  },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth }, iconButton: { minWidth: 44, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, headerTitle: { flex: 1, fontSize: 15, fontWeight: '600' },
+  content: { flexGrow: 1, padding: 20 }, profile: { alignItems: 'flex-start', gap: 8, paddingBottom: 20 }, avatar: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 }, initials: { fontSize: 18, fontWeight: '700' }, category: { fontSize: 12, fontWeight: '600' }, name: { fontSize: 30, lineHeight: 38, fontWeight: '700' }, subtitle: { fontSize: 14, lineHeight: 21 },
+  trait: { padding: 16, gap: 6, borderRadius: 14, marginBottom: 24 }, eyebrow: { fontSize: 12, fontWeight: '600' }, traitText: { fontSize: 16, lineHeight: 24, fontWeight: '600' }, biography: { paddingBottom: 24, marginBottom: 24, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth }, sectionTitle: { fontSize: 18, fontWeight: '700', flexShrink: 1 }, body: { fontSize: 16, lineHeight: 27 },
+  passageHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }, passageHint: { fontSize: 13, lineHeight: 20, marginBottom: 16 }, passage: { padding: 16, borderRadius: 14, borderWidth: 1, marginBottom: 12 }, passageReference: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }, reference: { fontSize: 14, fontWeight: '700', flexShrink: 1 }, verseText: { fontSize: 15, lineHeight: 24 },
+  state: { alignItems: 'center', paddingVertical: 32, gap: 14 }, stateTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' }, stateText: { fontSize: 14, lineHeight: 21, textAlign: 'center' }, retry: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }, link: { fontSize: 14, fontWeight: '600' }, shareError: { marginBottom: 16, alignItems: 'flex-start', gap: 4 },
 });

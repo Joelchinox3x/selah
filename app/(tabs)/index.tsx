@@ -406,10 +406,9 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {/* 6. Exploración Bíblica Profunda: Grid 2x2 Armónico */}
+        {/* 6. Accesos de exploración bíblica */}
         <BiblicalExplorationGrid
           theme={theme}
-          themeMode={themeMode}
           todayDiscovery={todayDiscovery}
           onNavigate={(route) => router.push(route as any)}
         />
