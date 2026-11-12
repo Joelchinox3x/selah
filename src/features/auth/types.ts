@@ -15,6 +15,9 @@ export interface AuthUser {
   lastActiveAt: string;
   reflectionsCount: number;
   blessingsCount: number;
+  bio?: string;
+  favoriteVerse?: string;
+  customAvatar?: boolean;
 }
 
 export interface PastoralMember extends AuthUser {

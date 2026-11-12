@@ -49,6 +49,8 @@ interface AuthState {
   loginAsGuestWithName: (name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfileName: (newName: string) => Promise<void>;
+  updateProfileAvatar: (newAvatarUrl: string) => Promise<void>;
+  updateProfileDetails: (params: { name?: string; bio?: string; favoriteVerse?: string; avatarUrl?: string }) => Promise<void>;
   setUserRole: (newRole: UserRole) => Promise<void>;
   devSetRole: (role: UserRole | 'anon' | 'suspended') => Promise<void>;
   unlockPastoralSession: (pin: string) => Promise<boolean>;
@@ -195,6 +197,44 @@ export const useAuthStore = create<AuthState>()(
         const currentUser = get().user;
         if (currentUser) {
           const updated: AuthUser = { ...currentUser, name: trimmed };
+          set({ user: updated });
+          await registerOrUpdatePastoralMember({
+            ...updated,
+            joinedAt: (currentUser as any).joinedAt || new Date().toISOString().split('T')[0],
+          });
+        }
+      },
+
+      updateProfileAvatar: async (newAvatarUrl: string) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          const updated: AuthUser = {
+            ...currentUser,
+            avatarUrl: newAvatarUrl,
+            customAvatar: true,
+          };
+          set({ user: updated });
+          await registerOrUpdatePastoralMember({
+            ...updated,
+            joinedAt: (currentUser as any).joinedAt || new Date().toISOString().split('T')[0],
+          });
+        }
+      },
+
+      updateProfileDetails: async (params) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          const cleanName = params.name ? params.name.trim().slice(0, 60) : currentUser.name;
+          if (params.name) await saveCommunityName(cleanName);
+
+          const updated: AuthUser = {
+            ...currentUser,
+            name: cleanName,
+            bio: params.bio !== undefined ? params.bio.trim().slice(0, 160) : currentUser.bio,
+            favoriteVerse: params.favoriteVerse !== undefined ? params.favoriteVerse.trim().slice(0, 80) : currentUser.favoriteVerse,
+            avatarUrl: params.avatarUrl !== undefined ? params.avatarUrl : currentUser.avatarUrl,
+            customAvatar: params.avatarUrl !== undefined ? true : currentUser.customAvatar,
+          };
           set({ user: updated });
           await registerOrUpdatePastoralMember({
             ...updated,

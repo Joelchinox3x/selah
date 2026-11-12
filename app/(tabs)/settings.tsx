@@ -289,6 +289,21 @@ export default function SettingsScreen() {
               </View>
 
               <TouchableOpacity
+                onPress={() => {
+                  hapticLight();
+                  router.push('/profile' as any);
+                }}
+                style={[styles.profileLinkBtn, { backgroundColor: theme.accentMuted, borderColor: theme.accent }]}
+                accessibilityRole="button"
+              >
+                <User size={16} color={theme.accent} />
+                <Text style={[styles.profileLinkBtnText, { color: theme.accent }]}>
+                  Ver y Editar Mi Perfil (Foto 1:1, Lema, etc.)
+                </Text>
+                <ChevronRight size={16} color={theme.accent} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 onPress={handleLogout}
                 style={[styles.logoutBtn, { borderColor: theme.borderSubtle }]}
                 accessibilityRole="button"
@@ -1170,6 +1185,23 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
     fontSize: 13,
+  },
+  profileLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  profileLinkBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    flex: 1,
+    marginLeft: 8,
   },
   logoutBtn: {
     flexDirection: 'row',
