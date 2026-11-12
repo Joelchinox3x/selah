@@ -39,6 +39,13 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   const theme = themes[mode] || themes.sepia;
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const authUser = useAuthStore((s) => s.user);
+  const canModerate = Boolean(
+    authUser?.isPastor ||
+    authUser?.isModerator ||
+    authUser?.role === 'moderador' ||
+    authUser?.role === 'pastor' ||
+    authUser?.role === 'admin'
+  );
   const [showPastoralReflection, setShowPastoralReflection] = useState<boolean | null>(getPastoralVisibility);
   useEffect(() => {
     if (!visible) return;
@@ -234,7 +241,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
     finally { mutationLock.current = false; setMutating(false); }
   };
   const togglePinComment = (comment: CommunityComment) => {
-    if (!authUser?.isPastor) return;
+    if (!canModerate) return;
     setMenuComment(null);
     hapticSuccess();
     const willPin = !comment.isPinned;
@@ -252,12 +259,12 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   };
 
   const suspendMemberFromComment = (comment: CommunityComment) => {
-    if (!authUser?.isPastor) return;
+    if (!canModerate) return;
     setMenuComment(null);
     hapticLight();
     Alert.alert(
       'Suspender Autor',
-      `Como pastor, ¿deseas suspender la cuenta de ${comment.userName}? No podrá volver a publicar testimonios en la comunidad.`,
+      `¿Deseas suspender la cuenta de ${comment.userName}? No podrá volver a publicar testimonios en la comunidad.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -275,14 +282,14 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
   };
 
   const confirmDelete = (comment: CommunityComment) => {
-    if ((!comment.isOwn && !authUser?.isPastor) || mutationLock.current) return;
+    if ((!comment.isOwn && !canModerate) || mutationLock.current) return;
     setMenuComment(null);
     const version = generation.current;
-    const isPastoralDelete = authUser?.isPastor && !comment.isOwn;
+    const isModeratorDelete = canModerate && !comment.isOwn;
     Alert.alert(
-      isPastoralDelete ? 'Moderar y Borrar' : 'Borrar',
-      isPastoralDelete
-        ? `Como pastor, ¿deseas eliminar este mensaje de ${comment.userName} y sus respuestas de la comunidad?`
+      isModeratorDelete ? 'Moderar y Borrar' : 'Borrar',
+      isModeratorDelete
+        ? `¿Deseas eliminar este mensaje de ${comment.userName} y sus respuestas de la comunidad?`
         : 'Se eliminará este mensaje y sus respuestas. Esta acción no se puede deshacer.',
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -313,11 +320,11 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
               if (draft.replyToId && deleted.has(draft.replyToId)) updateDraft({ name: draft.name, text: draft.text });
               setTotal(result.total);
               countCallback.current?.(result.total);
-              setFeedback(isPastoralDelete ? 'Comentario moderado.' : 'Eliminado.');
+              setFeedback(isModeratorDelete ? 'Comentario moderado.' : 'Eliminado.');
               hapticSuccess();
             } catch (error) {
               if (version === generation.current) {
-                if (isPastoralDelete) {
+                if (isModeratorDelete) {
                   setComments((current) => current.filter((item) => item.id !== comment.id));
                   setFeedback('Comentario retirado del muro.');
                   hapticSuccess();
@@ -367,7 +374,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
         <View style={styles.metaRow}>
           <View style={styles.nameRow}>
             <Text style={styles.author}>{item.userName}</Text>
-            {item.isVerified && !item.isPastor && (
+            {item.isVerified && !item.isPastor && item.userRole !== 'moderador' && (
               <BadgeCheck size={14} color="#0284c7" />
             )}
             {item.isPastor && (
@@ -376,10 +383,10 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
                 <Text style={[styles.tagText, { color: '#d97706' }]}>Pastoral</Text>
               </View>
             )}
-            {item.userRole === 'moderador' && (
-              <View style={styles.tag}>
-                <ShieldCheck size={12} color="#0284c7" />
-                <Text style={[styles.tagText, { color: '#0284c7' }]}>Líder</Text>
+            {item.userRole === 'moderador' && !item.isPastor && (
+              <View style={[styles.tag, { backgroundColor: 'rgba(14, 165, 233, 0.15)', borderColor: 'rgba(14, 165, 233, 0.35)' }]}>
+                <ShieldCheck size={12} color="#0ea5e9" />
+                <Text style={[styles.tagText, { color: '#0ea5e9' }]}>Líder</Text>
               </View>
             )}
             <Text style={styles.date}>· {formatReflectionDate(item.createdAt)}</Text>
@@ -455,8 +462,11 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
             <Text style={styles.authorIndicatorName} numberOfLines={1}>
               {draft.name || authUser?.name || 'Hermano/a en Cristo'}
             </Text>
-            {authUser?.isVerified && !authUser?.isPastor && (
+            {authUser?.isVerified && !authUser?.isPastor && authUser?.role !== 'moderador' && (
               <BadgeCheck size={13} color="#0284c7" />
+            )}
+            {authUser?.role === 'moderador' && (
+              <ShieldCheck size={13} color="#0ea5e9" />
             )}
             {authUser?.isPastor && (
               <ShieldCheck size={13} color="#d97706" />
@@ -493,7 +503,7 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
             <TouchableOpacity style={styles.actionSheetItem} onPress={() => beginEdit(menuComment)} accessibilityRole="button"><Pencil size={20} color={theme.text} /><Text style={styles.actionSheetLabel}>Editar</Text></TouchableOpacity>
             <TouchableOpacity style={styles.actionSheetItem} onPress={() => confirmDelete(menuComment)} accessibilityRole="button"><Trash2 size={20} color={theme.destructive} /><Text style={[styles.actionSheetLabel, { color: theme.destructive }]}>Borrar</Text></TouchableOpacity>
           </>}
-          {authUser?.isPastor && !menuComment?.isOwn && menuComment && <>
+          {canModerate && !menuComment?.isOwn && menuComment && <>
             <TouchableOpacity style={styles.actionSheetItem} onPress={() => togglePinComment(menuComment)} accessibilityRole="button">
               <Pin size={20} color="#d97706" />
               <Text style={[styles.actionSheetLabel, { color: '#d97706' }]}>

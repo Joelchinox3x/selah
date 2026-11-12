@@ -117,8 +117,14 @@ export async function publishCommunityReflection(
   if (options.avatarUrl) {
     comment.avatarUrl = options.avatarUrl;
   }
-  if (options.userRole === 'pastor') {
-    comment.isPastor = true;
+  if (options.userRole) {
+    comment.userRole = options.userRole as any;
+    if (options.userRole === 'pastor' || options.userRole === 'admin') {
+      comment.isPastor = true;
+    }
+    if (options.userRole === 'moderador') {
+      comment.role = 'Líder / Moderador';
+    }
   }
   return comment;
 }
