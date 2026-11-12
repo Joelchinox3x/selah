@@ -31,6 +31,10 @@ import {
   Calendar,
   Clock,
   ShieldAlert,
+  Flag,
+  Eye,
+  EyeOff,
+  CheckCircle2,
 } from 'lucide-react-native';
 import { Screen } from '@/src/components/ui/Screen';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
@@ -43,15 +47,17 @@ import {
   unbanSuspendedUser,
   togglePinCommentRemote,
   clearSpamAttempts,
+  resolveModerationReport,
   ModerationComment,
   SuspendedUser,
   SpamAttempt,
+  ModerationReport,
 } from '@/src/features/moderation/moderationService';
 import { deleteCommunityReflection } from '@/src/features/daily/services/communityReflections';
 import { suspendAuthorByName } from '@/src/features/auth/pastoralService';
 import { hapticLight, hapticSuccess, hapticWarning } from '@/src/services/haptics/hapticFeedback';
 
-type ModerationTab = 'feed' | 'pinned' | 'spam' | 'words' | 'suspended';
+type ModerationTab = 'feed' | 'reports' | 'pinned' | 'spam' | 'words' | 'suspended';
 
 interface DateGroup {
   dateKey: string;
@@ -128,6 +134,7 @@ export default function ModerationScreen() {
   const router = useRouter();
   const themeMode = useSettingsStore((s) => s.theme);
   const theme = themes[themeMode] || themes.sepia;
+  const isDark = themeMode === 'oled';
 
   const authUser = useAuthStore((s) => s.user);
   const canModerate = Boolean(
@@ -148,6 +155,7 @@ export default function ModerationScreen() {
   const [comments, setComments] = useState<ModerationComment[]>([]);
   const [pinnedComments, setPinnedComments] = useState<ModerationComment[]>([]);
   const [spamAttempts, setSpamAttempts] = useState<SpamAttempt[]>([]);
+  const [reports, setReports] = useState<ModerationReport[]>([]);
   const [suspendedUsers, setSuspendedUsers] = useState<SuspendedUser[]>([]);
 
   // Inputs locales
@@ -155,6 +163,7 @@ export default function ModerationScreen() {
   const [wordFilter, setWordFilter] = useState('');
   const [addingWord, setAddingWord] = useState(false);
   const [clearingSpam, setClearingSpam] = useState(false);
+  const [showWordsList, setShowWordsList] = useState(false);
 
   const loadData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -166,6 +175,7 @@ export default function ModerationScreen() {
       setComments(data.comments || []);
       setPinnedComments(data.pinnedComments || []);
       setSpamAttempts(data.spamAttempts || []);
+      setReports(data.reports || []);
       setSuspendedUsers(data.suspendedUsers || []);
     } catch (err: any) {
       setError(err?.message || 'Error cargando datos de moderación');
@@ -199,7 +209,6 @@ export default function ModerationScreen() {
       await togglePinCommentRemote(comment.id, newPinnedState);
       hapticSuccess();
 
-      // Actualizar estado local del comentario
       setComments((prev) =>
         prev.map((c) => (c.id === comment.id ? { ...c, isPinned: newPinnedState } : c))
       );
@@ -212,7 +221,7 @@ export default function ModerationScreen() {
         Alert.alert('Testimonio Desfijado', 'El comentario continuará en el muro pero ya no está fijado.');
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.message || 'No se pudo actualizar el estado de fijado');
+      Alert.alert('Aviso', err?.message || 'No se pudo actualizar el estado de fijado');
     }
   };
 
@@ -318,8 +327,16 @@ export default function ModerationScreen() {
     );
   };
 
-  // Borrar comentario del feed
+  // Borrar comentario del feed con protección de jerarquía pastoral
   const handleDeleteComment = (comment: ModerationComment) => {
+    if (comment.isPastor && !authUser?.isPastor && authUser?.role !== 'admin') {
+      Alert.alert(
+        'Jerarquía Ministerial',
+        'Esta reflexión fue emitida por un Pastor y cuenta con protección ministerial. No puede ser retirada por moderación general.'
+      );
+      return;
+    }
+
     Alert.alert(
       'Moderar y Borrar Comentario',
       `¿Deseas eliminar este comentario de ${comment.userName}?`,
@@ -336,7 +353,7 @@ export default function ModerationScreen() {
               setPinnedComments((prev) => prev.filter((c) => c.id !== comment.id));
               hapticSuccess();
             } catch (err: any) {
-              Alert.alert('Error', err?.message || 'No se pudo borrar el comentario.');
+              Alert.alert('Aviso', err?.message || 'No se pudo borrar el comentario.');
             }
           },
         },
@@ -372,6 +389,75 @@ export default function ModerationScreen() {
     );
   };
 
+  // Resolver o descartar denuncia
+  const handleResolveReport = (report: ModerationReport, action: 'dismiss' | 'delete') => {
+    const isDelete = action === 'delete';
+    Alert.alert(
+      isDelete ? 'Moderar y Borrar Testimonio Denunciado' : 'Descartar Denuncia',
+      isDelete
+        ? `¿Confirmas que deseas eliminar el testimonio de ${report.authorName} por motivo de «${report.reason}»?`
+        : '¿Deseas descartar esta denuncia? El testimonio se conservará en el muro.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: isDelete ? 'Borrar Testimonio' : 'Descartar',
+          style: isDelete ? 'destructive' : 'default',
+          onPress: async () => {
+            try {
+              hapticLight();
+              await resolveModerationReport(report.id, action, report.commentId);
+              setReports((prev) => prev.filter((r) => r.id !== report.id));
+              if (isDelete) {
+                setComments((prev) => prev.filter((c) => c.id !== report.commentId));
+                setPinnedComments((prev) => prev.filter((c) => c.id !== report.commentId));
+              }
+              hapticSuccess();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'No se pudo procesar la denuncia.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Colores dinámicos adaptados al tema
+  const dynamicStyles = useMemo(() => {
+    return {
+      card: {
+        backgroundColor: theme.cardBackground,
+        borderColor: theme.border,
+      },
+      surfaceBox: {
+        backgroundColor: theme.surface,
+        borderColor: theme.borderSubtle,
+      },
+      tagPill: {
+        backgroundColor: theme.surfaceRaised,
+        borderColor: theme.borderSubtle,
+      },
+      subtleRow: {
+        borderTopColor: theme.borderSubtle,
+      },
+      accentHeader: {
+        backgroundColor: theme.accentMuted,
+        borderLeftColor: theme.accent,
+      },
+      destructivePill: {
+        backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(185, 28, 28, 0.08)',
+        borderColor: isDark ? 'rgba(239, 68, 68, 0.35)' : 'rgba(185, 28, 28, 0.25)',
+      },
+      amberPill: {
+        backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : 'rgba(180, 83, 9, 0.1)',
+        borderColor: isDark ? 'rgba(251, 191, 36, 0.35)' : 'rgba(180, 83, 9, 0.25)',
+      },
+      emeraldPill: {
+        backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(4, 120, 87, 0.1)',
+        borderColor: isDark ? 'rgba(16, 185, 129, 0.35)' : 'rgba(4, 120, 87, 0.25)',
+      },
+    };
+  }, [theme, isDark]);
+
   return (
     <Screen safeTop safeBottom={false}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -388,13 +474,13 @@ export default function ModerationScreen() {
           <View style={styles.headerTitles}>
             <View style={styles.titleRow}>
               <Text style={[styles.title, { color: theme.text }]}>Panel de Moderación</Text>
-              <View style={[styles.roleBadge, { backgroundColor: 'rgba(14, 165, 233, 0.15)', borderColor: 'rgba(14, 165, 233, 0.35)' }]}>
-                <ShieldCheck size={12} color="#0ea5e9" />
-                <Text style={[styles.roleBadgeText, { color: '#0ea5e9' }]}>Líder / Mod</Text>
+              <View style={[styles.roleBadge, { backgroundColor: theme.accentMuted, borderColor: theme.accent }]}>
+                <ShieldCheck size={12} color={theme.accent} />
+                <Text style={[styles.roleBadgeText, { color: theme.accent }]}>Líder / Mod</Text>
               </View>
             </View>
             <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-              Control del muro de reflexiones, spam y testimonios.
+              Control del muro de reflexiones, denuncias y testimonios.
             </Text>
           </View>
           <TouchableOpacity
@@ -404,58 +490,133 @@ export default function ModerationScreen() {
             accessibilityRole="button"
             accessibilityLabel="Actualizar datos"
           >
-            <RefreshCw size={19} color={refreshing ? '#0ea5e9' : theme.textMuted} />
+            <RefreshCw size={19} color={refreshing ? theme.accent : theme.textMuted} />
           </TouchableOpacity>
         </View>
 
-        {/* BARRA DE PESTAÑAS HORIZONTAL (ESPACIO MAXIMIZADO) */}
-        <View style={styles.tabBarContainer}>
+        {/* BARRA DE PESTAÑAS HORIZONTAL ERGONÓMICA */}
+        <View style={[styles.tabBarContainer, { borderBottomColor: theme.borderSubtle }]}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.tabBarContent}
           >
+            {/* TAB 1: FEED POR FECHAS */}
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'feed' && styles.tabBtnActive]}
+              style={[
+                styles.tabBtn,
+                { backgroundColor: theme.surfaceRaised, borderColor: theme.borderSubtle },
+                activeTab === 'feed' && { backgroundColor: theme.accentMuted, borderColor: theme.accent },
+              ]}
               onPress={() => { hapticLight(); setActiveTab('feed'); }}
             >
-              <Text style={[styles.tabBtnText, activeTab === 'feed' && styles.tabBtnTextActive]}>
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  { color: theme.textMuted },
+                  activeTab === 'feed' && { color: theme.accent, fontWeight: '700' },
+                ]}
+              >
                 💬 Feed por Fechas ({comments.length})
               </Text>
             </TouchableOpacity>
 
+            {/* TAB 2: DENUNCIAS / REPORTES */}
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'pinned' && styles.tabBtnActivePinned]}
+              style={[
+                styles.tabBtn,
+                { backgroundColor: theme.surfaceRaised, borderColor: theme.borderSubtle },
+                activeTab === 'reports' && { backgroundColor: dynamicStyles.destructivePill.backgroundColor, borderColor: theme.destructive },
+              ]}
+              onPress={() => { hapticLight(); setActiveTab('reports'); }}
+            >
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  { color: reports.length > 0 ? theme.destructive : theme.textMuted },
+                  activeTab === 'reports' && { color: theme.destructive, fontWeight: '700' },
+                ]}
+              >
+                🚩 Denuncias ({reports.length})
+              </Text>
+            </TouchableOpacity>
+
+            {/* TAB 3: TESTIMONIOS DESTACADOS */}
+            <TouchableOpacity
+              style={[
+                styles.tabBtn,
+                { backgroundColor: theme.surfaceRaised, borderColor: theme.borderSubtle },
+                activeTab === 'pinned' && { backgroundColor: dynamicStyles.amberPill.backgroundColor, borderColor: isDark ? '#fbbf24' : '#b45309' },
+              ]}
               onPress={() => { hapticLight(); setActiveTab('pinned'); }}
             >
-              <Text style={[styles.tabBtnText, activeTab === 'pinned' && styles.tabBtnTextActivePinned]}>
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  { color: theme.textMuted },
+                  activeTab === 'pinned' && { color: isDark ? '#fbbf24' : '#b45309', fontWeight: '700' },
+                ]}
+              >
                 📌 Destacados ({pinnedComments.length})
               </Text>
             </TouchableOpacity>
 
+            {/* TAB 4: INTENTOS DE SPAM */}
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'spam' && styles.tabBtnActiveSpam]}
+              style={[
+                styles.tabBtn,
+                { backgroundColor: theme.surfaceRaised, borderColor: theme.borderSubtle },
+                activeTab === 'spam' && { backgroundColor: dynamicStyles.destructivePill.backgroundColor, borderColor: theme.destructive },
+              ]}
               onPress={() => { hapticLight(); setActiveTab('spam'); }}
             >
-              <Text style={[styles.tabBtnText, activeTab === 'spam' && styles.tabBtnTextActiveSpam]}>
-                🚨 Intentos de Spam ({spamAttempts.length})
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  { color: theme.textMuted },
+                  activeTab === 'spam' && { color: theme.destructive, fontWeight: '700' },
+                ]}
+              >
+                🚨 Registro Spam ({spamAttempts.length})
               </Text>
             </TouchableOpacity>
 
+            {/* TAB 5: FILTRO DE PALABRAS */}
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'words' && styles.tabBtnActiveWords]}
+              style={[
+                styles.tabBtn,
+                { backgroundColor: theme.surfaceRaised, borderColor: theme.borderSubtle },
+                activeTab === 'words' && { backgroundColor: theme.accentMuted, borderColor: theme.accent },
+              ]}
               onPress={() => { hapticLight(); setActiveTab('words'); }}
             >
-              <Text style={[styles.tabBtnText, activeTab === 'words' && styles.tabBtnTextActiveWords]}>
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  { color: theme.textMuted },
+                  activeTab === 'words' && { color: theme.accent, fontWeight: '700' },
+                ]}
+              >
                 🚫 Filtro Palabras ({blockedWords.length})
               </Text>
             </TouchableOpacity>
 
+            {/* TAB 6: CUENTAS SUSPENDIDAS */}
             <TouchableOpacity
-              style={[styles.tabBtn, activeTab === 'suspended' && styles.tabBtnActive]}
+              style={[
+                styles.tabBtn,
+                { backgroundColor: theme.surfaceRaised, borderColor: theme.borderSubtle },
+                activeTab === 'suspended' && { backgroundColor: theme.accentMuted, borderColor: theme.accent },
+              ]}
               onPress={() => { hapticLight(); setActiveTab('suspended'); }}
             >
-              <Text style={[styles.tabBtnText, activeTab === 'suspended' && styles.tabBtnTextActive]}>
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  { color: theme.textMuted },
+                  activeTab === 'suspended' && { color: theme.accent, fontWeight: '700' },
+                ]}
+              >
                 🔒 Suspendidos ({suspendedUsers.length})
               </Text>
             </TouchableOpacity>
@@ -465,17 +626,20 @@ export default function ModerationScreen() {
         {/* CONTENIDO PRINCIPAL */}
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#0ea5e9" />
+            <ActivityIndicator size="large" color={theme.accent} />
             <Text style={[styles.loadingText, { color: theme.textMuted }]}>
               Cargando panel de moderación…
             </Text>
           </View>
         ) : error ? (
           <View style={styles.centerContainer}>
-            <AlertTriangle size={36} color="#ef4444" />
+            <AlertTriangle size={36} color={theme.destructive} />
             <Text style={[styles.errorTitle, { color: theme.text }]}>No se pudo cargar</Text>
             <Text style={[styles.errorSubtitle, { color: theme.textMuted }]}>{error}</Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={() => loadData()}>
+            <TouchableOpacity
+              style={[styles.retryBtn, { backgroundColor: theme.accent }]}
+              onPress={() => loadData()}
+            >
               <Text style={styles.retryBtnText}>Reintentar</Text>
             </TouchableOpacity>
           </View>
@@ -491,25 +655,27 @@ export default function ModerationScreen() {
             {activeTab === 'feed' && (
               <View style={styles.section}>
                 <View style={styles.sectionTitleRow}>
-                  <Text style={styles.sectionHeaderTitle}>
+                  <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>
                     💬 Muro Global de Reflexiones
                   </Text>
-                  <Text style={styles.sectionCounterBadge}>{comments.length} en total</Text>
+                  <Text style={[styles.sectionCounterBadge, { backgroundColor: theme.accentMuted, color: theme.accent }]}>
+                    {comments.length} en total
+                  </Text>
                 </View>
-                <Text style={styles.sectionHeaderSubtitle}>
+                <Text style={[styles.sectionHeaderSubtitle, { color: theme.textMuted }]}>
                   Organizado cronológicamente por fecha de publicación.
                 </Text>
 
                 {dateGroups.map((group) => (
                   <View key={group.dateKey} style={styles.dateGroupContainer}>
                     {/* Header de Fecha */}
-                    <View style={styles.dateHeader}>
+                    <View style={[styles.dateHeader, dynamicStyles.accentHeader]}>
                       <View style={styles.dateHeaderLeft}>
-                        <Calendar size={14} color="#0ea5e9" />
-                        <Text style={styles.dateHeaderTitle}>{group.label}</Text>
+                        <Calendar size={14} color={theme.accent} />
+                        <Text style={[styles.dateHeaderTitle, { color: theme.accent }]}>{group.label}</Text>
                       </View>
-                      <View style={styles.dateGroupCountPill}>
-                        <Text style={styles.dateGroupCountText}>
+                      <View style={[styles.dateGroupCountPill, { backgroundColor: theme.cardBackground }]}>
+                        <Text style={[styles.dateGroupCountText, { color: theme.textMuted }]}>
                           {group.items.length} {group.items.length === 1 ? 'reflexión' : 'reflexiones'}
                         </Text>
                       </View>
@@ -520,31 +686,38 @@ export default function ModerationScreen() {
                       {group.items.map((item) => (
                         <View
                           key={item.id}
-                          style={[styles.commentCard, item.isPinned && styles.commentCardPinned]}
+                          style={[
+                            styles.commentCard,
+                            dynamicStyles.card,
+                            item.isPinned && {
+                              borderColor: isDark ? 'rgba(251, 191, 36, 0.4)' : 'rgba(180, 83, 9, 0.35)',
+                              backgroundColor: dynamicStyles.amberPill.backgroundColor,
+                            },
+                          ]}
                         >
                           <View style={styles.commentCardHeader}>
                             <View style={styles.commentAuthorCol}>
                               <View style={styles.commentAuthorRow}>
-                                <Text style={styles.commentAuthor}>{item.userName}</Text>
+                                <Text style={[styles.commentAuthor, { color: theme.text }]}>{item.userName}</Text>
                                 {item.isPastor && (
-                                  <View style={[styles.miniBadge, { backgroundColor: 'rgba(217, 119, 6, 0.15)' }]}>
-                                    <ShieldCheck size={11} color="#d97706" />
-                                    <Text style={[styles.miniBadgeText, { color: '#d97706' }]}>Pastor</Text>
+                                  <View style={[styles.miniBadge, dynamicStyles.amberPill]}>
+                                    <ShieldCheck size={11} color={isDark ? '#fbbf24' : '#b45309'} />
+                                    <Text style={[styles.miniBadgeText, { color: isDark ? '#fbbf24' : '#b45309' }]}>Pastor</Text>
                                   </View>
                                 )}
                                 {item.role === 'Líder / Moderador' && !item.isPastor && (
-                                  <View style={[styles.miniBadge, { backgroundColor: 'rgba(14, 165, 233, 0.15)' }]}>
-                                    <ShieldCheck size={11} color="#0ea5e9" />
-                                    <Text style={[styles.miniBadgeText, { color: '#0ea5e9' }]}>Líder</Text>
+                                  <View style={[styles.miniBadge, { backgroundColor: theme.accentMuted, borderColor: theme.accent }]}>
+                                    <ShieldCheck size={11} color={theme.accent} />
+                                    <Text style={[styles.miniBadgeText, { color: theme.accent }]}>Líder</Text>
                                   </View>
                                 )}
                               </View>
                               <View style={styles.commentMetaRow}>
-                                <Text style={styles.commentVerseTag}>📖 {item.verseSlug}</Text>
+                                <Text style={[styles.commentVerseTag, { color: theme.accent }]}>📖 {item.verseSlug}</Text>
                                 {item.createdAt ? (
                                   <View style={styles.commentTimeRow}>
-                                    <Clock size={10} color="#64748b" />
-                                    <Text style={styles.commentTimeText}>
+                                    <Clock size={10} color={theme.textMuted} />
+                                    <Text style={[styles.commentTimeText, { color: theme.textMuted }]}>
                                       {formatCommentTime(item.createdAt)}
                                     </Text>
                                   </View>
@@ -553,32 +726,32 @@ export default function ModerationScreen() {
                             </View>
 
                             {item.isPinned && (
-                              <View style={styles.pinnedBadge}>
-                                <Pin size={11} color="#fbbf24" />
-                                <Text style={styles.pinnedBadgeText}>Destacado</Text>
+                              <View style={[styles.pinnedBadge, dynamicStyles.amberPill]}>
+                                <Pin size={11} color={isDark ? '#fbbf24' : '#b45309'} />
+                                <Text style={[styles.pinnedBadgeText, { color: isDark ? '#fbbf24' : '#b45309' }]}>Destacado</Text>
                               </View>
                             )}
                           </View>
 
-                          <Text style={styles.commentBody}>{item.text}</Text>
+                          <Text style={[styles.commentBody, { color: theme.text }]}>{item.text}</Text>
 
                           {/* Acciones de Moderación */}
-                          <View style={styles.commentActionsRow}>
+                          <View style={[styles.commentActionsRow, dynamicStyles.subtleRow]}>
                             <TouchableOpacity
-                              style={[styles.commentActionBtn, item.isPinned && styles.commentActionBtnPinned]}
+                              style={styles.commentActionBtn}
                               onPress={() => handleTogglePin(item)}
                             >
                               {item.isPinned ? (
                                 <>
-                                  <PinOff size={13} color="#fbbf24" />
-                                  <Text style={[styles.commentActionText, { color: '#fbbf24' }]}>
+                                  <PinOff size={13} color={isDark ? '#fbbf24' : '#b45309'} />
+                                  <Text style={[styles.commentActionText, { color: isDark ? '#fbbf24' : '#b45309' }]}>
                                     Desfijar
                                   </Text>
                                 </>
                               ) : (
                                 <>
-                                  <Pin size={13} color="#0ea5e9" />
-                                  <Text style={[styles.commentActionText, { color: '#0ea5e9' }]}>
+                                  <Pin size={13} color={theme.accent} />
+                                  <Text style={[styles.commentActionText, { color: theme.accent }]}>
                                     Destacar
                                   </Text>
                                 </>
@@ -589,8 +762,8 @@ export default function ModerationScreen() {
                               style={styles.commentActionBtn}
                               onPress={() => handleDeleteComment(item)}
                             >
-                              <Trash2 size={13} color="#ef4444" />
-                              <Text style={[styles.commentActionText, { color: '#ef4444' }]}>
+                              <Trash2 size={13} color={theme.destructive} />
+                              <Text style={[styles.commentActionText, { color: theme.destructive }]}>
                                 Borrar
                               </Text>
                             </TouchableOpacity>
@@ -599,8 +772,8 @@ export default function ModerationScreen() {
                               style={styles.commentActionBtn}
                               onPress={() => handleSuspendAuthor(item.userName)}
                             >
-                              <UserX size={13} color="#f59e0b" />
-                              <Text style={[styles.commentActionText, { color: '#f59e0b' }]}>
+                              <UserX size={13} color={isDark ? '#f59e0b' : '#b45309'} />
+                              <Text style={[styles.commentActionText, { color: isDark ? '#f59e0b' : '#b45309' }]}>
                                 Suspender
                               </Text>
                             </TouchableOpacity>
@@ -613,9 +786,9 @@ export default function ModerationScreen() {
 
                 {comments.length === 0 && (
                   <View style={styles.emptyContainer}>
-                    <MessageSquare size={36} color="#64748b" />
-                    <Text style={styles.emptyTitle}>No hay reflexiones en el muro</Text>
-                    <Text style={styles.emptySubtitle}>
+                    <MessageSquare size={36} color={theme.textMuted} />
+                    <Text style={[styles.emptyTitle, { color: theme.text }]}>No hay reflexiones en el muro</Text>
+                    <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
                       Las publicaciones de la congregación aparecerán aquí agrupadas por fecha.
                     </Text>
                   </View>
@@ -624,53 +797,155 @@ export default function ModerationScreen() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 2: GESTOR DE TESTIMONIOS DESTACADOS                        */}
+            {/* TAB 2: DENUNCIAS / REPORTES DE LA CONGREGACIÓN                 */}
+            {/* ============================================================== */}
+            {activeTab === 'reports' && (
+              <View style={styles.section}>
+                <View style={styles.sectionTitleRow}>
+                  <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>
+                    🚩 Denuncias & Reportes de Hermanos
+                  </Text>
+                  <Text style={[styles.sectionCounterBadge, dynamicStyles.destructivePill, { color: theme.destructive }]}>
+                    {reports.length} pendientes
+                  </Text>
+                </View>
+                <Text style={[styles.sectionHeaderSubtitle, { color: theme.textMuted }]}>
+                  Testimonios reportados por la comunidad para revisión y cuidado del orden congregacional.
+                </Text>
+
+                <View style={styles.commentsList}>
+                  {reports.map((report) => (
+                    <View key={report.id} style={[styles.spamCard, dynamicStyles.card, { borderColor: theme.destructive }]}>
+                      <View style={styles.spamCardHeader}>
+                        <View style={styles.spamAuthorCol}>
+                          <View style={styles.commentAuthorRow}>
+                            <Flag size={14} color={theme.destructive} />
+                            <Text style={[styles.spamAuthorName, { color: theme.text }]}>
+                              Reportado: {report.authorName}
+                            </Text>
+                          </View>
+                          <Text style={[styles.spamVerseTag, { color: theme.textMuted }]}>
+                            📖 {report.verseSlug} • Reportado por: {report.reportedByName}
+                          </Text>
+                        </View>
+                        <Text style={[styles.spamDateText, { color: theme.textMuted }]}>
+                          {formatDateTimeShort(report.createdAt)}
+                        </Text>
+                      </View>
+
+                      {/* Motivo de la denuncia */}
+                      <View style={styles.spamDetectedPill}>
+                        <Text style={[styles.spamDetectedPillLabel, { color: theme.textMuted }]}>Motivo:</Text>
+                        <View style={[styles.spamDetectedWordTag, dynamicStyles.destructivePill]}>
+                          <Text style={[styles.spamDetectedWordText, { color: theme.destructive }]}>
+                            {report.reason}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Texto del comentario reportado */}
+                      <View style={[styles.spamAttemptQuote, dynamicStyles.surfaceBox, { borderLeftColor: theme.destructive }]}>
+                        <Text style={[styles.spamAttemptQuoteText, { color: theme.text }]}>
+                          "{report.commentText}"
+                        </Text>
+                      </View>
+
+                      {/* Acciones para resolver denuncia */}
+                      <View style={[styles.reportActionsRow, dynamicStyles.subtleRow]}>
+                        <TouchableOpacity
+                          style={[styles.reportActionBtn, dynamicStyles.tagPill]}
+                          onPress={() => handleResolveReport(report, 'dismiss')}
+                        >
+                          <CheckCircle2 size={13} color={theme.textMuted} />
+                          <Text style={[styles.reportActionBtnText, { color: theme.textMuted }]}>
+                            Descartar
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[styles.reportActionBtn, dynamicStyles.destructivePill]}
+                          onPress={() => handleResolveReport(report, 'delete')}
+                        >
+                          <Trash2 size={13} color={theme.destructive} />
+                          <Text style={[styles.reportActionBtnText, { color: theme.destructive }]}>
+                            Borrar Testimonio
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[styles.reportActionBtn, dynamicStyles.amberPill]}
+                          onPress={() => handleSuspendAuthor(report.authorName)}
+                        >
+                          <UserX size={13} color={isDark ? '#f59e0b' : '#b45309'} />
+                          <Text style={[styles.reportActionBtnText, { color: isDark ? '#f59e0b' : '#b45309' }]}>
+                            Suspender Autor
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+
+                  {reports.length === 0 && (
+                    <View style={styles.emptyContainer}>
+                      <CheckCircle2 size={36} color={theme.accent} />
+                      <Text style={[styles.emptyTitle, { color: theme.text }]}>No hay denuncias pendientes</Text>
+                      <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
+                        La comunidad se encuentra edificando en paz. Si un hermano denuncia un testimonio desde el muro, aparecerá aquí al instante.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* ============================================================== */}
+            {/* TAB 3: GESTOR DE TESTIMONIOS DESTACADOS                        */}
             {/* ============================================================== */}
             {activeTab === 'pinned' && (
               <View style={styles.section}>
                 <View style={styles.sectionTitleRow}>
-                  <Text style={styles.sectionHeaderTitle}>
+                  <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>
                     📌 Gestor de Testimonios Destacados
                   </Text>
-                  <Text style={[styles.sectionCounterBadge, { backgroundColor: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24' }]}>
+                  <Text style={[styles.sectionCounterBadge, dynamicStyles.amberPill, { color: isDark ? '#fbbf24' : '#b45309' }]}>
                     {pinnedComments.length} fijados
                   </Text>
                 </View>
-                <Text style={styles.sectionHeaderSubtitle}>
+                <Text style={[styles.sectionHeaderSubtitle, { color: theme.textMuted }]}>
                   Reflexiones y testimonios fijados en la parte superior de cada pasaje para edificación de todos.
                 </Text>
 
                 <View style={styles.commentsList}>
                   {pinnedComments.map((item) => (
-                    <View key={item.id} style={[styles.commentCard, styles.commentCardPinned]}>
+                    <View key={item.id} style={[styles.commentCard, dynamicStyles.card, dynamicStyles.amberPill]}>
                       <View style={styles.commentCardHeader}>
                         <View style={styles.commentAuthorCol}>
                           <View style={styles.commentAuthorRow}>
-                            <Text style={styles.commentAuthor}>{item.userName}</Text>
+                            <Text style={[styles.commentAuthor, { color: theme.text }]}>{item.userName}</Text>
                             {item.isPastor && (
-                              <View style={[styles.miniBadge, { backgroundColor: 'rgba(217, 119, 6, 0.15)' }]}>
-                                <ShieldCheck size={11} color="#d97706" />
-                                <Text style={[styles.miniBadgeText, { color: '#d97706' }]}>Pastor</Text>
+                              <View style={[styles.miniBadge, dynamicStyles.amberPill]}>
+                                <ShieldCheck size={11} color={isDark ? '#fbbf24' : '#b45309'} />
+                                <Text style={[styles.miniBadgeText, { color: isDark ? '#fbbf24' : '#b45309' }]}>Pastor</Text>
                               </View>
                             )}
                           </View>
-                          <Text style={styles.commentVerseTag}>📖 {item.verseSlug}</Text>
+                          <Text style={[styles.commentVerseTag, { color: theme.accent }]}>📖 {item.verseSlug}</Text>
                         </View>
-                        <View style={styles.pinnedBadge}>
-                          <Pin size={11} color="#fbbf24" />
-                          <Text style={styles.pinnedBadgeText}>Fijado Oficial</Text>
+                        <View style={[styles.pinnedBadge, dynamicStyles.amberPill]}>
+                          <Pin size={11} color={isDark ? '#fbbf24' : '#b45309'} />
+                          <Text style={[styles.pinnedBadgeText, { color: isDark ? '#fbbf24' : '#b45309' }]}>Fijado Oficial</Text>
                         </View>
                       </View>
 
-                      <Text style={styles.commentBody}>{item.text}</Text>
+                      <Text style={[styles.commentBody, { color: theme.text }]}>{item.text}</Text>
 
-                      <View style={styles.commentActionsRow}>
+                      <View style={[styles.commentActionsRow, dynamicStyles.subtleRow]}>
                         <TouchableOpacity
-                          style={[styles.commentActionBtn, styles.commentActionBtnPinned]}
+                          style={styles.commentActionBtn}
                           onPress={() => handleTogglePin(item)}
                         >
-                          <PinOff size={13} color="#fbbf24" />
-                          <Text style={[styles.commentActionText, { color: '#fbbf24' }]}>
+                          <PinOff size={13} color={isDark ? '#fbbf24' : '#b45309'} />
+                          <Text style={[styles.commentActionText, { color: isDark ? '#fbbf24' : '#b45309' }]}>
                             Desfijar Testimonio
                           </Text>
                         </TouchableOpacity>
@@ -679,8 +954,8 @@ export default function ModerationScreen() {
                           style={styles.commentActionBtn}
                           onPress={() => handleDeleteComment(item)}
                         >
-                          <Trash2 size={13} color="#ef4444" />
-                          <Text style={[styles.commentActionText, { color: '#ef4444' }]}>
+                          <Trash2 size={13} color={theme.destructive} />
+                          <Text style={[styles.commentActionText, { color: theme.destructive }]}>
                             Borrar
                           </Text>
                         </TouchableOpacity>
@@ -690,9 +965,9 @@ export default function ModerationScreen() {
 
                   {pinnedComments.length === 0 && (
                     <View style={styles.emptyContainer}>
-                      <Pin size={36} color="#fbbf24" />
-                      <Text style={styles.emptyTitle}>Sin testimonios destacados</Text>
-                      <Text style={styles.emptySubtitle}>
+                      <Pin size={36} color={isDark ? '#fbbf24' : '#b45309'} />
+                      <Text style={[styles.emptyTitle, { color: theme.text }]}>Sin testimonios destacados</Text>
+                      <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
                         Puedes entrar a la pestaña «Feed por Fechas» y pulsar «Destacar» en cualquier comentario edificante.
                       </Text>
                     </View>
@@ -702,68 +977,74 @@ export default function ModerationScreen() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 3: REGISTRO DE INTENTOS DE SPAM & GROSERÍAS               */}
+            {/* TAB 4: REGISTRO DE INTENTOS DE SPAM & GROSERÍAS               */}
             {/* ============================================================== */}
             {activeTab === 'spam' && (
               <View style={styles.section}>
                 <View style={styles.sectionTitleRow}>
-                  <Text style={styles.sectionHeaderTitle}>
+                  <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>
                     🚨 Registro de Intentos de Spam
                   </Text>
                   {spamAttempts.length > 0 && (
                     <TouchableOpacity
-                      style={styles.clearSpamBtn}
+                      style={[styles.clearSpamBtn, dynamicStyles.destructivePill]}
                       onPress={handleClearSpam}
                       disabled={clearingSpam}
                     >
-                      <Trash2 size={12} color="#ef4444" />
-                      <Text style={styles.clearSpamBtnText}>Limpiar Historial</Text>
+                      <Trash2 size={12} color={theme.destructive} />
+                      <Text style={[styles.clearSpamBtnText, { color: theme.destructive }]}>Limpiar Historial</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-                <Text style={styles.sectionHeaderSubtitle}>
+                <Text style={[styles.sectionHeaderSubtitle, { color: theme.textMuted }]}>
                   Intentos de publicación que fueron bloqueados automáticamente por contener groserías o insultos.
                 </Text>
 
                 <View style={styles.commentsList}>
                   {spamAttempts.map((attempt) => (
-                    <View key={attempt.id} style={styles.spamCard}>
+                    <View key={attempt.id} style={[styles.spamCard, dynamicStyles.card, { borderColor: theme.destructive }]}>
                       <View style={styles.spamCardHeader}>
                         <View style={styles.spamAuthorCol}>
                           <View style={styles.commentAuthorRow}>
-                            <ShieldAlert size={14} color="#ef4444" />
-                            <Text style={styles.spamAuthorName}>{attempt.userName || 'Usuario Anónimo'}</Text>
+                            <ShieldAlert size={14} color={theme.destructive} />
+                            <Text style={[styles.spamAuthorName, { color: theme.text }]}>
+                              {attempt.userName || 'Usuario Anónimo'}
+                            </Text>
                           </View>
-                          <Text style={styles.spamVerseTag}>📖 {attempt.verseSlug}</Text>
+                          <Text style={[styles.spamVerseTag, { color: theme.textMuted }]}>📖 {attempt.verseSlug}</Text>
                         </View>
-                        <Text style={styles.spamDateText}>
+                        <Text style={[styles.spamDateText, { color: theme.textMuted }]}>
                           {formatDateTimeShort(attempt.createdAt)}
                         </Text>
                       </View>
 
                       {/* Pill de la palabra detectada */}
                       <View style={styles.spamDetectedPill}>
-                        <Text style={styles.spamDetectedPillLabel}>Palabra Bloqueada:</Text>
-                        <View style={styles.spamDetectedWordTag}>
-                          <Text style={styles.spamDetectedWordText}>«{attempt.detectedWord}»</Text>
+                        <Text style={[styles.spamDetectedPillLabel, { color: theme.textMuted }]}>Palabra Bloqueada:</Text>
+                        <View style={[styles.spamDetectedWordTag, dynamicStyles.destructivePill]}>
+                          <Text style={[styles.spamDetectedWordText, { color: theme.destructive }]}>
+                            «{attempt.detectedWord}»
+                          </Text>
                         </View>
                       </View>
 
                       {/* Texto del intento */}
-                      <View style={styles.spamAttemptQuote}>
-                        <Text style={styles.spamAttemptQuoteText}>
+                      <View style={[styles.spamAttemptQuote, dynamicStyles.surfaceBox, { borderLeftColor: theme.destructive }]}>
+                        <Text style={[styles.spamAttemptQuoteText, { color: theme.text }]}>
                           "{attempt.attemptedText}"
                         </Text>
                       </View>
 
                       {/* Acciones */}
-                      <View style={styles.spamActionsRow}>
+                      <View style={[styles.spamActionsRow, dynamicStyles.subtleRow]}>
                         <TouchableOpacity
-                          style={styles.spamSuspendBtn}
+                          style={[styles.spamSuspendBtn, dynamicStyles.destructivePill]}
                           onPress={() => handleSuspendAuthor(attempt.userName)}
                         >
-                          <UserX size={13} color="#ef4444" />
-                          <Text style={styles.spamSuspendBtnText}>Suspender Usuario</Text>
+                          <UserX size={13} color={theme.destructive} />
+                          <Text style={[styles.spamSuspendBtnText, { color: theme.destructive }]}>
+                            Suspender Usuario
+                          </Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -771,9 +1052,9 @@ export default function ModerationScreen() {
 
                   {spamAttempts.length === 0 && (
                     <View style={styles.emptyContainer}>
-                      <Sparkles size={36} color="#10b981" />
-                      <Text style={styles.emptyTitle}>Sin intentos de spam registrados</Text>
-                      <Text style={styles.emptySubtitle}>
+                      <Sparkles size={36} color={theme.accent} />
+                      <Text style={[styles.emptyTitle, { color: theme.text }]}>Sin intentos de spam registrados</Text>
+                      <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
                         El filtro de groserías se encuentra activo y la comunidad permanece en santidad y respeto.
                       </Text>
                     </View>
@@ -783,28 +1064,32 @@ export default function ModerationScreen() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 4: FILTRO DE PALABRAS BLOQUEADAS (LISTA NEGRA)             */}
+            {/* TAB 5: FILTRO DE PALABRAS BLOQUEADAS (LISTA OCULTA POR DEFECTO) */}
             {/* ============================================================== */}
             {activeTab === 'words' && (
               <View style={styles.section}>
                 {/* Formulario Agregar Palabra */}
-                <View style={styles.addWordBox}>
-                  <Text style={styles.addWordBoxTitle}>🚫 Agregar Palabra al Filtro</Text>
-                  <Text style={styles.addWordBoxSubtitle}>
-                    Cualquier comentario con esta palabra será bloqueado y registrado en «Intentos de Spam».
+                <View style={[styles.addWordBox, dynamicStyles.card, { borderColor: theme.border }]}>
+                  <Text style={[styles.addWordBoxTitle, { color: theme.text }]}>🚫 Agregar Palabra al Filtro</Text>
+                  <Text style={[styles.addWordBoxSubtitle, { color: theme.textMuted }]}>
+                    Cualquier comentario con esta palabra será bloqueado e irá a «Registro Spam».
                   </Text>
                   <View style={styles.addWordRow}>
                     <TextInput
-                      style={styles.addWordInput}
+                      style={[styles.addWordInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
                       placeholder="Ej: grosería, insulto, spam…"
-                      placeholderTextColor="#64748b"
+                      placeholderTextColor={theme.textMuted}
                       value={newWordInput}
                       onChangeText={setNewWordInput}
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
                     <TouchableOpacity
-                      style={[styles.addWordBtn, (!newWordInput.trim() || addingWord) && styles.addWordBtnDisabled]}
+                      style={[
+                        styles.addWordBtn,
+                        { backgroundColor: theme.destructive },
+                        (!newWordInput.trim() || addingWord) && styles.addWordBtnDisabled,
+                      ]}
                       onPress={handleAddWord}
                       disabled={!newWordInput.trim() || addingWord}
                     >
@@ -821,106 +1106,148 @@ export default function ModerationScreen() {
                 </View>
 
                 {/* Buscador de Palabras */}
-                <View style={styles.searchRow}>
-                  <Search size={16} color="#64748b" />
+                <View style={[styles.searchRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                  <Search size={16} color={theme.textMuted} />
                   <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, { color: theme.text }]}
                     placeholder="Buscar palabra en la lista negra…"
-                    placeholderTextColor="#64748b"
+                    placeholderTextColor={theme.textMuted}
                     value={wordFilter}
-                    onChangeText={setWordFilter}
+                    onChangeText={(val) => {
+                      setWordFilter(val);
+                      if (val.trim()) setShowWordsList(true);
+                    }}
                     autoCapitalize="none"
                   />
                   {!!wordFilter && (
                     <TouchableOpacity onPress={() => setWordFilter('')}>
-                      <X size={16} color="#64748b" />
+                      <X size={16} color={theme.textMuted} />
                     </TouchableOpacity>
                   )}
                 </View>
 
-                <View style={styles.wordsSummaryRow}>
-                  <Text style={styles.wordsSummaryText}>
-                    Mostrando {filteredWords.length} de {blockedWords.length} palabras activas
-                  </Text>
-                </View>
-
-                {/* Cloud de palabras */}
-                <View style={styles.wordsCloud}>
-                  {filteredWords.map((word) => (
-                    <View key={word} style={styles.wordChip}>
-                      <Text style={styles.wordChipText}>{word}</Text>
-                      <TouchableOpacity
-                        style={styles.wordChipDelete}
-                        onPress={() => handleDeleteWord(word)}
-                        hitSlop={8}
-                        accessibilityLabel={`Quitar palabra ${word}`}
-                      >
-                        <X size={13} color="#ef4444" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                  {filteredWords.length === 0 && (
-                    <Text style={styles.emptyWordsText}>
-                      No se encontraron palabras que coincidan con la búsqueda.
-                    </Text>
+                {/* BOTÓN COLAPSABLE: OCULTO POR DEFECTO PARA NO VER GROSERÍAS */}
+                <TouchableOpacity
+                  style={[
+                    styles.toggleWordsBtn,
+                    { backgroundColor: theme.surfaceRaised, borderColor: theme.borderSubtle },
+                  ]}
+                  onPress={() => {
+                    hapticLight();
+                    setShowWordsList((prev) => !prev);
+                  }}
+                  accessibilityRole="button"
+                >
+                  {showWordsList ? (
+                    <EyeOff size={16} color={theme.accent} />
+                  ) : (
+                    <Eye size={16} color={theme.accent} />
                   )}
-                </View>
+                  <Text style={[styles.toggleWordsBtnText, { color: theme.text }]}>
+                    {showWordsList
+                      ? 'Ocultar lista de palabras'
+                      : `Ver lista de palabras bloqueadas (${filteredWords.length})`}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* CLOUD DE PALABRAS (SOLO SI SE EXPANDE O SE BUSCA) */}
+                {showWordsList ? (
+                  <View style={styles.wordsCloudContainer}>
+                    <View style={styles.wordsSummaryRow}>
+                      <Text style={[styles.wordsSummaryText, { color: theme.textMuted }]}>
+                        Mostrando {filteredWords.length} de {blockedWords.length} palabras activas
+                      </Text>
+                    </View>
+
+                    <View style={styles.wordsCloud}>
+                      {filteredWords.map((word) => (
+                        <View key={word} style={[styles.wordChip, dynamicStyles.tagPill]}>
+                          <Text style={[styles.wordChipText, { color: theme.text }]}>{word}</Text>
+                          <TouchableOpacity
+                            style={styles.wordChipDelete}
+                            onPress={() => handleDeleteWord(word)}
+                            hitSlop={8}
+                            accessibilityLabel={`Quitar palabra ${word}`}
+                          >
+                            <X size={13} color={theme.destructive} />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      {filteredWords.length === 0 && (
+                        <Text style={[styles.emptyWordsText, { color: theme.textMuted }]}>
+                          No se encontraron palabras que coincidan con la búsqueda.
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                ) : (
+                  <View style={[styles.wordsHiddenNotice, dynamicStyles.surfaceBox]}>
+                    <ShieldCheck size={20} color={theme.accent} />
+                    <Text style={[styles.wordsHiddenNoticeText, { color: theme.textMuted }]}>
+                      La lista de groserías se encuentra oculta por respeto y limpieza visual. Pulsa «Ver lista» si necesitas gestionar alguna.
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 
             {/* ============================================================== */}
-            {/* TAB 5: CUENTAS SUSPENDIDAS (PERDÓN Y GRACIA)                   */}
+            {/* TAB 6: CUENTAS SUSPENDIDAS (PERDÓN Y GRACIA)                   */}
             {/* ============================================================== */}
             {activeTab === 'suspended' && (
               <View style={styles.section}>
                 <View style={styles.sectionTitleRow}>
-                  <Text style={styles.sectionHeaderTitle}>
+                  <Text style={[styles.sectionHeaderTitle, { color: theme.text }]}>
                     🔒 Cuentas Suspendidas & Ministración
                   </Text>
-                  <Text style={styles.sectionCounterBadge}>{suspendedUsers.length} bloqueados</Text>
+                  <Text style={[styles.sectionCounterBadge, dynamicStyles.destructivePill, { color: theme.destructive }]}>
+                    {suspendedUsers.length} bloqueados
+                  </Text>
                 </View>
-                <Text style={styles.sectionHeaderSubtitle}>
+                <Text style={[styles.sectionHeaderSubtitle, { color: theme.textMuted }]}>
                   Usuarios restringidos por faltas a la convivencia. Puedes restablecerles la cuenta cuando hayan reflexionado.
                 </Text>
 
                 <View style={styles.suspendedList}>
                   {suspendedUsers.map((user) => (
-                    <View key={user.id} style={styles.suspendedCard}>
+                    <View key={user.id} style={[styles.suspendedCard, dynamicStyles.card, { borderColor: theme.border }]}>
                       <View style={styles.suspendedInfoRow}>
                         {user.avatarUrl ? (
                           <Image source={{ uri: user.avatarUrl }} style={styles.suspendedAvatar} />
                         ) : (
-                          <View style={styles.suspendedAvatarFallback}>
-                            <Text style={styles.suspendedInitials}>
+                          <View style={[styles.suspendedAvatarFallback, dynamicStyles.destructivePill]}>
+                            <Text style={[styles.suspendedInitials, { color: theme.destructive }]}>
                               {user.name.charAt(0).toUpperCase()}
                             </Text>
                           </View>
                         )}
                         <View style={styles.suspendedDetails}>
-                          <Text style={styles.suspendedName}>{user.name}</Text>
-                          <Text style={styles.suspendedEmail}>{user.email}</Text>
-                          <View style={styles.suspendedStatusPill}>
-                            <Lock size={10} color="#ef4444" />
-                            <Text style={styles.suspendedStatusText}>Suspendido</Text>
+                          <Text style={[styles.suspendedName, { color: theme.text }]}>{user.name}</Text>
+                          <Text style={[styles.suspendedEmail, { color: theme.textMuted }]}>{user.email}</Text>
+                          <View style={[styles.suspendedStatusPill, dynamicStyles.destructivePill]}>
+                            <Lock size={10} color={theme.destructive} />
+                            <Text style={[styles.suspendedStatusText, { color: theme.destructive }]}>Suspendido</Text>
                           </View>
                         </View>
                       </View>
 
                       <TouchableOpacity
-                        style={styles.unbanBtn}
+                        style={[styles.unbanBtn, dynamicStyles.emeraldPill]}
                         onPress={() => handleUnbanUser(user)}
                       >
-                        <UserCheck size={16} color="#10b981" />
-                        <Text style={styles.unbanBtnText}>Reactivar Cuenta (Gracia)</Text>
+                        <UserCheck size={16} color={isDark ? '#10b981' : '#047857'} />
+                        <Text style={[styles.unbanBtnText, { color: isDark ? '#10b981' : '#047857' }]}>
+                          Reactivar Cuenta (Gracia y Perdón)
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   ))}
 
                   {suspendedUsers.length === 0 && (
                     <View style={styles.emptyContainer}>
-                      <Sparkles size={36} color="#10b981" />
-                      <Text style={styles.emptyTitle}>No hay cuentas suspendidas</Text>
-                      <Text style={styles.emptySubtitle}>
+                      <Sparkles size={36} color={theme.accent} />
+                      <Text style={[styles.emptyTitle, { color: theme.text }]}>No hay cuentas suspendidas</Text>
+                      <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
                         Toda la congregación se encuentra participando en paz y armonía.
                       </Text>
                     </View>
@@ -994,7 +1321,6 @@ const styles = StyleSheet.create({
   tabBarContainer: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   tabBarContent: {
     paddingHorizontal: 16,
@@ -1004,47 +1330,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     alignItems: 'center',
-    backgroundColor: '#1b2633',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  tabBtnActive: {
-    backgroundColor: 'rgba(14, 165, 233, 0.15)',
-    borderColor: '#0ea5e9',
-  },
-  tabBtnActivePinned: {
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
-    borderColor: '#fbbf24',
-  },
-  tabBtnActiveSpam: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderColor: '#ef4444',
-  },
-  tabBtnActiveWords: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-    borderColor: '#f43f5e',
   },
   tabBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#94a3b8',
-  },
-  tabBtnTextActive: {
-    color: '#0ea5e9',
-    fontWeight: '700',
-  },
-  tabBtnTextActivePinned: {
-    color: '#fbbf24',
-    fontWeight: '700',
-  },
-  tabBtnTextActiveSpam: {
-    color: '#ef4444',
-    fontWeight: '700',
-  },
-  tabBtnTextActiveWords: {
-    color: '#f43f5e',
-    fontWeight: '700',
   },
   scrollArea: {
     flex: 1,
@@ -1066,20 +1357,17 @@ const styles = StyleSheet.create({
   sectionHeaderTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#ffffff',
   },
   sectionCounterBadge: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0ea5e9',
-    backgroundColor: 'rgba(14, 165, 233, 0.12)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    borderWidth: 1,
   },
   sectionHeaderSubtitle: {
     fontSize: 12,
-    color: '#94a3b8',
     marginBottom: 14,
   },
   dateGroupContainer: {
@@ -1089,9 +1377,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(14, 165, 233, 0.08)',
     borderLeftWidth: 3,
-    borderLeftColor: '#0ea5e9',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 6,
@@ -1105,32 +1391,23 @@ const styles = StyleSheet.create({
   dateHeaderTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#38bdf8',
   },
   dateGroupCountPill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   dateGroupCountText: {
     fontSize: 10,
-    color: '#94a3b8',
     fontWeight: '600',
   },
   commentsList: {
     gap: 10,
   },
   commentCard: {
-    backgroundColor: '#131b24',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  commentCardPinned: {
-    borderColor: 'rgba(251, 191, 36, 0.35)',
-    backgroundColor: 'rgba(251, 191, 36, 0.04)',
   },
   commentCardHeader: {
     flexDirection: 'row',
@@ -1149,7 +1426,6 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#ffffff',
   },
   commentMetaRow: {
     flexDirection: 'row',
@@ -1158,7 +1434,6 @@ const styles = StyleSheet.create({
   },
   commentVerseTag: {
     fontSize: 11,
-    color: '#0ea5e9',
     fontWeight: '600',
   },
   commentTimeRow: {
@@ -1168,7 +1443,6 @@ const styles = StyleSheet.create({
   },
   commentTimeText: {
     fontSize: 10,
-    color: '#64748b',
   },
   miniBadge: {
     flexDirection: 'row',
@@ -1176,6 +1450,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
+    borderWidth: 1,
     gap: 3,
   },
   miniBadgeText: {
@@ -1185,20 +1460,18 @@ const styles = StyleSheet.create({
   pinnedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
+    borderWidth: 1,
     gap: 4,
   },
   pinnedBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#fbbf24',
   },
   commentBody: {
     fontSize: 13,
-    color: '#cbd5e1',
     lineHeight: 18,
     marginBottom: 10,
   },
@@ -1206,7 +1479,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
     paddingTop: 8,
   },
   commentActionBtn: {
@@ -1214,34 +1486,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
   },
-  commentActionBtnPinned: {
-    opacity: 0.9,
-  },
   commentActionText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  // Report tab styles
+  reportActionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    borderTopWidth: 1,
+    paddingTop: 8,
+    marginTop: 4,
+  },
+  reportActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 5,
+  },
+  reportActionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   // Spam Styles
   clearSpamBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    borderWidth: 1,
   },
   clearSpamBtnText: {
     fontSize: 11,
-    color: '#ef4444',
     fontWeight: '700',
   },
   spamCard: {
-    backgroundColor: '#131b24',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
     gap: 8,
   },
   spamCardHeader: {
@@ -1255,15 +1543,12 @@ const styles = StyleSheet.create({
   spamAuthorName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#ffffff',
   },
   spamVerseTag: {
     fontSize: 11,
-    color: '#64748b',
   },
   spamDateText: {
     fontSize: 10,
-    color: '#94a3b8',
   },
   spamDetectedPill: {
     flexDirection: 'row',
@@ -1273,72 +1558,59 @@ const styles = StyleSheet.create({
   },
   spamDetectedPillLabel: {
     fontSize: 11,
-    color: '#94a3b8',
   },
   spamDetectedWordTag: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
   },
   spamDetectedWordText: {
-    color: '#ef4444',
     fontWeight: '800',
     fontSize: 11,
   },
   spamAttemptQuote: {
-    backgroundColor: '#0a0f14',
     padding: 10,
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#ef4444',
   },
   spamAttemptQuoteText: {
     fontSize: 12,
-    color: '#cbd5e1',
     fontStyle: 'italic',
   },
   spamActionsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
     paddingTop: 8,
   },
   spamSuspendBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
+    borderWidth: 1,
   },
   spamSuspendBtnText: {
     fontSize: 11,
-    color: '#ef4444',
     fontWeight: '700',
   },
   // Words Tab Styles
   addWordBox: {
-    backgroundColor: '#131b24',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(244, 63, 94, 0.25)',
     padding: 14,
     marginBottom: 14,
   },
   addWordBoxTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ffffff',
     marginBottom: 4,
   },
   addWordBoxSubtitle: {
     fontSize: 12,
-    color: '#94a3b8',
     lineHeight: 16,
     marginBottom: 12,
   },
@@ -1348,19 +1620,15 @@ const styles = StyleSheet.create({
   },
   addWordInput: {
     flex: 1,
-    backgroundColor: '#0a0f14',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 9,
-    color: '#ffffff',
     fontSize: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   addWordBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f43f5e',
     paddingHorizontal: 14,
     borderRadius: 10,
     gap: 6,
@@ -1376,26 +1644,52 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0f1720',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   searchInput: {
     flex: 1,
-    color: '#ffffff',
     fontSize: 13,
+  },
+  toggleWordsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: 12,
+  },
+  toggleWordsBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  wordsHiddenNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10,
+  },
+  wordsHiddenNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  wordsCloudContainer: {
+    marginTop: 4,
   },
   wordsSummaryRow: {
     marginBottom: 10,
   },
   wordsSummaryText: {
     fontSize: 11,
-    color: '#94a3b8',
     fontWeight: '500',
   },
   wordsCloud: {
@@ -1406,25 +1700,21 @@ const styles = StyleSheet.create({
   wordChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1b2633',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     gap: 8,
   },
   wordChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#cbd5e1',
   },
   wordChipDelete: {
     padding: 2,
   },
   emptyWordsText: {
     fontSize: 13,
-    color: '#64748b',
     textAlign: 'center',
     marginTop: 20,
     width: '100%',
@@ -1434,11 +1724,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   suspendedCard: {
-    backgroundColor: '#131b24',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.25)',
     gap: 12,
   },
   suspendedInfoRow: {
@@ -1455,12 +1743,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   suspendedInitials: {
-    color: '#ef4444',
     fontWeight: '700',
     fontSize: 16,
   },
@@ -1470,42 +1757,36 @@ const styles = StyleSheet.create({
   suspendedName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ffffff',
   },
   suspendedEmail: {
     fontSize: 12,
-    color: '#94a3b8',
     marginTop: 1,
   },
   suspendedStatusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     gap: 4,
     alignSelf: 'flex-start',
     marginTop: 4,
+    borderWidth: 1,
   },
   suspendedStatusText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#ef4444',
   },
   unbanBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.35)',
     paddingVertical: 10,
     borderRadius: 10,
     gap: 6,
   },
   unbanBtnText: {
-    color: '#10b981',
     fontWeight: '700',
     fontSize: 13,
   },
@@ -1533,7 +1814,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   retryBtn: {
-    backgroundColor: '#0ea5e9',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 10,
@@ -1551,11 +1831,9 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ffffff',
   },
   emptySubtitle: {
     fontSize: 12,
-    color: '#94a3b8',
     textAlign: 'center',
     paddingHorizontal: 20,
   },

@@ -30,18 +30,32 @@ export interface SpamAttempt {
   createdAt: string;
 }
 
+export interface ModerationReport {
+  id: string;
+  commentId: string;
+  verseSlug: string;
+  reportedByName: string;
+  authorName: string;
+  commentText: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+}
+
 export interface ModerationOverview {
   blockedWords: string[];
   comments: ModerationComment[];
   suspendedUsers: SuspendedUser[];
   pinnedComments: ModerationComment[];
   spamAttempts: SpamAttempt[];
+  reports: ModerationReport[];
   metrics: {
     totalComments: number;
     totalBlockedWords: number;
     totalSuspended: number;
     totalPinned: number;
     totalSpamAttempts: number;
+    totalReports: number;
   };
 }
 
@@ -60,12 +74,14 @@ export async function fetchModerationOverview(): Promise<ModerationOverview> {
     suspendedUsers: data.suspendedUsers || [],
     pinnedComments: data.pinnedComments || [],
     spamAttempts: data.spamAttempts || [],
+    reports: data.reports || [],
     metrics: data.metrics || {
       totalComments: 0,
       totalBlockedWords: 0,
       totalSuspended: 0,
       totalPinned: 0,
       totalSpamAttempts: 0,
+      totalReports: 0,
     },
   };
 }
@@ -139,3 +155,35 @@ export async function clearSpamAttempts(): Promise<boolean> {
   return Boolean(data?.ok);
 }
 
+export async function sendCommunityReport(params: {
+  commentId: string;
+  verseSlug: string;
+  reason: string;
+  reportedByName?: string;
+  authorName?: string;
+  commentText?: string;
+}): Promise<boolean> {
+  const res = await fetch(`${BASE_URL}/api/community-reflections/report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error('No se pudo enviar la denuncia.');
+  const data = await res.json() as any;
+  return Boolean(data?.ok);
+}
+
+export async function resolveModerationReport(
+  reportId: string,
+  action: 'dismiss' | 'delete',
+  commentId?: string
+): Promise<boolean> {
+  const res = await fetch(`${BASE_URL}/api/moderation/resolve-report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reportId, action, commentId }),
+  });
+  if (!res.ok) throw new Error('No se pudo procesar la denuncia.');
+  const data = await res.json() as any;
+  return Boolean(data?.ok);
+}

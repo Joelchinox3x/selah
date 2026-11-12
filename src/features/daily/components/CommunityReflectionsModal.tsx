@@ -2,11 +2,12 @@ import { getPastoralVisibility, loadPastoralVisibility, refreshPastoralVisibilit
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, useWindowDimensions, Keyboard, Alert, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Send, ShieldCheck, BadgeCheck, ArrowLeft, Heart, ChevronDown, MoreHorizontal, EyeOff, Pin, Pencil, Trash2, UserX } from 'lucide-react-native';
+import { X, Send, ShieldCheck, BadgeCheck, ArrowLeft, Heart, ChevronDown, MoreHorizontal, EyeOff, Pin, Pencil, Trash2, UserX, Flag } from 'lucide-react-native';
 import { themes, ThemePalette } from '@/src/theme/colors';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { useAuthStore } from '@/src/features/auth/authStore';
 import { suspendAuthorByName } from '@/src/features/auth/pastoralService';
+import { sendCommunityReport } from '@/src/features/moderation/moderationService';
 import { hapticLight, hapticSuccess } from '@/src/services/haptics/hapticFeedback';
 import { CommunityComment, loadCommunityReflections, publishCommunityReflection, editCommunityReflection, deleteCommunityReflection, setCommunityCommentLike, formatReflectionDate } from '../services/communityReflections';
 import { getCommunityName, newCommunityRequestId } from '../services/communityIdentity';
@@ -281,7 +282,84 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
     );
   };
 
+  const handleReportComment = (comment: CommunityComment) => {
+    setMenuComment(null);
+    hapticLight();
+    Alert.alert(
+      'Denunciar Testimonio',
+      `¿Por qué deseas denunciar el testimonio de ${comment.userName}? Un moderador lo revisará con prioridad.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: '🚫 Lenguaje Inapropiado / Grosería',
+          onPress: async () => {
+            try {
+              await sendCommunityReport({
+                commentId: comment.id,
+                verseSlug,
+                reason: 'Lenguaje inapropiado o grosería',
+                reportedByName: authUser?.name,
+                authorName: comment.userName,
+                commentText: comment.text,
+              });
+              setFeedback('Denuncia enviada a los moderadores. Gracias.');
+              hapticSuccess();
+            } catch {
+              setFeedback('No se pudo enviar la denuncia.');
+            }
+          },
+        },
+        {
+          text: '⚠️ Spam o Publicidad',
+          onPress: async () => {
+            try {
+              await sendCommunityReport({
+                commentId: comment.id,
+                verseSlug,
+                reason: 'Spam o publicidad',
+                reportedByName: authUser?.name,
+                authorName: comment.userName,
+                commentText: comment.text,
+              });
+              setFeedback('Denuncia enviada a los moderadores. Gracias.');
+              hapticSuccess();
+            } catch {
+              setFeedback('No se pudo enviar la denuncia.');
+            }
+          },
+        },
+        {
+          text: '⚔️ Falta de Respeto / Conflicto',
+          onPress: async () => {
+            try {
+              await sendCommunityReport({
+                commentId: comment.id,
+                verseSlug,
+                reason: 'Falta de respeto o agresión',
+                reportedByName: authUser?.name,
+                authorName: comment.userName,
+                commentText: comment.text,
+              });
+              setFeedback('Denuncia enviada a los moderadores. Gracias.');
+              hapticSuccess();
+            } catch {
+              setFeedback('No se pudo enviar la denuncia.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const confirmDelete = (comment: CommunityComment) => {
+    if (comment.isPastor && !authUser?.isPastor && authUser?.role !== 'admin') {
+      setMenuComment(null);
+      Alert.alert(
+        'Jerarquía Ministerial',
+        'Esta reflexión fue emitida por un Pastor y cuenta con protección ministerial. No puede ser retirada por moderación general.'
+      );
+      return;
+    }
     if ((!comment.isOwn && !canModerate) || mutationLock.current) return;
     setMenuComment(null);
     const version = generation.current;
@@ -519,6 +597,16 @@ export const CommunityReflectionsModal: React.FC<Props> = ({
               <Text style={[styles.actionSheetLabel, { color: '#ef4444' }]}>Suspender autor</Text>
             </TouchableOpacity>
           </>}
+          {!menuComment?.isOwn && menuComment && (
+            <TouchableOpacity
+              style={styles.actionSheetItem}
+              onPress={() => handleReportComment(menuComment)}
+              accessibilityRole="button"
+            >
+              <Flag size={20} color="#ef4444" />
+              <Text style={[styles.actionSheetLabel, { color: '#ef4444' }]}>Denunciar testimonio</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.actionSheetItem} onPress={() => menuComment && hideComment(menuComment)} accessibilityRole="button" accessibilityHint="Solo dejarás de verlo tú en este muro">
             <EyeOff size={20} color={theme.text} /><Text style={styles.actionSheetLabel}>Ocultar</Text>
           </TouchableOpacity>
