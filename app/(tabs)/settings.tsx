@@ -368,16 +368,57 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    hapticLight();
+                    router.push('/admin' as any);
+                  }}
+                  style={[styles.openPastoralBtn, { backgroundColor: '#d97706', flex: 1 }]}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.openPastoralBtnText}>Panel Pastoral</Text>
+                  <ChevronRight size={16} color="#ffffff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    hapticLight();
+                    router.push('/moderation' as any);
+                  }}
+                  style={[styles.openPastoralBtn, { backgroundColor: '#0284c7', flex: 1 }]}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.openPastoralBtnText}>Moderación</Text>
+                  <ChevronRight size={16} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* SECCIÓN DE MODERACIÓN: SOLO VISIBLE SI EL USUARIO ES MODERADOR */}
+          {authUser && !authUser.isPastor && (authUser.role === 'moderador' || authUser.isModerator || authUser.role === 'admin') && (
+            <View style={[styles.pastoralBox, { backgroundColor: 'rgba(14, 165, 233, 0.08)', borderColor: 'rgba(14, 165, 233, 0.35)' }]}>
+              <View style={styles.pastoralBoxHeader}>
+                <ShieldCheck size={22} color="#0ea5e9" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.pastoralBoxTitle, { color: theme.text }]}>Herramientas de Moderación</Text>
+                  <Text style={[styles.pastoralBoxSubtitle, { color: theme.textMuted }]}>
+                    Filtro de palabras bloqueadas, feed de reflexiones y cuentas suspendidas.
+                  </Text>
+                </View>
+              </View>
               <TouchableOpacity
                 onPress={() => {
                   hapticLight();
-                  router.push('/admin' as any);
+                  router.push('/moderation' as any);
                 }}
-                style={[styles.openPastoralBtn, { backgroundColor: '#d97706' }]}
+                style={[styles.openPastoralBtn, { backgroundColor: '#0ea5e9' }]}
                 activeOpacity={0.85}
                 accessibilityRole="button"
               >
-                <Text style={styles.openPastoralBtnText}>Abrir Panel de Supervisión</Text>
+                <Text style={styles.openPastoralBtnText}>Abrir Panel de Moderación</Text>
                 <ChevronRight size={16} color="#ffffff" />
               </TouchableOpacity>
             </View>
