@@ -33,8 +33,10 @@ import {
   KeyRound,
   Upload,
 } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import {
+  pickImageWithCrop,
+  takePhotoWithCrop,
+} from '@/src/features/profile/safeImagePicker';
 import { Screen } from '@/src/components/ui/Screen';
 import { useSettingsStore } from '@/src/features/settings/store/useSettingsStore';
 import { useAuthStore } from '@/src/features/auth/authStore';
@@ -154,73 +156,31 @@ export default function ProfileScreen() {
     setCustomUrlInput('');
   };
 
-  // Procesar, recortar y redimensionar estrictamente a cuadrado 1:1 (512x512)
-  const processAndSetImage = async (uri: string) => {
+  // Seleccionar de Galería con recorte cuadrado 1:1
+  const handlePickFromGallery = async () => {
+    setProcessingImage(true);
     try {
-      setProcessingImage(true);
-      const manip = await manipulateAsync(
-        uri,
-        [{ resize: { width: 512, height: 512 } }],
-        { compress: 0.85, format: SaveFormat.JPEG }
-      );
-      setPreviewingAvatar(manip.uri);
-      hapticLight();
-    } catch {
-      // Fallback seguro a URI original
-      setPreviewingAvatar(uri);
+      const res = await pickImageWithCrop();
+      if (res.success && res.uri) {
+        setPreviewingAvatar(res.uri);
+        hapticLight();
+      }
     } finally {
       setProcessingImage(false);
     }
   };
 
-  // Seleccionar de Galería con recorte cuadrado 1:1
-  const handlePickFromGallery = async () => {
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert(
-          'Permiso Requerido',
-          'Concede acceso a tus fotos para recortar tu imagen en formato cuadrado 1:1.'
-        );
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1], // Proporción cuadrada estricta 1:1
-        quality: 0.9,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]?.uri) {
-        await processAndSetImage(result.assets[0].uri);
-      }
-    } catch (err: any) {
-      Alert.alert('Error', 'No se pudo cargar la imagen: ' + (err?.message || 'Error desconocido'));
-    }
-  };
-
   // Tomar Foto con Cámara y recorte 1:1
   const handleTakePhotoWithCamera = async () => {
+    setProcessingImage(true);
     try {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert(
-          'Permiso Requerido',
-          'Concede acceso a la cámara para capturar tu foto de perfil cuadrada.'
-        );
-        return;
+      const res = await takePhotoWithCrop();
+      if (res.success && res.uri) {
+        setPreviewingAvatar(res.uri);
+        hapticLight();
       }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1], // Proporción cuadrada estricta 1:1
-        quality: 0.9,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]?.uri) {
-        await processAndSetImage(result.assets[0].uri);
-      }
-    } catch (err: any) {
-      Alert.alert('Error', 'No se pudo abrir la cámara: ' + (err?.message || 'Error desconocido'));
+    } finally {
+      setProcessingImage(false);
     }
   };
 
