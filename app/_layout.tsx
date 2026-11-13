@@ -8,11 +8,13 @@ import { getBibleDb } from '@/src/services/db/bibleDb';
 import { getUserDb } from '@/src/services/db/userDb';
 import { scheduleSliding14DayNotifications } from '@/src/services/notifications/notificationService';
 import { themes } from '@/src/theme/colors';
+import { AnimatedSplashScreen } from '@/src/components/ui/AnimatedSplashScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
+  const [splashFinished, setSplashFinished] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -80,37 +82,15 @@ export default function RootLayout() {
     }
   }, []);
 
-  if (!isReady) {
-    return (
-      <View style={[styles.splash, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.accent} />
-        <Text style={[styles.splashTitle, { color: theme.text }]}>Selah</Text>
-        <Text style={[styles.splashSubtitle, { color: theme.textMuted }]}>
-          {initError
-            ? `Error al inicializar: ${initError}`
-            : 'Preparando las Sagradas Escrituras...'}
-        </Text>
-        {initError ? (
-          <TouchableOpacity
-            style={[styles.retryBtn, { backgroundColor: theme.accent }]}
-            onPress={prepareApp}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.retryBtnText}>Reintentar conexión</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    );
-  }
-
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: theme.background },
-        animation: 'slide_from_right',
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: theme.background },
+          animation: 'slide_from_right',
+        }}
+      >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="reader/[book]/[chapter]"
@@ -220,7 +200,18 @@ export default function RootLayout() {
         }}
       />
     </Stack>
-  );
+
+    {/* SPLASH ANIMADO MAJESTUOSO CON FLOTACIÓN 60 FPS Y RESPLANDOR CELESTIAL */}
+    {!splashFinished && (
+      <AnimatedSplashScreen
+        isReady={isReady}
+        initError={initError}
+        onRetry={prepareApp}
+        onFinish={() => setSplashFinished(true)}
+      />
+    )}
+  </View>
+);
 }
 
 const styles = StyleSheet.create({

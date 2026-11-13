@@ -56,11 +56,11 @@
         {
           "backgroundColor": "#090d16",
           "image": "./assets/images/splash.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
+          "resizeMode": "cover",
           "dark": {
             "backgroundColor": "#090d16",
-            "image": "./assets/images/splash.png"
+            "image": "./assets/images/splash.png",
+            "resizeMode": "cover"
           }
         }
       ],
