@@ -8,7 +8,7 @@ import { getBibleDb } from '@/src/services/db/bibleDb';
 import { getUserDb } from '@/src/services/db/userDb';
 import { scheduleSliding14DayNotifications } from '@/src/services/notifications/notificationService';
 import { themes } from '@/src/theme/colors';
-import { AnimatedSplashScreen } from '@/src/components/ui/AnimatedSplashScreen';
+import { VideoSplashScreen } from '@/src/components/ui/VideoSplashScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -49,11 +49,7 @@ export default function RootLayout() {
     prepareApp();
   }, [prepareApp]);
 
-  useEffect(() => {
-    if (isReady) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [isReady]);
+
 
   // Listen for user tapping a scheduled notification -> Deep link to reader
   useEffect(() => {
@@ -201,12 +197,10 @@ export default function RootLayout() {
       />
     </Stack>
 
-    {/* SPLASH ANIMADO MAJESTUOSO CON FLOTACIÓN 60 FPS Y RESPLANDOR CELESTIAL */}
+    {/* SPLASH VIDEO CINEMÁTICO FILMORA (720x1280) */}
     {!splashFinished && (
-      <AnimatedSplashScreen
+      <VideoSplashScreen
         isReady={isReady}
-        initError={initError}
-        onRetry={prepareApp}
         onFinish={() => setSplashFinished(true)}
       />
     )}
