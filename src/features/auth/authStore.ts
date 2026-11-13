@@ -102,7 +102,12 @@ export const useAuthStore = create<AuthState>()(
           const currentStoredName = await getCommunityName();
           const cleanName = (customData?.name || currentStoredName || 'Creyente en Cristo').trim();
           const cleanEmail = (customData?.email || 'creyente.selah@gmail.com').trim().toLowerCase();
-          const defaultAvatar = customData?.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
+          const existingUser = get().user;
+          const defaultAvatar =
+            customData?.avatarUrl ||
+            (existingUser?.customAvatar && existingUser.avatarUrl
+              ? existingUser.avatarUrl
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=0284c7&color=ffffff&size=512&rounded=true`);
           const deviceId = await getCommunityDeviceId().catch(() => undefined);
 
           // Sincronizar con el backend centralizado para resolver el rol y estado asignado en la Web
@@ -127,7 +132,6 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Esta cuenta ha sido suspendida por moderación comunitaria.');
           }
 
-          const existingUser = get().user;
           const userRole: UserRole = serverUser?.role || (await resolveRoleForUser(cleanEmail, existingUser?.role));
           const isPastor = serverUser ? Boolean(serverUser.isPastor) : (userRole === 'pastor' || userRole === 'admin');
           const isModerator = serverUser ? Boolean(serverUser.isModerator) : (userRole === 'moderador' || isPastor);

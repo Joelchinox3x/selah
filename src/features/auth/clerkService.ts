@@ -3,7 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const CLERK_KEY_STORAGE = '@selah_clerk_publishable_key_v1';
 
 // Valor por defecto o variable de entorno de Expo
-const DEFAULT_CLERK_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
+const DEFAULT_CLERK_KEY =
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  'pk_test_Z3JhbmQtY291Z2FyLTQzMjYuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
 /**
  * Obtiene la Clerk Publishable Key activa
